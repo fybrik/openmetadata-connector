@@ -13,11 +13,13 @@ DOCKER_NAME ?= openmetadata-connector
 
 FYBRIK_VERSION ?= v1.0.1
 
+TMP_FILE = tmpfile.tmp
+
 IMG := ${DOCKER_HOSTNAME}/${DOCKER_NAMESPACE}/${DOCKER_NAME}:${DOCKER_TAG}
 export HELM_EXPERIMENTAL_OCI=1
 
 
-all: build
+all: generate-code patch
 
 .PHONY: compile
 compile:
@@ -67,4 +69,5 @@ generate-code:
            -i /local/client-swagger/swagger.json
 
 patch:
-	sed -i 's/\t"github.com\/gorilla\/mux"//' api/go/api_default.go
+	awk '($$1 != "\"github.com/gorilla/mux\"") {print}' api/go/api_default.go > ${TMP_FILE}
+	mv ${TMP_FILE} api/go/api_default.go
