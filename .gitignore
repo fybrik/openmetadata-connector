@@ -1,0 +1,5 @@
+.vscode/
+api/
+models/
+client/
+./openmetadata-connector
