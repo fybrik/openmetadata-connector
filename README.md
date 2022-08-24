@@ -27,4 +27,4 @@ The configuration file also contains the path of a JWT file which is used to ide
 - [utils](utils): Includes utility methods used in the connector code
 - [vault](vault): Includes methods to obtain a token and secrets from Vault
 - [conf](conf): Contains a sample configuration file
-- [client-swagger](client-swagger): The OpenMetadata API Specification, used to OpenMetadata client code in the golang language. This directory contains the original YAML file and a modified YAML file to fix the auto-generated code
+- [client-swagger](client-swagger): The OpenMetadata API Specification, used to generate OpenMetadata client code in the golang language. This directory contains the original YAML file and a modified YAML file to fix the auto-generated code
