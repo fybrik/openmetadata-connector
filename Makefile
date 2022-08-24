@@ -10,8 +10,17 @@ FYBRIK_VERSION ?= v1.0.1
 
 TMP_FILE = tmpfile.tmp
 
-all: generate-code patch
+all: generate-code patch compile
 
+.PHONY: compile
+compile:
+	go build .
+
+.PHONY: run
+run:
+	go run . run --config conf/conf.yaml
+
+.PHONY: generate-code
 generate-code:
 	git clone https://github.com/fybrik/fybrik/
 	cd fybrik && git checkout ${FYBRIK_VERSION}
@@ -43,6 +52,7 @@ generate-code:
            -o /local/auto-generated/client \
            -i /local/client-swagger/swagger.json
 
+.PHONY: patch
 patch:
 	awk '($$1 != "\"github.com/gorilla/mux\"") {print}' auto-generated/api/go/api_default.go > ${TMP_FILE}
 	mv ${TMP_FILE} auto-generated/api/go/api_default.go
