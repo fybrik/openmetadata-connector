@@ -50,25 +50,25 @@ func NewOpenMetadataApiController(s OpenMetadataApiServicer, opts ...DefaultApiO
 // Routes returns all the api routes for the DefaultApiController
 func (c *DefaultApiController) Routes() api.Routes {
 	return api.Routes{
-		{
+		api.Route{
 			Name:        "CreateAsset",
 			Method:      strings.ToUpper("Post"),
 			Pattern:     "/createAsset",
 			HandlerFunc: c.CreateAsset,
 		},
-		{
+		api.Route{
 			Name:        "DeleteAsset",
 			Method:      strings.ToUpper("Delete"),
 			Pattern:     "/deleteAsset",
 			HandlerFunc: c.DeleteAsset,
 		},
-		{
+		api.Route{
 			Name:        "GetAssetInfo",
 			Method:      strings.ToUpper("Post"),
 			Pattern:     "/getAssetInfo",
 			HandlerFunc: c.GetAssetInfo,
 		},
-		{
+		api.Route{
 			Name:        "UpdateAsset",
 			Method:      strings.ToUpper("Patch"),
 			Pattern:     "/updateAsset",
