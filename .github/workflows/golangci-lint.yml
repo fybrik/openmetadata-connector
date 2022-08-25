@@ -13,6 +13,8 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+      - name: autogenerate code
+        run: make
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
