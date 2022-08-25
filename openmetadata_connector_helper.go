@@ -22,7 +22,7 @@ func getTag(ctx context.Context, c *client.APIClient, tagFQN string) client.TagL
 		// we will translate it to 'Fybrik.tagFQN'. We try to create it
 		// (whether it exists or not)
 		createTag := *client.NewCreateTag(tagFQN, tagFQN)
-		c.TagsApi.CreatePrimaryTag(ctx, "Fybrik").CreateTag(createTag).Execute()
+		_, _, _ = c.TagsApi.CreatePrimaryTag(ctx, "Fybrik").CreateTag(createTag).Execute()
 		tagFQN = "Fybrik." + tagFQN
 	}
 	return *&client.TagLabel{
@@ -53,7 +53,7 @@ func (s *OpenMetadataApiService) prepareOpenMetadataForFybrik() bool {
 	c := s.getOpenMetadataClient()
 
 	// Create Tag Category for Fybrik
-	c.TagsApi.CreateTagCategory(ctx).CreateTagCategory(*client.NewCreateTagCategory("Classification",
+	_, _, _ = c.TagsApi.CreateTagCategory(ctx).CreateTagCategory(*client.NewCreateTagCategory("Classification",
 		"Parent Category for all Fybrik labels", "Fybrik")).Execute()
 
 	// Find the ID for the 'table' entity
@@ -100,22 +100,22 @@ func (s *OpenMetadataApiService) prepareOpenMetadataForFybrik() bool {
 	}
 
 	// Add custom properties for tables
-	c.MetadataApi.AddProperty(ctx, tableID).CustomProperty(*client.NewCustomProperty(
+	_, _ = c.MetadataApi.AddProperty(ctx, tableID).CustomProperty(*client.NewCustomProperty(
 		"The vault plugin path where the destination data credentials will be stored as kubernetes secrets", "credentials",
 		*client.NewEntityReference(stringID, "string"))).Execute()
-	c.MetadataApi.AddProperty(ctx, tableID).CustomProperty(*client.NewCustomProperty(
+	_, _ = c.MetadataApi.AddProperty(ctx, tableID).CustomProperty(*client.NewCustomProperty(
 		"Connection type, e.g.: s3 or mysql", "connectionType",
 		*client.NewEntityReference(stringID, "string"))).Execute()
-	c.MetadataApi.AddProperty(ctx, tableID).CustomProperty(*client.NewCustomProperty(
+	_, _ = c.MetadataApi.AddProperty(ctx, tableID).CustomProperty(*client.NewCustomProperty(
 		"Name of the resource", "name",
 		*client.NewEntityReference(stringID, "string"))).Execute()
-	c.MetadataApi.AddProperty(ctx, tableID).CustomProperty(*client.NewCustomProperty(
+	_, _ = c.MetadataApi.AddProperty(ctx, tableID).CustomProperty(*client.NewCustomProperty(
 		"Geography of the resource", "geography",
 		*client.NewEntityReference(stringID, "string"))).Execute()
-	c.MetadataApi.AddProperty(ctx, tableID).CustomProperty(*client.NewCustomProperty(
+	_, _ = c.MetadataApi.AddProperty(ctx, tableID).CustomProperty(*client.NewCustomProperty(
 		"Owner of the resource", "owner",
 		*client.NewEntityReference(stringID, "string"))).Execute()
-	c.MetadataApi.AddProperty(ctx, tableID).CustomProperty(*client.NewCustomProperty(
+	_, _ = c.MetadataApi.AddProperty(ctx, tableID).CustomProperty(*client.NewCustomProperty(
 		"Data format", "dataFormat",
 		*client.NewEntityReference(stringID, "string"))).Execute()
 
