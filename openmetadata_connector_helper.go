@@ -165,7 +165,7 @@ func NewOpenMetadataApiService(conf map[interface{}]interface{}, logger zerolog.
 
 func (s *OpenMetadataApiService) getOpenMetadataClient() *client.APIClient {
 	conf := client.Configuration{Servers: client.ServerConfigurations{
-		{
+		client.ServerConfiguration{
 			URL:         s.Endpoint,
 			Description: "Endpoint URL",
 		},
