@@ -51,28 +51,28 @@ func NewOpenMetadataApiController(s OpenMetadataApiServicer, opts ...DefaultApiO
 func (c *DefaultApiController) Routes() api.Routes {
 	return api.Routes{
 		{
-			"CreateAsset",
-			strings.ToUpper("Post"),
-			"/createAsset",
-			c.CreateAsset,
+			Name:        "CreateAsset",
+			Method:      strings.ToUpper("Post"),
+			Pattern:     "/createAsset",
+			HandlerFunc: c.CreateAsset,
 		},
 		{
-			"DeleteAsset",
-			strings.ToUpper("Delete"),
-			"/deleteAsset",
-			c.DeleteAsset,
+			Name:        "DeleteAsset",
+			Method:      strings.ToUpper("Delete"),
+			Pattern:     "/deleteAsset",
+			HandlerFunc: c.DeleteAsset,
 		},
 		{
-			"GetAssetInfo",
-			strings.ToUpper("Post"),
-			"/getAssetInfo",
-			c.GetAssetInfo,
+			Name:        "GetAssetInfo",
+			Method:      strings.ToUpper("Post"),
+			Pattern:     "/getAssetInfo",
+			HandlerFunc: c.GetAssetInfo,
 		},
 		{
-			"UpdateAsset",
-			strings.ToUpper("Patch"),
-			"/updateAsset",
-			c.UpdateAsset,
+			Name:        "UpdateAsset",
+			Method:      strings.ToUpper("Patch"),
+			Pattern:     "/updateAsset",
+			HandlerFunc: c.UpdateAsset,
 		},
 	}
 }
