@@ -1,4 +1,4 @@
-package database_types
+package databasetypes
 
 import (
 	"reflect"
@@ -12,11 +12,11 @@ type mysql struct {
 
 func NewMysql() *mysql {
 	standardFields := map[string]bool{
-		"databaseSchema": true,
-		"hostPort":       true,
-		"password":       true,
-		"scheme":         true,
-		"username":       true,
+		DatabaseSchema: true,
+		"hostPort":     true,
+		"password":     true,
+		"scheme":       true,
+		"username":     true,
 	}
 	return &mysql{StandardFields: standardFields}
 }
@@ -35,9 +35,8 @@ func (m *mysql) TranslateOpenMetadataConfigToFybrikConfig(config map[string]inte
 			other[key] = value
 		}
 	}
-	if other != nil {
-		ret["other"] = other
-	}
+
+	ret["other"] = other
 	return ret
 }
 
@@ -45,18 +44,17 @@ func (m *mysql) OMTypeName() string {
 	return "Mysql"
 }
 
-func (m *mysql) TableFQN(serviceName string, createAssetRequest models.CreateAssetRequest) string {
+func (m *mysql) TableFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) string {
 	connectionProperties := createAssetRequest.Details.GetConnection().AdditionalProperties["mysql"].(map[string]interface{})
 	assetName := *createAssetRequest.DestinationAssetID
-	databaseSchema, found := connectionProperties["databaseSchema"]
+	databaseSchema, found := connectionProperties[DatabaseSchema]
 	if found {
-		return serviceName + ".default." + databaseSchema.(string) + "." + assetName
-	} else {
-		return serviceName + ".default." + assetName
+		return serviceName + "." + DEFAULT + "." + databaseSchema.(string) + "." + assetName
 	}
+	return serviceName + "." + DEFAULT + "." + assetName
 }
 
-func (m *mysql) CompareServiceConfigurations(requestConfig map[string]interface{}, serviceConfig map[string]interface{}) bool {
+func (m *mysql) CompareServiceConfigurations(requestConfig, serviceConfig map[string]interface{}) bool {
 	for property, value := range requestConfig {
 		if !reflect.DeepEqual(serviceConfig[property], value) {
 			return false
@@ -65,22 +63,22 @@ func (m *mysql) CompareServiceConfigurations(requestConfig map[string]interface{
 	return true
 }
 
-func (m *mysql) DatabaseName(createAssetRequest models.CreateAssetRequest) string {
-	return "default"
+func (m *mysql) DatabaseName(createAssetRequest *models.CreateAssetRequest) string {
+	return DEFAULT
 }
 
-func (m *mysql) DatabaseFQN(serviceName string, createAssetRequest models.CreateAssetRequest) string {
+func (m *mysql) DatabaseFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) string {
 	return ""
 }
 
-func (m *mysql) DatabaseSchemaName(createAssetRequest models.CreateAssetRequest) string {
+func (m *mysql) DatabaseSchemaName(createAssetRequest *models.CreateAssetRequest) string {
 	return ""
 }
 
-func (m *mysql) DatabaseSchemaFQN(serviceName string, createAssetRequest models.CreateAssetRequest) string {
+func (m *mysql) DatabaseSchemaFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) string {
 	return ""
 }
 
-func (m *mysql) TableName(createAssetRequest models.CreateAssetRequest) string {
+func (m *mysql) TableName(createAssetRequest *models.CreateAssetRequest) string {
 	return ""
 }

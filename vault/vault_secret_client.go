@@ -1,9 +1,10 @@
 package vault
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -12,19 +13,22 @@ import (
 )
 
 type VaultClient struct {
-	address       string
-	authPath      string
-	role          string
-	jwt_file_path string
-	logger        zerolog.Logger
+	address     string
+	authPath    string
+	role        string
+	jwtFilePath string
+	logger      *zerolog.Logger
 }
 
+const ROLE = "role"
+const JWT = "jwt"
+
 // return structure for Vault Client, based on configuration
-func NewVaultClient(conf map[interface{}]interface{}, logger zerolog.Logger) VaultClient {
+func NewVaultClient(conf map[interface{}]interface{}, logger *zerolog.Logger) VaultClient {
 	address := "http://vault.fybrik-system:8200"
 	authPath := "/v1/auth/kubernetes/login"
 	role := "fybrik"
-	jwt_file_path := "/var/run/secrets/kubernetes.io/serviceaccount/token"
+	jwtFilePath := "/var/run/secrets/kubernetes.io/serviceaccount/token"
 	if conf != nil {
 		if addressConf, ok := conf["address"]; ok {
 			address = addressConf.(string)
@@ -36,25 +40,25 @@ func NewVaultClient(conf map[interface{}]interface{}, logger zerolog.Logger) Vau
 			role = roleConf.(string)
 		}
 		if jwtFilePathConf, ok := conf["jwt_file_path"]; ok {
-			jwt_file_path = jwtFilePathConf.(string)
+			jwtFilePath = jwtFilePathConf.(string)
 		}
 	}
-	return VaultClient{address: address, authPath: authPath, role: role, jwt_file_path: jwt_file_path, logger: logger}
+	return VaultClient{address: address, authPath: authPath, role: role, jwtFilePath: jwtFilePath, logger: logger}
 }
 
 func (v *VaultClient) GetToken() (string, error) {
 	// read JWT file. JWT is used to authenticate against Vault
-	jwt, err := os.ReadFile(v.jwt_file_path)
+	jwt, err := os.ReadFile(v.jwtFilePath)
 	if err != nil {
 		v.logger.Error().Msg("Failed to read JWT file")
 		return "", err
 	}
 
 	j := make(map[string]string)
-	j["jwt"] = string(jwt)
-	j["role"] = v.role
+	j[JWT] = string(jwt)
+	j[ROLE] = v.role
 
-	full_auth_path := v.address + v.authPath
+	fullAuthPath := v.address + v.authPath
 	jsonStr, err := json.Marshal(j)
 	if err != nil {
 		v.logger.Error().Msg("Failed to transform map to JSON string")
@@ -63,8 +67,8 @@ func (v *VaultClient) GetToken() (string, error) {
 
 	// request token from vault
 	requestBody := strings.NewReader(string(jsonStr))
-	resp, _ := http.Post(full_auth_path, "encoding/json", requestBody)
-	responseBody, err := ioutil.ReadAll(resp.Body)
+	resp, _ := http.Post(fullAuthPath, "encoding/json", requestBody) //nolint
+	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		v.logger.Error().Msg("Failed to get token from vault")
 		return "", err
@@ -83,14 +87,14 @@ func (v *VaultClient) GetToken() (string, error) {
 		token = value.(map[string]interface{})["client_token"].(string)
 		v.logger.Info().Msg("Successfully obtained token from Vault")
 		return token, nil
-	} else {
-		v.logger.Error().Msg("malformed response from vault")
-		return "", errors.New("malformed response from vault")
 	}
+	const MalformedVaultResposeMessage = "malformed response from vault"
+	v.logger.Error().Msg(MalformedVaultResposeMessage)
+	return "", errors.New(MalformedVaultResposeMessage)
 }
 
-func (v *VaultClient) GetSecret(token string, secretPath string) ([]byte, error) {
-	req, err := http.NewRequest("GET", v.address+secretPath, nil)
+func (v *VaultClient) GetSecret(token, secretPath string) ([]byte, error) {
+	req, err := http.NewRequestWithContext(context.Background(), "GET", v.address+secretPath, http.NoBody)
 	if err != nil {
 		v.logger.Error().Msg("Failed to prepare Vault secret request")
 		return nil, err
@@ -103,8 +107,9 @@ func (v *VaultClient) GetSecret(token string, secretPath string) ([]byte, error)
 		v.logger.Error().Msg("Failed to obtain secret from Vault")
 		return nil, err
 	}
+	defer resp.Body.Close()
 
-	responseBody, err := ioutil.ReadAll(resp.Body)
+	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		v.logger.Error().Msg("Failed to read Vault secret")
 		return nil, err
@@ -126,8 +131,7 @@ func (v *VaultClient) ExtractS3CredentialsFromSecret(secret []byte) (string, str
 		data := value.(map[string]interface{})
 		v.logger.Info().Msg("Successfully extracted S3 credentials from Vault secret")
 		return data["access_key"].(string), data["secret_key"].(string)
-	} else {
-		v.logger.Error().Msg("Failed to extract S3 credentials from Vault secret")
-		return "", ""
 	}
+	v.logger.Error().Msg("Failed to extract S3 credentials from Vault secret")
+	return "", ""
 }

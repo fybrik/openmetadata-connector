@@ -1,4 +1,4 @@
-package database_types
+package databasetypes
 
 import (
 	"reflect"
@@ -14,21 +14,36 @@ type s3 struct {
 	Translate                map[string]string
 	TranslateInv             map[string]string
 	VaultClientConfiguration map[interface{}]interface{}
-	logger                   zerolog.Logger
+	logger                   *zerolog.Logger
 }
 
-func NewS3(vaultClientConfiguration map[interface{}]interface{}, logger zerolog.Logger) *s3 {
+const REGION = "region"
+const ENDPOINT = "endpoint"
+const AccessKeyID = "access_key_id"
+const SecretAccessID = "secret_access_id"
+const AwsRegion = "awsRegion"
+const EndPointURL = "endPointURL"
+const AwsAccessKeyID = "awsAccessKeyId"
+const AwsSecretAccessKey = "awsSecretAccessKey"
+const DATALAKE = "Datalake"
+const ConfigSource = "configSource"
+const BucketName = "bucketName"
+const Bucket = "bucket"
+const SecurityConfig = "securityConfig"
+const S3 = "s3"
+
+func NewS3(vaultClientConfiguration map[interface{}]interface{}, logger *zerolog.Logger) *s3 {
 	translate := map[string]string{
-		"region":           "awsRegion",
-		"endpoint":         "endPointURL",
-		"access_key_id":    "awsAccessKeyId",
-		"secret_access_id": "awsSecretAccessKey",
+		REGION:         AwsRegion,
+		ENDPOINT:       EndPointURL,
+		AccessKeyID:    AwsAccessKeyID,
+		SecretAccessID: AwsSecretAccessKey,
 	}
 	translateInv := map[string]string{
-		"awsRegion":          "region",
-		"endPointURL":        "endpoint",
-		"awsAccessKeyId":     "access_key_id",
-		"awsSecretAccessKey": "secret_access_id",
+		AwsRegion:          REGION,
+		EndPointURL:        ENDPOINT,
+		AwsAccessKeyID:     AccessKeyID,
+		AwsSecretAccessKey: SecretAccessID,
 	}
 	return &s3{Translate: translate,
 		TranslateInv:             translateInv,
@@ -54,10 +69,10 @@ func (s *s3) getS3Credentials(vaultClientConfiguration map[interface{}]interface
 func (s *s3) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interface{}, credentialsPath *string) map[string]interface{} {
 	ret := make(map[string]interface{})
 	configSourceMap := make(map[string]interface{})
-	ret["type"] = "Datalake"
-	bucketName, found := config["bucket"]
+	ret["type"] = DATALAKE
+	bucketName, found := config[Bucket]
 	if found {
-		ret["bucketName"] = bucketName
+		ret[BucketName] = bucketName
 	}
 
 	securityMap := make(map[string]interface{})
@@ -70,43 +85,43 @@ func (s *s3) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interfa
 	}
 
 	if s.VaultClientConfiguration != nil && credentialsPath != nil {
-		awsAccessKeyId, awsSecretAccessKey := s.getS3Credentials(s.VaultClientConfiguration, credentialsPath)
-		if awsAccessKeyId != "" && awsSecretAccessKey != "" {
-			securityMap["awsAccessKeyId"] = awsAccessKeyId
+		awsAccessKeyID, awsSecretAccessKey := s.getS3Credentials(s.VaultClientConfiguration, credentialsPath)
+		if awsAccessKeyID != "" && awsSecretAccessKey != "" {
+			securityMap["awsAccessKeyId"] = awsAccessKeyID
 			securityMap["awsSecretAccessKey"] = awsSecretAccessKey
 		}
 	}
 
-	configSourceMap["securityConfig"] = securityMap
-	ret["configSource"] = configSourceMap
+	configSourceMap[SecurityConfig] = securityMap
+	ret[ConfigSource] = configSourceMap
 	return ret
 }
 
 func (s *s3) TranslateOpenMetadataConfigToFybrikConfig(config map[string]interface{}) map[string]interface{} {
 	ret := make(map[string]interface{})
 
-	securityConfig := config["configSource"].(map[string]interface{})["securityConfig"].(map[string]interface{})
+	securityConfig := config[ConfigSource].(map[string]interface{})[SecurityConfig].(map[string]interface{})
 
 	for key, value := range securityConfig {
 		if translation, found := s.TranslateInv[key]; found {
 			ret[translation] = value
 		}
 	}
-	if value, found := config["bucketName"]; found {
-		ret["bucket"] = value
+	if value, found := config[BucketName]; found {
+		ret[Bucket] = value
 	}
 
 	return ret
 }
 
-func (m *s3) OMTypeName() string {
-	return "Datalake"
+func (s *s3) OMTypeName() string {
+	return DATALAKE
 }
 
-func (s *s3) compareConfigSource(fromService map[string]interface{}, fromRequest map[string]interface{}) bool {
+func (s *s3) compareConfigSource(fromService, fromRequest map[string]interface{}) bool {
 	// ignore some fields, such as 'aws_token' which would appear only serviceSecurityConfig
-	serviceSecurityConfig := fromService["securityConfig"].(map[string]interface{})
-	requestSecurityConfig := fromRequest["securityConfig"].(map[string]interface{})
+	serviceSecurityConfig := fromService[SecurityConfig].(map[string]interface{})
+	requestSecurityConfig := fromRequest[SecurityConfig].(map[string]interface{})
 	for property, value := range requestSecurityConfig {
 		if !reflect.DeepEqual(serviceSecurityConfig[property], value) {
 			return false
@@ -115,9 +130,9 @@ func (s *s3) compareConfigSource(fromService map[string]interface{}, fromRequest
 	return true
 }
 
-func (s *s3) CompareServiceConfigurations(requestConfig map[string]interface{}, serviceConfig map[string]interface{}) bool {
+func (s *s3) CompareServiceConfigurations(requestConfig, serviceConfig map[string]interface{}) bool {
 	for property, value := range requestConfig {
-		if property == "configSource" {
+		if property == ConfigSource {
 			if !s.compareConfigSource(serviceConfig[property].(map[string]interface{}), value.(map[string]interface{})) {
 				return false
 			}
@@ -129,48 +144,47 @@ func (s *s3) CompareServiceConfigurations(requestConfig map[string]interface{}, 
 	}
 	return true
 }
-func (s *s3) DatabaseName(createAssetRequest models.CreateAssetRequest) string {
-	return "default"
+func (s *s3) DatabaseName(createAssetRequest *models.CreateAssetRequest) string {
+	return DEFAULT
 }
 
-func (s *s3) DatabaseFQN(serviceName string, createAssetRequest models.CreateAssetRequest) string {
+func (s *s3) DatabaseFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) string {
 	return utils.AppendStrings(serviceName, s.DatabaseSchemaName(createAssetRequest))
 }
 
-func (s *s3) DatabaseSchemaName(createAssetRequest models.CreateAssetRequest) string {
-	connectionProperties := createAssetRequest.Details.GetConnection().AdditionalProperties["s3"].(map[string]interface{})
-	bucket, found := connectionProperties["bucket"]
+func (s *s3) DatabaseSchemaName(createAssetRequest *models.CreateAssetRequest) string {
+	connectionProperties := createAssetRequest.Details.GetConnection().AdditionalProperties[S3].(map[string]interface{})
+	bucket, found := connectionProperties[Bucket]
 	if found {
 		return bucket.(string)
-	} else {
-		assetID := *createAssetRequest.DestinationAssetID
-		split := strings.Split(assetID, ".")
-		if len(split) > 1 {
-			return split[len(split)-2]
-		}
 	}
+
+	assetID := *createAssetRequest.DestinationAssetID
+	split := strings.Split(assetID, ".")
+	if len(split) > 1 {
+		return split[len(split)-2]
+	}
+
 	s.logger.Warn().Msg("Could not determine the name of the DatabaseSchema (bucket)")
 	return ""
 }
 
-func (s *s3) DatabaseSchemaFQN(serviceName string, createAssetRequest models.CreateAssetRequest) string {
-
+func (s *s3) DatabaseSchemaFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) string {
 	return utils.AppendStrings(s.DatabaseFQN(serviceName, createAssetRequest),
 		s.DatabaseSchemaName(createAssetRequest))
 }
 
-func (s *s3) TableName(createAssetRequest models.CreateAssetRequest) string {
-	connectionProperties := createAssetRequest.Details.GetConnection().AdditionalProperties["s3"].(map[string]interface{})
+func (s *s3) TableName(createAssetRequest *models.CreateAssetRequest) string {
+	connectionProperties := createAssetRequest.Details.GetConnection().AdditionalProperties[S3].(map[string]interface{})
 	objectKey, found := connectionProperties["object_key"]
 	if found {
 		return objectKey.(string)
-	} else {
-		split := strings.Split(*createAssetRequest.DestinationAssetID, ".")
-		return split[len(split)-1]
 	}
+	split := strings.Split(*createAssetRequest.DestinationAssetID, ".")
+	return split[len(split)-1]
 }
 
-func (s *s3) TableFQN(serviceName string, createAssetRequest models.CreateAssetRequest) string {
+func (s *s3) TableFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) string {
 	return utils.AppendStrings(s.DatabaseSchemaFQN(serviceName, createAssetRequest),
 		s.TableName(createAssetRequest))
 }

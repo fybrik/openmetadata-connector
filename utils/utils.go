@@ -1,19 +1,19 @@
 package utils
 
 import (
-	"math/rand"
+	"crypto/rand"
+	"math/big"
 	"strings"
 
 	client "github.com/fybrik/datacatalog-go-client"
 	models "github.com/fybrik/datacatalog-go-models"
 )
 
-func AppendStrings(a string, b string) string {
+func AppendStrings(a, b string) string {
 	if strings.Contains(b, ".") {
 		return a + ".\"" + b + "\""
-	} else {
-		return a + "." + b
 	}
+	return a + "." + b
 }
 
 // If the tag is in the Fybrik tag category (e.g. "Fybrik.PII"), remove the
@@ -22,7 +22,7 @@ func StripTag(tag string) string {
 	return strings.TrimPrefix(tag, "Fybrik.")
 }
 
-func UpdateCustomProperty(customProperties map[string]interface{}, orig map[string]interface{}, key string, value *string) {
+func UpdateCustomProperty(customProperties, orig map[string]interface{}, key string, value *string) {
 	// update customProperties only if there is a new value
 	if value != nil && *value != "" {
 		customProperties[key] = *value
@@ -41,7 +41,8 @@ const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 func RandStringBytes(n int) string {
 	b := make([]byte, n)
 	for i := range b {
-		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+		r, _ := rand.Int(rand.Reader, big.NewInt(int64(len(letterBytes))))
+		b[i] = letterBytes[r.Int64()]
 	}
 	return string(b)
 }

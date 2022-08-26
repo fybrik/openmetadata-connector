@@ -28,7 +28,7 @@ type OpenMetadataApiService struct {
 	SleepIntervalMS      int
 	NumRetries           int
 	NameToDatabaseStruct map[string]database_types.DatabaseType
-	logger               zerolog.Logger
+	logger               *zerolog.Logger
 	NumRenameRetries     int
 	initialized          bool
 }
@@ -61,15 +61,15 @@ func (s *OpenMetadataApiService) CreateAsset(ctx context.Context,
 	// step 1: Translate the fybrik connection information to the OM connection information.
 	//         This configuration information will later be used to create an OM connection
 	//         (if it does not already exist)
-	OMConfig := dt.TranslateFybrikConfigToOpenMetadataConfig(
+	omConfig := dt.TranslateFybrikConfigToOpenMetadataConfig(
 		createAssetRequest.Details.GetConnection().AdditionalProperties[connectionType].(map[string]interface{}),
 		createAssetRequest.Credentials)
 	// step 2: compare the transformed connection information to that of all existing services
-	databaseServiceId, databaseServiceName, found = s.findService(ctx, c, dt, OMConfig)
+	databaseServiceId, databaseServiceName, found = s.findService(ctx, c, dt, omConfig)
 
 	if !found {
 		// If does not exist, let us create database service
-		databaseServiceId, databaseServiceName, err = s.createDatabaseService(ctx, c, createAssetRequest, connectionType, OMConfig, dt.OMTypeName())
+		databaseServiceId, databaseServiceName, err = s.createDatabaseService(ctx, c, &createAssetRequest, connectionType, omConfig, dt.OMTypeName())
 		if err != nil {
 			s.logger.Error().Msg("unable to create Database Service for " + dt.OMTypeName() + " connection")
 			return api.Response(http.StatusBadRequest, nil), err
@@ -77,7 +77,7 @@ func (s *OpenMetadataApiService) CreateAsset(ctx context.Context,
 	}
 
 	// now that we know the of the database service, we can determine the asset name in OpenMetadata
-	assetId := dt.TableFQN(databaseServiceName, createAssetRequest)
+	assetId := dt.TableFQN(databaseServiceName, &createAssetRequest)
 
 	// Let's check whether OM already has this asset
 	found, _ = s.findAsset(ctx, c, assetId)
@@ -121,18 +121,17 @@ func (s *OpenMetadataApiService) CreateAsset(ctx context.Context,
 	*/
 
 	databaseId, err := s.findOrCreateDatabase(ctx, c, databaseServiceId,
-		dt.DatabaseFQN(databaseServiceName, createAssetRequest),
-		dt.DatabaseName(createAssetRequest))
+		dt.DatabaseFQN(databaseServiceName, &createAssetRequest),
+		dt.DatabaseName(&createAssetRequest))
 	if err != nil {
 		return api.Response(http.StatusBadRequest, nil), err
 	}
 
 	databaseSchemaId, _ := s.findOrCreateDatabaseSchema(ctx, c, databaseId,
-		dt.DatabaseSchemaFQN(databaseServiceName, createAssetRequest),
-		dt.DatabaseSchemaName(createAssetRequest))
+		dt.DatabaseSchemaName(&createAssetRequest))
 
 	columns := utils.ExtractColumns(createAssetRequest.ResourceMetadata.Columns)
-	table, err := s.createTable(ctx, c, databaseSchemaId, dt.TableName(createAssetRequest), columns)
+	table, err := s.createTable(ctx, c, databaseSchemaId, dt.TableName(&createAssetRequest), columns)
 	if err != nil {
 		return api.Response(http.StatusBadRequest, nil), err
 	}
