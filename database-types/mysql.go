@@ -6,7 +6,10 @@ import (
 	models "github.com/fybrik/datacatalog-go-models"
 )
 
+const MYSQL = "Mysql"
+
 type mysql struct {
+	dataBase
 	StandardFields map[string]bool
 }
 
@@ -18,7 +21,7 @@ func NewMysql() *mysql {
 		"scheme":       true,
 		"username":     true,
 	}
-	return &mysql{StandardFields: standardFields}
+	return &mysql{StandardFields: standardFields, dataBase: dataBase{name: MYSQL}}
 }
 
 func (m *mysql) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interface{}, credentials *string) map[string]interface{} {
@@ -38,10 +41,6 @@ func (m *mysql) TranslateOpenMetadataConfigToFybrikConfig(config map[string]inte
 
 	ret["other"] = other
 	return ret
-}
-
-func (m *mysql) OMTypeName() string {
-	return "Mysql"
 }
 
 func (m *mysql) TableFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) string {

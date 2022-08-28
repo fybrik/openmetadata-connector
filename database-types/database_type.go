@@ -17,3 +17,11 @@ type DatabaseType interface {
 	TableName(createAssetRequest *models.CreateAssetRequest) string
 	TableFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) string
 }
+
+type dataBase struct {
+	name string
+}
+
+func (db dataBase) OMTypeName() string {
+	return db.name
+}

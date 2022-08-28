@@ -11,6 +11,7 @@ import (
 )
 
 type s3 struct {
+	dataBase
 	Translate                map[string]string
 	TranslateInv             map[string]string
 	VaultClientConfiguration map[interface{}]interface{}
@@ -45,7 +46,8 @@ func NewS3(vaultClientConfiguration map[interface{}]interface{}, logger *zerolog
 		AwsAccessKeyID:     AccessKeyID,
 		AwsSecretAccessKey: SecretAccessID,
 	}
-	return &s3{Translate: translate,
+	return &s3{dataBase: dataBase{name: DATALAKE},
+		Translate:                translate,
 		TranslateInv:             translateInv,
 		VaultClientConfiguration: vaultClientConfiguration,
 		logger:                   logger}
@@ -112,10 +114,6 @@ func (s *s3) TranslateOpenMetadataConfigToFybrikConfig(config map[string]interfa
 	}
 
 	return ret
-}
-
-func (s *s3) OMTypeName() string {
-	return DATALAKE
 }
 
 func (s *s3) compareConfigSource(fromService, fromRequest map[string]interface{}) bool {
