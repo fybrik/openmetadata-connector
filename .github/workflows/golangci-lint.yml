@@ -14,7 +14,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: autogenerate code
-        run: make
+        run: make patch
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
