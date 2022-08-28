@@ -10,8 +10,8 @@ package openapiconnectorcore
 import (
 	"context"
 
-	models "github.com/fybrik/datacatalog-go-models"
-	api "github.com/fybrik/datacatalog-go/go"
+	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
+	api "fybrik.io/openmetadata-connector/datacatalog-go/go"
 )
 
 type OpenMetadataApiServicer interface {

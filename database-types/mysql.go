@@ -3,7 +3,7 @@ package databasetypes
 import (
 	"reflect"
 
-	models "github.com/fybrik/datacatalog-go-models"
+	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
 )
 
 const MYSQL = "Mysql"

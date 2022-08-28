@@ -18,8 +18,8 @@ import (
 	"strconv"
 
 	logging "fybrik.io/fybrik/pkg/logging"
-	api "github.com/fybrik/datacatalog-go/go"
-	openapi_connector_core "github.com/fybrik/openmetadata-connector/openmetadata-connector-core"
+	api "fybrik.io/openmetadata-connector/datacatalog-go/go"
+	openapi_connector_core "fybrik.io/openmetadata-connector/openmetadata-connector-core"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 )

@@ -1,12 +1,12 @@
-module github.com/fybrik/openmetadata-connector
+module fybrik.io/openmetadata-connector
 
 go 1.17
 
 require (
 	fybrik.io/fybrik v1.0.0
-	github.com/fybrik/datacatalog-go v0.0.0
-	github.com/fybrik/datacatalog-go-client v0.0.0-00010101000000-000000000000
-	github.com/fybrik/datacatalog-go-models v0.0.0
+	fybrik.io/openmetadata-connector/datacatalog-go v0.0.0
+	fybrik.io/openmetadata-connector/datacatalog-go-client v0.0.0
+	fybrik.io/openmetadata-connector/datacatalog-go-models v0.0.0
 	github.com/rs/zerolog v1.26.0
 	github.com/spf13/cobra v1.5.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -23,8 +23,8 @@ require (
 	google.golang.org/protobuf v1.27.1 // indirect
 )
 
-replace github.com/fybrik/datacatalog-go => ./auto-generated/api
+replace fybrik.io/openmetadata-connector/datacatalog-go => ./auto-generated/api
 
-replace github.com/fybrik/datacatalog-go-models => ./auto-generated/models
+replace fybrik.io/openmetadata-connector/datacatalog-go-models => ./auto-generated/models
 
-replace github.com/fybrik/datacatalog-go-client => ./auto-generated/client
+replace fybrik.io/openmetadata-connector/datacatalog-go-client => ./auto-generated/client

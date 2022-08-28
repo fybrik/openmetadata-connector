@@ -1,6 +1,6 @@
 package databasetypes
 
-import models "github.com/fybrik/datacatalog-go-models"
+import models "fybrik.io/openmetadata-connector/datacatalog-go-models"
 
 const DEFAULT = "default"
 const DatabaseSchema = "databaseSchema"

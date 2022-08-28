@@ -7,11 +7,11 @@ import (
 	"net/http"
 	"strings"
 
-	client "github.com/fybrik/datacatalog-go-client"
-	models "github.com/fybrik/datacatalog-go-models"
-	api "github.com/fybrik/datacatalog-go/go"
-	database_types "github.com/fybrik/openmetadata-connector/database-types"
-	utils "github.com/fybrik/openmetadata-connector/utils"
+	client "fybrik.io/openmetadata-connector/datacatalog-go-client"
+	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
+	api "fybrik.io/openmetadata-connector/datacatalog-go/go"
+	database_types "fybrik.io/openmetadata-connector/database-types"
+	utils "fybrik.io/openmetadata-connector/utils"
 	"github.com/rs/zerolog"
 )
 

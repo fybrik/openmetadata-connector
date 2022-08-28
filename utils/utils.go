@@ -5,8 +5,8 @@ import (
 	"math/big"
 	"strings"
 
-	client "github.com/fybrik/datacatalog-go-client"
-	models "github.com/fybrik/datacatalog-go-models"
+	client "fybrik.io/openmetadata-connector/datacatalog-go-client"
+	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
 )
 
 func AppendStrings(a, b string) string {

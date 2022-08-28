@@ -1,7 +1,8 @@
 USER_ID := $(shell id -u)
 GROUP_ID := $(shell id -g)
 
-GIT_USER_ID := fybrik
+GIT_HOST := fybrik.io
+GIT_USER_ID := openmetadata-connector
 GIT_REPO_ID := datacatalog-go
 GIT_REPO_ID_MODELS := datacatalog-go-models
 GIT_REPO_ID_CLIENT := datacatalog-go-client
@@ -30,6 +31,7 @@ generate-code:
              -u "${USER_ID}:${GROUP_ID}" \
              openapitools/openapi-generator-cli generate -g go-server \
              --additional-properties=serverPort=8081 \
+             --git-host=${GIT_HOST} \
              --git-user-id=${GIT_USER_ID} \
              --git-repo-id=${GIT_REPO_ID} \
              -o /local/auto-generated/api \
@@ -39,6 +41,7 @@ generate-code:
              -u "${USER_ID}:${GROUP_ID}" \
              openapitools/openapi-generator-cli generate -g go \
              --global-property=models,supportingFiles \
+             --git-host=${GIT_HOST} \
              --git-user-id=${GIT_USER_ID} \
              --git-repo-id=${GIT_REPO_ID_MODELS} \
              -o /local/auto-generated/models \
@@ -50,6 +53,7 @@ generate-code:
              -v ${PWD}:/local \
              -u "${USER_ID}:${GROUP_ID}" \
              openapitools/openapi-generator-cli generate -g go \
+             --git-host=${GIT_HOST} \
              --git-user-id=${GIT_USER_ID} \
              --git-repo-id=${GIT_REPO_ID_CLIENT} \
              -o /local/auto-generated/client \

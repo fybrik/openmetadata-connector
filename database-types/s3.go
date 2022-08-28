@@ -5,9 +5,9 @@ import (
 	"reflect"
 	"strings"
 
-	models "github.com/fybrik/datacatalog-go-models"
-	utils "github.com/fybrik/openmetadata-connector/utils"
-	vault "github.com/fybrik/openmetadata-connector/vault"
+	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
+	utils "fybrik.io/openmetadata-connector/utils"
+	vault "fybrik.io/openmetadata-connector/vault"
 	"github.com/rs/zerolog"
 )
 
