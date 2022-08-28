@@ -19,7 +19,7 @@ To run the connector locally, run:
 make run
 ```
 
-`make run` runs the connector with the configuration file in `conf/conf.yaml`. This configuration assumes that OM is running on localhost, listening on port 8585, and the Vault is running on localhost, listening on port 8200. If that is not the case, change the configuration file or employ port-forwarding.
+`make run` runs the connector with the configuration file in `conf/conf.yaml`. This configuration assumes that OM is running on localhost and listening on port 8585. In addition, it assumes that Vault is running on localhost too and listening on port 8200. If that is not the case, change the configuration file or employ port-forwarding.
 The configuration file also contains the path of a JWT file which is used to identify against Vault.
 
 ## Directory Structure
