@@ -28,3 +28,4 @@ The configuration file also contains a path to a JWT file which is used to ident
 - [vault](vault): Includes methods to obtain a token and secrets from Vault
 - [conf](conf): Contains a sample configuration file
 - [client-swagger](client-swagger): The OpenMetadata API Specification, used to generate OpenMetadata client code in the golang language. This directory contains the original YAML file and a modified YAML file to fix the auto-generated code
+- [auto-generated](auto-generated): Automatically generated OpenAPI code, both for OpenMetadata (client code) and Fybrik Data Catalog (server code)
