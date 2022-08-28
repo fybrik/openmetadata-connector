@@ -20,10 +20,10 @@ make run
 ```
 
 `make run` runs the connector with the configuration file in `conf/conf.yaml`. This configuration assumes that OM is running on localhost and listening on port 8585. In addition, it assumes that Vault is running on localhost too and listening on port 8200. If that is not the case, change the configuration file or employ port-forwarding.
-The configuration file also contains the path of a JWT file which is used to identify against Vault.
+The configuration file also contains a path to a JWT file which is used to identify against Vault.
 
 ## Directory Structure
-- [database-types](database-types): Currently, the OM connector supports two types of databases: mysql and s3. The direcory contains `database_type.go` which defines the DatabaseType interface. It also contains `mysql.go` and `s3.go` which describe the `mysql` and `s3` structures (respectively), that implement the DatabaseType interface
+- [database-types](database-types): Currently, the OM connector supports two types of data sources: mysql and s3 (future versions may support additional data sources). The direcory contains the [database_type.go](database-types/database_type.go) file, which defines the DatabaseType interface. It also contains [mysql.go](database-types/mysql.go) and [s3.go](database-types/s3.go) which provide implementations of the DatabaseType interface for `mysql` and `s3`.
 - [utils](utils): Includes utility methods used in the connector code
 - [vault](vault): Includes methods to obtain a token and secrets from Vault
 - [conf](conf): Contains a sample configuration file
