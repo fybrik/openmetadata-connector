@@ -1,4 +1,4 @@
-package openmetadata_connector_core
+package openapiconnectorcore
 
 import (
 	"context"
