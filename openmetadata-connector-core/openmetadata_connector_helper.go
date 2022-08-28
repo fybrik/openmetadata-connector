@@ -1,4 +1,4 @@
-package main
+package openmetadata_connector_core
 
 import (
 	"context"
@@ -70,8 +70,9 @@ func (s *OpenMetadataApiService) prepareOpenMetadataForFybrik() bool {
 		"Parent Category for all Fybrik labels", Fybrik)).Execute()
 	if err != nil {
 		s.logger.Trace().Msg("Failed to create the Fybrik Tag category. Maybe it already exists.")
+	} else {
+		defer r.Body.Close()
 	}
-	defer r.Body.Close()
 
 	// Find the ID for the 'table' entity
 	var tableID string

@@ -5,5 +5,5 @@ openmetadata_num_retries: 1000
 vault:
   address: http://localhost:8200
   authPath: /v1/auth/kubernetes/login
-  role: module
+  role: fybrik
   jwt_file_path: /tmp/openmetadata-connector/jwt/jwt

@@ -8,7 +8,7 @@
 // CHANGE-FROM-GENERATED-CODE: All code in this file is different from auto-generated code.
 // This code is specific for working with OpenMetadata
 
-package main
+package openmetadata_connector_core
 
 import (
 	"context"
