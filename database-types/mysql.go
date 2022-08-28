@@ -10,7 +10,7 @@ const MYSQL = "Mysql"
 
 type mysql struct {
 	dataBase
-	StandardFields map[string]bool
+	standardFields map[string]bool
 }
 
 func NewMysql() *mysql {
@@ -21,7 +21,7 @@ func NewMysql() *mysql {
 		"scheme":       true,
 		"username":     true,
 	}
-	return &mysql{StandardFields: standardFields, dataBase: dataBase{name: MYSQL}}
+	return &mysql{standardFields: standardFields, dataBase: dataBase{name: MYSQL}}
 }
 
 func (m *mysql) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interface{}, credentials *string) map[string]interface{} {
@@ -32,7 +32,7 @@ func (m *mysql) TranslateOpenMetadataConfigToFybrikConfig(config map[string]inte
 	other := make(map[string]interface{})
 	ret := make(map[string]interface{})
 	for key, value := range config {
-		if _, ok := m.StandardFields[key]; ok {
+		if _, ok := m.standardFields[key]; ok {
 			ret[key] = value
 		} else {
 			other[key] = value

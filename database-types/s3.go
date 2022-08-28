@@ -12,9 +12,9 @@ import (
 
 type s3 struct {
 	dataBase
-	Translate                map[string]string
-	TranslateInv             map[string]string
-	VaultClientConfiguration map[interface{}]interface{}
+	translate                map[string]string
+	translateInv             map[string]string
+	vaultClientConfiguration map[interface{}]interface{}
 	logger                   *zerolog.Logger
 }
 
@@ -47,9 +47,9 @@ func NewS3(vaultClientConfiguration map[interface{}]interface{}, logger *zerolog
 		AwsSecretAccessKey: SecretAccessID,
 	}
 	return &s3{dataBase: dataBase{name: DATALAKE},
-		Translate:                translate,
-		TranslateInv:             translateInv,
-		VaultClientConfiguration: vaultClientConfiguration,
+		translate:                translate,
+		translateInv:             translateInv,
+		vaultClientConfiguration: vaultClientConfiguration,
 		logger:                   logger}
 }
 
@@ -80,14 +80,14 @@ func (s *s3) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interfa
 	securityMap := make(map[string]interface{})
 	securityMap["awsRegion"] = "eu-de" // awsRegion field is mandatory, although it is persumably ignored if endpoint is provided
 	for key, value := range config {
-		translation, found := s.Translate[key]
+		translation, found := s.translate[key]
 		if found {
 			securityMap[translation] = value
 		}
 	}
 
-	if s.VaultClientConfiguration != nil && credentialsPath != nil {
-		awsAccessKeyID, awsSecretAccessKey := s.getS3Credentials(s.VaultClientConfiguration, credentialsPath)
+	if s.vaultClientConfiguration != nil && credentialsPath != nil {
+		awsAccessKeyID, awsSecretAccessKey := s.getS3Credentials(s.vaultClientConfiguration, credentialsPath)
 		if awsAccessKeyID != "" && awsSecretAccessKey != "" {
 			securityMap["awsAccessKeyId"] = awsAccessKeyID
 			securityMap["awsSecretAccessKey"] = awsSecretAccessKey
@@ -105,7 +105,7 @@ func (s *s3) TranslateOpenMetadataConfigToFybrikConfig(config map[string]interfa
 	securityConfig := config[ConfigSource].(map[string]interface{})[SecurityConfig].(map[string]interface{})
 
 	for key, value := range securityConfig {
-		if translation, found := s.TranslateInv[key]; found {
+		if translation, found := s.translateInv[key]; found {
 			ret[translation] = value
 		}
 	}
