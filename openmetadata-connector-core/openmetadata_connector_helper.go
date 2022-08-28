@@ -316,7 +316,7 @@ func (s *OpenMetadataApiService) waitUntilAssetIsDiscovered(ctx context.Context,
 
 func (s *OpenMetadataApiService) findAsset(ctx context.Context, c *client.APIClient, assetID string) (bool, *client.Table) {
 	fields := "tags"
-	include := "non-deleted"
+	include := "all"
 	table, r, err := c.TablesApi.GetTableByFQN(ctx, assetID).Fields(fields).Include(include).Execute()
 	if err != nil {
 		s.logger.Trace().Msg(fmt.Sprintf("Error when calling `IngestionPipelinesApi.GetTableByFQN``: %v\n", err))

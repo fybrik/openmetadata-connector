@@ -12,8 +12,6 @@ import (
 
 type s3 struct {
 	dataBase
-	translate                map[string]string
-	translateInv             map[string]string
 	vaultClientConfiguration map[interface{}]interface{}
 	logger                   *zerolog.Logger
 }
@@ -33,22 +31,21 @@ const Bucket = "bucket"
 const SecurityConfig = "securityConfig"
 const S3 = "s3"
 
+var translate = map[string]string{
+	REGION:         AwsRegion,
+	ENDPOINT:       EndPointURL,
+	AccessKeyID:    AwsAccessKeyID,
+	SecretAccessID: AwsSecretAccessKey,
+}
+var translateInv = map[string]string{
+	AwsRegion:          REGION,
+	EndPointURL:        ENDPOINT,
+	AwsAccessKeyID:     AccessKeyID,
+	AwsSecretAccessKey: SecretAccessID,
+}
+
 func NewS3(vaultClientConfiguration map[interface{}]interface{}, logger *zerolog.Logger) *s3 {
-	translate := map[string]string{
-		REGION:         AwsRegion,
-		ENDPOINT:       EndPointURL,
-		AccessKeyID:    AwsAccessKeyID,
-		SecretAccessID: AwsSecretAccessKey,
-	}
-	translateInv := map[string]string{
-		AwsRegion:          REGION,
-		EndPointURL:        ENDPOINT,
-		AwsAccessKeyID:     AccessKeyID,
-		AwsSecretAccessKey: SecretAccessID,
-	}
 	return &s3{dataBase: dataBase{name: DATALAKE},
-		translate:                translate,
-		translateInv:             translateInv,
 		vaultClientConfiguration: vaultClientConfiguration,
 		logger:                   logger}
 }
@@ -80,7 +77,7 @@ func (s *s3) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interfa
 	securityMap := make(map[string]interface{})
 	securityMap["awsRegion"] = "eu-de" // awsRegion field is mandatory, although it is persumably ignored if endpoint is provided
 	for key, value := range config {
-		translation, found := s.translate[key]
+		translation, found := translate[key]
 		if found {
 			securityMap[translation] = value
 		}
@@ -105,7 +102,7 @@ func (s *s3) TranslateOpenMetadataConfigToFybrikConfig(config map[string]interfa
 	securityConfig := config[ConfigSource].(map[string]interface{})[SecurityConfig].(map[string]interface{})
 
 	for key, value := range securityConfig {
-		if translation, found := s.translateInv[key]; found {
+		if translation, found := translateInv[key]; found {
 			ret[translation] = value
 		}
 	}
