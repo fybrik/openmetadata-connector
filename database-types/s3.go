@@ -1,6 +1,7 @@
 package databasetypes
 
 import (
+	"errors"
 	"reflect"
 	"strings"
 
@@ -50,19 +51,28 @@ func NewS3(vaultClientConfiguration map[interface{}]interface{}, logger *zerolog
 		logger:                   logger}
 }
 
-func (s *s3) getS3Credentials(vaultClientConfiguration map[interface{}]interface{}, credentialsPath *string) (string, string) {
+const GetTokenFailed = "GetToken failed"
+const GetSecretFailed = "GetSecret failed"
+
+func (s *s3) getS3Credentials(vaultClientConfiguration map[interface{}]interface{},
+	credentialsPath *string) (string, string, error) {
 	client := vault.NewVaultClient(vaultClientConfiguration, s.logger)
 	token, err := client.GetToken()
 	if err != nil {
-		s.logger.Error().Msg("GetToken failed")
-		return "", ""
+		s.logger.Warn().Msg(GetTokenFailed)
+		return "", "", errors.New(GetTokenFailed)
 	}
 	secret, err := client.GetSecret(token, *credentialsPath)
 	if err != nil {
-		s.logger.Error().Msg("GetSecret failed")
-		return "", ""
+		s.logger.Warn().Msg(GetSecretFailed)
+		return "", "", errors.New(GetSecretFailed)
 	}
-	return client.ExtractS3CredentialsFromSecret(secret)
+	accessKey, secretKey, err := client.ExtractS3CredentialsFromSecret(secret)
+	if err != nil {
+		s.logger.Warn().Msg("S3 credentials extraction failed")
+		return "", "", err
+	}
+	return accessKey, secretKey, nil
 }
 
 func (s *s3) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interface{}, credentialsPath *string) map[string]interface{} {
@@ -84,8 +94,8 @@ func (s *s3) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interfa
 	}
 
 	if s.vaultClientConfiguration != nil && credentialsPath != nil {
-		awsAccessKeyID, awsSecretAccessKey := s.getS3Credentials(s.vaultClientConfiguration, credentialsPath)
-		if awsAccessKeyID != "" && awsSecretAccessKey != "" {
+		awsAccessKeyID, awsSecretAccessKey, err := s.getS3Credentials(s.vaultClientConfiguration, credentialsPath)
+		if err == nil && awsAccessKeyID != "" && awsSecretAccessKey != "" {
 			securityMap["awsAccessKeyId"] = awsAccessKeyID
 			securityMap["awsSecretAccessKey"] = awsSecretAccessKey
 		}

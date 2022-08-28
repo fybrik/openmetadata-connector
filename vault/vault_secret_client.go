@@ -119,19 +119,22 @@ func (v *VaultClient) GetSecret(token, secretPath string) ([]byte, error) {
 	return responseBody, nil
 }
 
-func (v *VaultClient) ExtractS3CredentialsFromSecret(secret []byte) (string, string) {
+const MalformedSecretResponseFromVault = "malformed secret response from vault"
+const FailedToExtractS3CredentialsFromVaultSecret = "failed to extract S3 credentials from Vault secret"
+
+func (v *VaultClient) ExtractS3CredentialsFromSecret(secret []byte) (string, string, error) {
 	secretMap := make(map[string]interface{})
 	err := json.Unmarshal(secret, &secretMap)
 	if err != nil {
-		v.logger.Error().Msg("malformed secret response from vault")
-		return "", ""
+		v.logger.Error().Msg(MalformedSecretResponseFromVault)
+		return "", "", errors.New(MalformedSecretResponseFromVault)
 	}
 
 	if value, ok := secretMap["data"]; ok {
 		data := value.(map[string]interface{})
 		v.logger.Info().Msg("Successfully extracted S3 credentials from Vault secret")
-		return data["access_key"].(string), data["secret_key"].(string)
+		return data["access_key"].(string), data["secret_key"].(string), nil
 	}
-	v.logger.Error().Msg("Failed to extract S3 credentials from Vault secret")
-	return "", ""
+	v.logger.Error().Msg(FailedToExtractS3CredentialsFromVaultSecret)
+	return "", "", errors.New(FailedToExtractS3CredentialsFromVaultSecret)
 }
