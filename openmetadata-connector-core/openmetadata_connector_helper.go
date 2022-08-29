@@ -644,7 +644,8 @@ func (s *OpenMetadataApiService) constructAssetResponse(ctx context.Context,
 		return nil, errors.New("Unrecognized connection type: " + connectionType)
 	}
 
-	config := dt.TranslateOpenMetadataConfigToFybrikConfig(respService.Connection.GetConfig())
+	config := dt.TranslateOpenMetadataConfigToFybrikConfig(table.Name, ret.Credentials,
+		respService.Connection.GetConfig())
 
 	additionalProperties := make(map[string]interface{})
 	ret.Details.Connection.Name = connectionType

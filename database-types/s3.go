@@ -32,6 +32,7 @@ const BucketName = "bucketName"
 const Bucket = "bucket"
 const SecurityConfig = "securityConfig"
 const S3 = "s3"
+const ObjectKey = "object_key"
 
 var translate = map[string]string{
 	Region:         AwsRegion,
@@ -107,8 +108,10 @@ func (s *s3) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interfa
 	return ret
 }
 
-func (s *s3) TranslateOpenMetadataConfigToFybrikConfig(config map[string]interface{}) map[string]interface{} {
+func (s *s3) TranslateOpenMetadataConfigToFybrikConfig(tableName string, credentials string,
+	config map[string]interface{}) map[string]interface{} {
 	ret := make(map[string]interface{})
+	ret[ObjectKey] = tableName
 
 	securityConfig := config[ConfigSource].(map[string]interface{})[SecurityConfig].(map[string]interface{})
 
@@ -119,6 +122,13 @@ func (s *s3) TranslateOpenMetadataConfigToFybrikConfig(config map[string]interfa
 	}
 	if value, found := config[BucketName]; found {
 		ret[Bucket] = value
+	}
+
+	// if credentials were extracted from vault, we don't want to return
+	// the actual access key and secret key
+	if credentials != "" {
+		delete(ret, AccessKeyID)
+		delete(ret, SecretAccessID)
 	}
 
 	return ret
@@ -182,7 +192,7 @@ func (s *s3) DatabaseSchemaFQN(serviceName string, createAssetRequest *models.Cr
 
 func (s *s3) TableName(createAssetRequest *models.CreateAssetRequest) string {
 	connectionProperties := createAssetRequest.Details.GetConnection().AdditionalProperties[S3].(map[string]interface{})
-	objectKey, found := connectionProperties["object_key"]
+	objectKey, found := connectionProperties[ObjectKey]
 	if found {
 		return objectKey.(string)
 	}

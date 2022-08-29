@@ -28,7 +28,8 @@ func (m *mysql) TranslateFybrikConfigToOpenMetadataConfig(config map[string]inte
 	return config
 }
 
-func (m *mysql) TranslateOpenMetadataConfigToFybrikConfig(config map[string]interface{}) map[string]interface{} {
+func (m *mysql) TranslateOpenMetadataConfigToFybrikConfig(tableName string, credentials string,
+	config map[string]interface{}) map[string]interface{} {
 	other := make(map[string]interface{})
 	ret := make(map[string]interface{})
 	for key, value := range config {
