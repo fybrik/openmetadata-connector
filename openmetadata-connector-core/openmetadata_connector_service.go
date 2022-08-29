@@ -128,6 +128,7 @@ func (s *OpenMetadataApiService) CreateAsset(ctx context.Context,
 	}
 
 	databaseSchemaId, _ := s.findOrCreateDatabaseSchema(ctx, c, databaseId,
+		dt.DatabaseSchemaFQN(databaseServiceName, &createAssetRequest),
 		dt.DatabaseSchemaName(&createAssetRequest))
 
 	columns := utils.ExtractColumns(createAssetRequest.ResourceMetadata.Columns)

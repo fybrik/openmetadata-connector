@@ -155,7 +155,7 @@ func (s *s3) DatabaseName(createAssetRequest *models.CreateAssetRequest) string 
 }
 
 func (s *s3) DatabaseFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) string {
-	return utils.AppendStrings(serviceName, s.DatabaseSchemaName(createAssetRequest))
+	return utils.AppendStrings(serviceName, s.DatabaseName(createAssetRequest))
 }
 
 func (s *s3) DatabaseSchemaName(createAssetRequest *models.CreateAssetRequest) string {

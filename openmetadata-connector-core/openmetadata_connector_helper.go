@@ -426,10 +426,10 @@ func (s *OpenMetadataApiService) findOrCreateDatabase(ctx context.Context,
 	// we begin by checking whether the database exists
 	database, r, err := c.DatabasesApi.GetDatabaseByFQN(ctx, databaseFQN).Execute()
 	if err == nil {
+		defer r.Body.Close()
 		s.logger.Trace().Msg("Database already exists: " + databaseFQN)
 		return *database.Id, nil
 	}
-	defer r.Body.Close()
 
 	s.logger.Trace().Msg("Database " + databaseFQN + " does not exist. Creating")
 	database, r1, err := c.DatabasesApi.CreateDatabase(ctx).CreateDatabase(*client.NewCreateDatabase(databaseName,
@@ -446,8 +446,17 @@ func (s *OpenMetadataApiService) findOrCreateDatabase(ctx context.Context,
 func (s *OpenMetadataApiService) findOrCreateDatabaseSchema(ctx context.Context,
 	c *client.APIClient,
 	databaseID string,
+	databaseSchemaFQN string,
 	databaseSchemaName string) (string, error) {
-	databaseSchema, r, err := c.DatabaseSchemasApi.CreateDBSchema(ctx).CreateDatabaseSchema(
+	// first let us check whether this Database Schema already exists
+	databaseSchema, r, err := c.DatabaseSchemasApi.GetDBSchemaByFQN(ctx, databaseSchemaFQN).Execute()
+	if err == nil {
+		defer r.Body.Close()
+		s.logger.Trace().Msg("Database Schema already exists: " + databaseSchemaName)
+		return *databaseSchema.Id, nil
+	}
+
+	databaseSchema, r, err = c.DatabaseSchemasApi.CreateDBSchema(ctx).CreateDatabaseSchema(
 		*client.NewCreateDatabaseSchema(*client.NewEntityReference(databaseID, "database"), databaseSchemaName)).Execute()
 	if err != nil {
 		s.logger.Trace().Msg(fmt.Sprintf("Error when calling `DatabaseSchemasApi.CreateDBSchema``: %v\n", err))
