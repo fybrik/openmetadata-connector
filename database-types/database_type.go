@@ -2,7 +2,7 @@ package databasetypes
 
 import models "fybrik.io/openmetadata-connector/datacatalog-go-models"
 
-const DEFAULT = "default"
+const Default = "default"
 const DatabaseSchema = "databaseSchema"
 
 type DatabaseType interface {

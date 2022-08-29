@@ -48,9 +48,9 @@ func (m *mysql) TableFQN(serviceName string, createAssetRequest *models.CreateAs
 	assetName := *createAssetRequest.DestinationAssetID
 	databaseSchema, found := connectionProperties[DatabaseSchema]
 	if found {
-		return serviceName + "." + DEFAULT + "." + databaseSchema.(string) + "." + assetName
+		return serviceName + "." + Default + "." + databaseSchema.(string) + "." + assetName
 	}
-	return serviceName + "." + DEFAULT + "." + assetName
+	return serviceName + "." + Default + "." + assetName
 }
 
 func (m *mysql) CompareServiceConfigurations(requestConfig, serviceConfig map[string]interface{}) bool {
@@ -63,7 +63,7 @@ func (m *mysql) CompareServiceConfigurations(requestConfig, serviceConfig map[st
 }
 
 func (m *mysql) DatabaseName(createAssetRequest *models.CreateAssetRequest) string {
-	return DEFAULT
+	return Default
 }
 
 func (m *mysql) DatabaseFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) string {

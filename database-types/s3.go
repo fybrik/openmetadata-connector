@@ -18,15 +18,15 @@ type s3 struct {
 	logger                   *zerolog.Logger
 }
 
-const REGION = "region"
-const ENDPOINT = "endpoint"
+const Region = "region"
+const Endpoint = "endpoint"
 const AccessKeyID = "access_key_id"
 const SecretAccessID = "secret_access_id"
 const AwsRegion = "awsRegion"
 const EndPointURL = "endPointURL"
 const AwsAccessKeyID = "awsAccessKeyId"
 const AwsSecretAccessKey = "awsSecretAccessKey"
-const DATALAKE = "Datalake"
+const Datalake = "Datalake"
 const ConfigSource = "configSource"
 const BucketName = "bucketName"
 const Bucket = "bucket"
@@ -34,20 +34,20 @@ const SecurityConfig = "securityConfig"
 const S3 = "s3"
 
 var translate = map[string]string{
-	REGION:         AwsRegion,
-	ENDPOINT:       EndPointURL,
+	Region:         AwsRegion,
+	Endpoint:       EndPointURL,
 	AccessKeyID:    AwsAccessKeyID,
 	SecretAccessID: AwsSecretAccessKey,
 }
 var translateInv = map[string]string{
-	AwsRegion:          REGION,
-	EndPointURL:        ENDPOINT,
+	AwsRegion:          Region,
+	EndPointURL:        Endpoint,
 	AwsAccessKeyID:     AccessKeyID,
 	AwsSecretAccessKey: SecretAccessID,
 }
 
 func NewS3(vaultClientConfiguration map[interface{}]interface{}, logger *zerolog.Logger) *s3 {
-	return &s3{dataBase: dataBase{name: DATALAKE},
+	return &s3{dataBase: dataBase{name: Datalake},
 		vaultClientConfiguration: vaultClientConfiguration,
 		logger:                   logger}
 }
@@ -79,7 +79,7 @@ func (s *s3) getS3Credentials(vaultClientConfiguration map[interface{}]interface
 func (s *s3) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interface{}, credentialsPath *string) map[string]interface{} {
 	ret := make(map[string]interface{})
 	configSourceMap := make(map[string]interface{})
-	ret["type"] = DATALAKE
+	ret["type"] = Datalake
 	bucketName, found := config[Bucket]
 	if found {
 		ret[BucketName] = bucketName
@@ -151,7 +151,7 @@ func (s *s3) CompareServiceConfigurations(requestConfig, serviceConfig map[strin
 	return true
 }
 func (s *s3) DatabaseName(createAssetRequest *models.CreateAssetRequest) string {
-	return DEFAULT
+	return Default
 }
 
 func (s *s3) DatabaseFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) string {
