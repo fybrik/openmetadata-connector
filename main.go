@@ -18,10 +18,11 @@ import (
 	"strconv"
 
 	logging "fybrik.io/fybrik/pkg/logging"
-	api "fybrik.io/openmetadata-connector/datacatalog-go/go"
-	openapi_connector_core "fybrik.io/openmetadata-connector/openmetadata-connector-core"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
+
+	api "fybrik.io/openmetadata-connector/datacatalog-go/go"
+	openapi_connector_core "fybrik.io/openmetadata-connector/openmetadata-connector-core"
 )
 
 // RunCmd defines the command for running the connector

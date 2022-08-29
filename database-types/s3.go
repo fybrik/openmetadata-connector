@@ -5,10 +5,11 @@ import (
 	"reflect"
 	"strings"
 
+	zerolog "github.com/rs/zerolog"
+
 	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
 	utils "fybrik.io/openmetadata-connector/utils"
 	vault "fybrik.io/openmetadata-connector/vault"
-	"github.com/rs/zerolog"
 )
 
 type s3 struct {

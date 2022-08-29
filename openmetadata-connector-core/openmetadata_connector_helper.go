@@ -7,12 +7,13 @@ import (
 	"net/http"
 	"strings"
 
+	zerolog "github.com/rs/zerolog"
+
 	database_types "fybrik.io/openmetadata-connector/database-types"
 	client "fybrik.io/openmetadata-connector/datacatalog-go-client"
 	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
 	api "fybrik.io/openmetadata-connector/datacatalog-go/go"
 	utils "fybrik.io/openmetadata-connector/utils"
-	"github.com/rs/zerolog"
 )
 
 const FullHTTPResponse = "Full HTTP response: %v\n"
