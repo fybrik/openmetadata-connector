@@ -266,7 +266,7 @@ func (s *OpenMetadataApiService) createDatabaseService(ctx context.Context,
 
 		// let's try creating the service with different names
 		for i := 0; i < s.NumRenameRetries; i++ {
-			newName := databaseServiceName + "-" + utils.randSeq(RandomStringLength)
+			newName := databaseServiceName + "-" + utils.RandSeq(RandomStringLength)
 			createDatabaseService.SetName(newName)
 			s.logger.Info().Msg("Trying to create a Database Service: " + newName)
 			databaseService2, r1, err1 := c.DatabaseServiceApi.CreateDatabaseService(ctx).CreateDatabaseService(*createDatabaseService).Execute()
