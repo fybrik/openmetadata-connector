@@ -38,7 +38,7 @@ func UpdateCustomProperty(customProperties, orig map[string]interface{}, key str
 var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
 // create random string of letters of length n
-func RandStringBytes(n int) string {
+func RandSeq(n int) string {
 	b := make([]rune, n)
 	for i := range b {
 		r, _ := rand.Int(rand.Reader, big.NewInt(int64(len(letters))))
