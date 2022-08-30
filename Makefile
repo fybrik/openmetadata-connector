@@ -13,6 +13,10 @@ TMP_FILE = tmpfile.tmp
 
 all: compile
 
+.PHONT: test
+test:
+	go test -v ./...
+
 .PHONY: compile
 compile: patch
 	go build .
