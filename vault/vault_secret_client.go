@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -23,10 +24,18 @@ type VaultClient struct {
 const ROLE = "role"
 const JWT = "jwt"
 
+func getFullAuthPath(authPath string) string {
+	if authPath == "" {
+		return ""
+	}
+	fullAuthPath := fmt.Sprintf("/v1/auth/%s/login", authPath)
+	return fullAuthPath
+}
+
 // return structure for Vault Client, based on configuration
 func NewVaultClient(conf map[interface{}]interface{}, logger *zerolog.Logger) VaultClient {
 	address := "http://vault.fybrik-system:8200"
-	authPath := "/v1/auth/kubernetes/login"
+	authPath := "kubernetes"
 	role := "fybrik"
 	jwtFilePath := "/var/run/secrets/kubernetes.io/serviceaccount/token"
 	if conf != nil {
@@ -43,7 +52,8 @@ func NewVaultClient(conf map[interface{}]interface{}, logger *zerolog.Logger) Va
 			jwtFilePath = jwtFilePathConf.(string)
 		}
 	}
-	return VaultClient{address: address, authPath: authPath, role: role, jwtFilePath: jwtFilePath, logger: logger}
+	return VaultClient{address: address, authPath: getFullAuthPath(authPath),
+		role: role, jwtFilePath: jwtFilePath, logger: logger}
 }
 
 func (v *VaultClient) GetToken() (string, error) {
