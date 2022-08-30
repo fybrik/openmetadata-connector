@@ -99,8 +99,9 @@ func createMockVaultServer(t *testing.T) *httptest.Server {
 
 var logger zerolog.Logger
 var jwtFile *os.File
+var mockVaultServer *httptest.Server
 
-func setupSuite() func() {
+func setupSuite(t *testing.T) func() {
 	logger = logging.LogInit(logging.CONNECTOR, "OpenMetadata Connector Tests")
 	logger.Trace().Msg("Setting up OM Connector test suite")
 
@@ -114,6 +115,8 @@ func setupSuite() func() {
 		logger.Fatal().Msg("failed to write to temporary file")
 	}
 
+	mockVaultServer = createMockVaultServer(t)
+
 	// Return a function to teardown the test
 	return func() {
 		logger.Trace().Msg("Tearing down OM Connector test suite")
@@ -122,12 +125,11 @@ func setupSuite() func() {
 }
 
 func TestVault(t *testing.T) {
-	teardownSuite := setupSuite()
+	teardownSuite := setupSuite(t)
 	defer teardownSuite()
 
-	vaultServer := createMockVaultServer(t)
 	conf := make(map[interface{}]interface{})
-	conf["address"] = vaultServer.URL
+	conf["address"] = mockVaultServer.URL
 	conf["jwt_file_path"] = jwtFile.Name()
 	vaultClient := vault.NewVaultClient(conf, &logger)
 
