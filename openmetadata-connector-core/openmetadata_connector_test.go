@@ -18,6 +18,9 @@ import (
 
 const Token = "vaultToken"
 const JWT = "myJWT"
+const PathInVault = "/v1/kubernetes/info?namespace=default"
+const AccessKey = "myAccessKey"
+const SecretKey = "mySecretKey"
 
 func mustAsJSON(t *testing.T, in interface{}) []byte {
 	result, err := json.Marshal(in)
@@ -27,7 +30,7 @@ func mustAsJSON(t *testing.T, in interface{}) []byte {
 	return result
 }
 
-func createMockServer(t *testing.T) *httptest.Server {
+func createMockVaultServer(t *testing.T) *httptest.Server {
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requestBytes, err := io.ReadAll(r.Body)
 		if err != nil {
@@ -62,7 +65,33 @@ func createMockServer(t *testing.T) *httptest.Server {
 			if err != nil {
 				t.Error(err)
 			}
+
+			return
 		}
+
+		if r.Method == "GET" {
+			if r.Header.Get("X-Vault-Token") != Token {
+				t.Error(err)
+			}
+			logger.Trace().Msg("About to mock response secret request")
+			response := map[string]interface{}{
+				"data": map[string]interface{}{
+					"access_key": AccessKey,
+					"secret_key": SecretKey,
+				},
+			}
+
+			responseBytes := mustAsJSON(t, response)
+
+			w.Header().Add("Content-Type", "application/json")
+			_, err = w.Write(responseBytes)
+			if err != nil {
+				t.Error(err)
+			}
+
+			return
+		}
+		t.Error(errors.New(""))
 	}))
 
 	return svr
@@ -96,7 +125,7 @@ func TestVault(t *testing.T) {
 	teardownSuite := setupSuite()
 	defer teardownSuite()
 
-	vaultServer := createMockServer(t)
+	vaultServer := createMockVaultServer(t)
 	conf := make(map[interface{}]interface{})
 	conf["address"] = vaultServer.URL
 	conf["jwt_file_path"] = jwtFile.Name()
@@ -104,6 +133,16 @@ func TestVault(t *testing.T) {
 
 	token, err := vaultClient.GetToken()
 	if err != nil || token != Token {
+		t.Error(err)
+	}
+
+	secret, err := vaultClient.GetSecret(token, PathInVault)
+	if err != nil {
+		t.Error(err)
+	}
+
+	accessKey, secretKey, err := vaultClient.ExtractS3CredentialsFromSecret(secret)
+	if err != nil || accessKey != AccessKey || secretKey != SecretKey {
 		t.Error(err)
 	}
 }
