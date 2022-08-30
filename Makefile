@@ -14,7 +14,7 @@ TMP_FILE = tmpfile.tmp
 all: compile
 
 .PHONY: compile
-compile: patch
+compile:
 	go build .
 
 .PHONY: run
