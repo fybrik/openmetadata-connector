@@ -21,6 +21,8 @@ compile:
 run:
 	go run . run --config conf/conf.yaml
 
+# if datacatalog.spec.yaml or swagger.json changes in the fybrik repository,
+# please remove the auto-generated dir and regenerate the code.
 .PHONY: generate-code
 generate-code:
 	git clone https://github.com/fybrik/fybrik/
