@@ -26,20 +26,25 @@ type DatabaseType interface {
 	// - Database
 	// - Database Schema
 	// - Table
-	// Consider an asset called: openmetadata-s3.default.fake-csv-bucket."fake.csv"
-	// For this asset:
-	// 'openmetadata-s3' is the name of the Database Service
-	// DatabaseName() will return 'default'
-	// DatabaseFQN() will return 'openmetadata-s3.default'
-	// DatabaseSchemaName() will return 'fake-csv-bucket'
-	// DatabaseSchemaFQN() will return 'openmetadata-s3.default.fake-csv-bucket'
-	// TableName() will return '"fake.csv"'
-	// TableFQN() will return 'openmetadata-s3.default.fake-csv-bucket."fake.csv"'
+
+	// DatabaseName returns the name of the asset Database, e.g. 'default'
 	DatabaseName(createAssetRequest *models.CreateAssetRequest) string
+
+	// DatabaseFQN returns the Fully Qualified Name of the asset Database, e.g. 'openmetadata-s3.default'
 	DatabaseFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) string
+
+	// DatabaseSchemaName returns the name of the asset DatabaseSchema, e.g. 'fake-csv-bucket'
 	DatabaseSchemaName(createAssetRequest *models.CreateAssetRequest) string
+
+	// DatabaseSchemaFQN returns the Fully Qualified Name of the asset DatabaseSchema,
+	// e.g. 'openmetadata-s3.default.fake-csv-bucket'
 	DatabaseSchemaFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) string
+
+	// TableName returns the name of the asset Table, e.g. '"fake.csv"'
 	TableName(createAssetRequest *models.CreateAssetRequest) string
+
+	// TableFQN returns the Fully Qualified Name of the asset DatabaseSchema,
+	// e.g. 'openmetadata-s3.default.fake-csv-bucket."fake.csv"'
 	TableFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) string
 }
 
