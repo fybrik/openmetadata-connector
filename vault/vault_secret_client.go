@@ -34,10 +34,7 @@ func getFullAuthPath(authPath string) string {
 
 // return structure for Vault Client, based on configuration
 func NewVaultClient(conf map[interface{}]interface{}, logger *zerolog.Logger) VaultClient {
-	address := "http://vault.fybrik-system:8200"
-	authPath := "kubernetes"
-	role := "fybrik"
-	jwtFilePath := "/var/run/secrets/kubernetes.io/serviceaccount/token"
+	var address, authPath, role, jwtFilePath string
 	if conf != nil {
 		if addressConf, ok := conf["address"]; ok {
 			address = addressConf.(string)

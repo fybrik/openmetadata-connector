@@ -105,24 +105,6 @@ func (s *OpenMetadataApiService) CreateAsset(ctx context.Context,
 		_, err = s.createIngestionPipeline(ctx, c, databaseServiceId, ingestionPipelineName)
 	}
 
-	/*
-		s.logger.Info().Msg("About to deploy and run ingestion Pipeline.")
-		// Let us deploy and run the ingestion pipeline
-		err = s.deployAndRunIngestionPipeline(ctx, c, ingestionPipelineID)
-		if err != nil {
-			return api.Response(http.StatusBadRequest, nil), err
-		}
-
-			// We just triggered a run of the ingestion pipeline.
-			// Now we need to wait until the asset is discovered
-			s.logger.Info().Msg("Waiting for asset to be discovered")
-			success, table := s.waitUntilAssetIsDiscovered(ctx, c, assetId)
-
-			if !success {
-				return api.Response(http.StatusBadRequest, nil), errors.New("Could not find table " + assetId)
-			}
-	*/
-
 	databaseId, err := s.findOrCreateDatabase(ctx, c, databaseServiceId,
 		dt.DatabaseFQN(databaseServiceName, &createAssetRequest),
 		dt.DatabaseName(&createAssetRequest))

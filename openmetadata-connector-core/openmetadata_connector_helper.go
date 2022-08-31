@@ -266,32 +266,6 @@ func (s *OpenMetadataApiService) createDatabaseService(ctx context.Context,
 	return databaseService.Id, *databaseService.FullyQualifiedName, nil
 }
 
-/*
-// After deploying and running an ingestion pipeline, we need to wait until the asset is discovered.
-// We periodically query OM and then go to sleep. The number of queries and the sleep time is configurable.
-func (s *OpenMetadataApiService) waitUntilAssetIsDiscovered(ctx context.Context, c *client.APIClient, name string) (bool, *client.Table) {
-	count := 0
-	s.logger.Trace().Msg("Entering a loop to check whether OM is aware of asset (byrunning GetTableByFQN)")
-	for {
-		table, _, err := c.TablesApi.GetTableByFQN(ctx, name).Execute()
-		if err == nil {
-			s.logger.Info().Msg("Asset found")
-			return true, table
-		} else {
-			s.logger.Trace().Msg("Could not find the table")
-		}
-
-		if count == s.NumRetries {
-			break
-		}
-		count++
-		time.Sleep(time.Duration(s.SleepIntervalMS) * time.Millisecond)
-	}
-	s.logger.Error().Msg("Too many retries. Could not find table " + name + ". Giving up")
-	return false, nil
-}
-*/
-
 func (s *OpenMetadataApiService) findAsset(ctx context.Context, c *client.APIClient, assetID string) (bool, *client.Table) {
 	fields := "tags"
 	include := "all"
@@ -364,33 +338,6 @@ func (s *OpenMetadataApiService) createIngestionPipeline(ctx context.Context,
 		ForDatabaseServiceID + databaseServiceID)
 	return *ingestionPipeline.Id, nil
 }
-
-/*
-func (s *OpenMetadataApiService) deployAndRunIngestionPipeline(ctx context.Context,
-	c *client.APIClient,
-	ingestionPipelineID string) error {
-	// Let us deploy the ingestion pipeline
-	_, r, err := c.IngestionPipelinesApi.DeployIngestion(ctx, ingestionPipelineID).Execute()
-	if err != nil {
-		s.logger.Trace().Msg(fmt.Sprintf("Error when calling `IngestionPipelinesApi.DeployIngestion``: %v\n", err))
-		s.logger.Trace().Msg(fmt.Sprintf(FullHTTPResponse, r))
-		s.logger.Error().Msg("Failed to deploy Ingestion Pipeline: " + ingestionPipelineID)
-		return err
-	}
-
-	// Let us trigger a run of the ingestion pipeline
-	_, r, err = c.IngestionPipelinesApi.TriggerIngestionPipelineRun(ctx, ingestionPipelineID).Execute()
-	if err != nil {
-		s.logger.Trace().Msg(fmt.Sprintf("Error when calling `IngestionPipelinesApi.TriggerIngestion``: %v\n", err))
-		s.logger.Trace().Msg(fmt.Sprintf(FullHTTPResponse, r))
-		s.logger.Error().Msg("Failed to trigger Ingestion Pipeline run: " + ingestionPipelineID)
-		return err
-	}
-
-	s.logger.Info().Msg("Deploying and Running of Ingestion Pipeline successful")
-	return nil
-}
-*/
 
 func (s *OpenMetadataApiService) findOrCreateDatabase(ctx context.Context,
 	c *client.APIClient,
