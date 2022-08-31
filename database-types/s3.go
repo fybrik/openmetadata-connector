@@ -79,7 +79,7 @@ func (s *s3) getS3Credentials(vaultClientConfiguration map[interface{}]interface
 func (s *s3) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interface{}, credentialsPath *string) map[string]interface{} {
 	ret := make(map[string]interface{})
 	configSourceMap := make(map[string]interface{})
-	ret[Type] = Datalake
+	ret[Type] = s.OMTypeName()
 	bucketName, found := config[Bucket]
 	if found {
 		ret[BucketName] = bucketName
