@@ -52,25 +52,25 @@ func (c *DefaultApiController) Routes() api.Routes {
 	return api.Routes{
 		api.Route{
 			Name:        "CreateAsset",
-			Method:      strings.ToUpper("Post"),
+			Method:      strings.ToUpper(http.MethodPost),
 			Pattern:     "/createAsset",
 			HandlerFunc: c.CreateAsset,
 		},
 		api.Route{
 			Name:        "DeleteAsset",
-			Method:      strings.ToUpper("Delete"),
+			Method:      strings.ToUpper(http.MethodDelete),
 			Pattern:     "/deleteAsset",
 			HandlerFunc: c.DeleteAsset,
 		},
 		api.Route{
 			Name:        "GetAssetInfo",
-			Method:      strings.ToUpper("Post"),
+			Method:      strings.ToUpper(http.MethodPost),
 			Pattern:     "/getAssetInfo",
 			HandlerFunc: c.GetAssetInfo,
 		},
 		api.Route{
 			Name:        "UpdateAsset",
-			Method:      strings.ToUpper("Patch"),
+			Method:      strings.ToUpper(http.MethodPatch),
 			Pattern:     "/updateAsset",
 			HandlerFunc: c.UpdateAsset,
 		},
