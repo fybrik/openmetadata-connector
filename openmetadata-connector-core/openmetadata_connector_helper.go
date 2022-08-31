@@ -67,8 +67,7 @@ func (s *OpenMetadataApiService) prepareOpenMetadataForFybrik() bool {
 
 	typeList, r, err := c.MetadataApi.ListTypes(ctx).Category("entity").Limit(TypeListLengthLimit).Execute()
 	if err != nil {
-		s.logger.Warn().Msg(ErrorInPrepareOpenMetadataForFybrik)
-		s.logger.Warn().Msg("Most likely OpenMetadata is not up yet")
+		s.logger.Warn().Msg(ErrorInPrepareOpenMetadataForFybrik + "Most likely OpenMetadata is not up yet")
 		return false
 	}
 	defer r.Body.Close()
@@ -81,8 +80,7 @@ func (s *OpenMetadataApiService) prepareOpenMetadataForFybrik() bool {
 	}
 
 	if tableID == "" {
-		s.logger.Error().Msg(ErrorInPrepareOpenMetadataForFybrik)
-		s.logger.Error().Msg("Failed to find the ID for entity 'table'")
+		s.logger.Error().Msg(ErrorInPrepareOpenMetadataForFybrik + "Failed to find the ID for entity 'table'")
 		return false
 	}
 
@@ -91,7 +89,6 @@ func (s *OpenMetadataApiService) prepareOpenMetadataForFybrik() bool {
 	typeList, r, err = c.MetadataApi.ListTypes(ctx).Category("field").Limit(TypeListLengthLimit).Execute()
 	if err != nil {
 		s.logger.Error().Msg(fmt.Sprintf("Error when calling `MetadataApi.ListTypes``: %v\n", err))
-		s.logger.Error().Msg(fmt.Sprintf(FullHTTPResponse, r))
 		return false
 	}
 	defer r.Body.Close()
@@ -104,8 +101,7 @@ func (s *OpenMetadataApiService) prepareOpenMetadataForFybrik() bool {
 	}
 
 	if stringID == "" {
-		s.logger.Error().Msg(ErrorInPrepareOpenMetadataForFybrik)
-		s.logger.Error().Msg("Failed to find the ID for entity 'string'")
+		s.logger.Error().Msg(ErrorInPrepareOpenMetadataForFybrik + "Failed to find the ID for entity 'string'")
 		return false
 	}
 
@@ -237,9 +233,7 @@ func (s *OpenMetadataApiService) createDatabaseService(ctx context.Context,
 	databaseService, r, err := c.DatabaseServiceApi.CreateDatabaseService(ctx).CreateDatabaseService(*createDatabaseService).Execute()
 	if err != nil {
 		s.logger.Trace().Msg(fmt.Sprintf(ErrorCallingCreateDatabaseService, err))
-		s.logger.Trace().Msg(fmt.Sprintf(FullHTTPResponse, r))
-		s.logger.Warn().Msg(FailedToCreateDatabaseService + databaseServiceName)
-		s.logger.Warn().Msg("Let us try again with a different name")
+		s.logger.Warn().Msg(FailedToCreateDatabaseService + databaseServiceName + ". Let us try again with a different name")
 
 		// let's try creating the service with different names
 		for i := 0; i < s.NumRenameRetries; i++ {
@@ -253,7 +247,6 @@ func (s *OpenMetadataApiService) createDatabaseService(ctx context.Context,
 			}
 			r1.Body.Close()
 			s.logger.Trace().Msg(fmt.Sprintf(ErrorCallingCreateDatabaseService, err1))
-			s.logger.Trace().Msg(fmt.Sprintf(FullHTTPResponse, r))
 			s.logger.Warn().Msg(FailedToCreateDatabaseService + newName)
 		}
 
@@ -272,7 +265,6 @@ func (s *OpenMetadataApiService) findAsset(ctx context.Context, c *client.APICli
 	table, r, err := c.TablesApi.GetTableByFQN(ctx, assetID).Fields(fields).Include(include).Execute()
 	if err != nil {
 		s.logger.Trace().Msg(fmt.Sprintf("Error when calling `IngestionPipelinesApi.GetTableByFQN``: %v\n", err))
-		s.logger.Trace().Msg(fmt.Sprintf(FullHTTPResponse, r))
 		s.logger.Warn().Msg("Could not find asset: " + assetID)
 	} else {
 		defer r.Body.Close()
@@ -292,7 +284,6 @@ func (s *OpenMetadataApiService) findLatestAsset(ctx context.Context, c *client.
 	table, r, err := c.TablesApi.GetSpecificDatabaseVersion1(ctx, table.Id, version).Execute()
 	if err != nil {
 		s.logger.Trace().Msg(fmt.Sprintf("Error when calling `TablesApi.GetSpecificDatabaseVersion1``: %v\n", err))
-		s.logger.Trace().Msg(fmt.Sprintf(FullHTTPResponse, r))
 		s.logger.Error().Msg("Could not retrieve latest version of the asset")
 		return false, nil
 	}
@@ -329,7 +320,6 @@ func (s *OpenMetadataApiService) createIngestionPipeline(ctx context.Context,
 			CreateIngestionPipeline(newCreateIngestionPipeline).Execute()
 	if err != nil {
 		s.logger.Trace().Msg(fmt.Sprintf("Error when calling `IngestionPipelinesApi.CreateIngestionPipeline``: %v\n", err))
-		s.logger.Trace().Msg(fmt.Sprintf(FullHTTPResponse, r))
 		s.logger.Error().Msg("Failed to create Ingestion Pipeline: " + ingestionPipelineName + ForDatabaseServiceID + databaseServiceID)
 		return "", err
 	}
@@ -357,7 +347,6 @@ func (s *OpenMetadataApiService) findOrCreateDatabase(ctx context.Context,
 		*client.NewEntityReference(databaseServiceID, DatabaseService))).Execute()
 	if err != nil {
 		s.logger.Trace().Msg(fmt.Sprintf("Error when calling `DatabasesApi.CreateDatabase``: %v\n", err))
-		s.logger.Trace().Msg(fmt.Sprintf(FullHTTPResponse, r1))
 		return "", err
 	}
 	defer r1.Body.Close()
@@ -381,7 +370,6 @@ func (s *OpenMetadataApiService) findOrCreateDatabaseSchema(ctx context.Context,
 		*client.NewCreateDatabaseSchema(*client.NewEntityReference(databaseID, "database"), databaseSchemaName)).Execute()
 	if err != nil {
 		s.logger.Trace().Msg(fmt.Sprintf("Error when calling `DatabaseSchemasApi.CreateDBSchema``: %v\n", err))
-		s.logger.Trace().Msg(fmt.Sprintf(FullHTTPResponse, r))
 		return "", err
 	}
 	defer r.Body.Close()
@@ -399,7 +387,6 @@ func (s *OpenMetadataApiService) createTable(ctx context.Context,
 	table, r, err := c.TablesApi.CreateTable(ctx).CreateTable(*createTable).Execute()
 	if err != nil {
 		s.logger.Trace().Msg(fmt.Sprintf("Error when calling `TablesApi.CreateTable``: %v\n", err))
-		s.logger.Trace().Msg(fmt.Sprintf(FullHTTPResponse, r))
 		s.logger.Error().Msg("createTable failed: " + tableName)
 		return nil, err
 	}
@@ -471,7 +458,6 @@ func (s *OpenMetadataApiService) enrichAsset(ctx context.Context, table *client.
 	resp, err := c.TablesApi.PatchTable(ctx, table.Id).RequestBody(requestBody).Execute()
 	if err != nil {
 		s.logger.Trace().Msg(fmt.Sprintf("Error when calling `TablesApi.PatchTable``: %v\n", err))
-		s.logger.Trace().Msg(fmt.Sprintf(FullHTTPResponse, resp))
 		s.logger.Error().Msg("Asset Enrichment failed (using PatchTable)")
 		return err
 	}
@@ -485,7 +471,6 @@ func (s *OpenMetadataApiService) deleteAsset(ctx context.Context, c *client.APIC
 	table, r, err := c.TablesApi.GetTableByFQN(ctx, assetID).Execute()
 	if err != nil {
 		s.logger.Trace().Msg(fmt.Sprintf("Error when calling `TablesApi.GetTableByFQN``: %v\n", err))
-		s.logger.Trace().Msg(fmt.Sprintf(FullHTTPResponse, r))
 		s.logger.Error().Msg("Asset deletion failed -- asset not found")
 		return http.StatusNotFound, err
 	}
@@ -495,7 +480,6 @@ func (s *OpenMetadataApiService) deleteAsset(ctx context.Context, c *client.APIC
 	r, err = c.TablesApi.DeleteTable(ctx, table.Id).Execute()
 	if err != nil {
 		s.logger.Trace().Msg(fmt.Sprintf("Error when calling `TablesApi.DeleteTable``: %v\n", err))
-		s.logger.Trace().Msg(fmt.Sprintf(FullHTTPResponse, r))
 		s.logger.Error().Msg("Asset deletion failed")
 		return http.StatusBadRequest, err
 	}
