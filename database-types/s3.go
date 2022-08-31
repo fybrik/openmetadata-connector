@@ -2,6 +2,7 @@ package databasetypes
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 
@@ -33,6 +34,9 @@ const SecurityConfig = "securityConfig"
 const S3 = "s3"
 const ObjectKey = "object_key"
 const Type = "type"
+const FailedToConvert = "%s: failed to convert interface to map"
+const Value = "value"
+const AdditionalProperties = "additional properties"
 
 var translate = map[string]string{
 	Region:         AwsRegion,
@@ -112,7 +116,16 @@ func (s *s3) TranslateOpenMetadataConfigToFybrikConfig(tableName string, credent
 	ret := make(map[string]interface{})
 	ret[ObjectKey] = tableName
 
-	securityConfig := config[ConfigSource].(map[string]interface{})[SecurityConfig].(map[string]interface{})
+	configSource, ok := utils.InterfaceToMap(config[ConfigSource])
+	if !ok {
+		s.logger.Warn().Msg(fmt.Sprintf(FailedToConvert, ConfigSource))
+		return nil
+	}
+	securityConfig, ok := utils.InterfaceToMap(configSource[SecurityConfig])
+	if !ok {
+		s.logger.Warn().Msg(fmt.Sprintf(FailedToConvert, SecurityConfig))
+		return nil
+	}
 
 	for key, value := range securityConfig {
 		if translation, found := translateInv[key]; found {
@@ -139,8 +152,16 @@ func (s *s3) TranslateOpenMetadataConfigToFybrikConfig(tableName string, credent
 // also appear in the OM configuration, and that the values be identical
 func (s *s3) equivalentConfigSource(fromService, fromRequest map[string]interface{}) bool {
 	// ignore some fields, such as 'aws_token' which would appear only serviceSecurityConfig
-	serviceSecurityConfig := fromService[SecurityConfig].(map[string]interface{})
-	requestSecurityConfig := fromRequest[SecurityConfig].(map[string]interface{})
+	serviceSecurityConfig, ok := utils.InterfaceToMap(fromService[SecurityConfig])
+	if !ok {
+		s.logger.Warn().Msg(fmt.Sprintf(FailedToConvert, "OM "+SecurityConfig))
+		return false
+	}
+	requestSecurityConfig, ok := utils.InterfaceToMap(fromRequest[SecurityConfig])
+	if !ok {
+		s.logger.Warn().Msg(fmt.Sprintf(FailedToConvert, "Request "+SecurityConfig))
+		return false
+	}
 	for property, value := range requestSecurityConfig {
 		if !reflect.DeepEqual(serviceSecurityConfig[property], value) {
 			return false
@@ -152,13 +173,21 @@ func (s *s3) equivalentConfigSource(fromService, fromRequest map[string]interfac
 func (s *s3) EquivalentServiceConfigurations(requestConfig, serviceConfig map[string]interface{}) bool {
 	for property, value := range requestConfig {
 		if property == ConfigSource {
-			if !s.equivalentConfigSource(serviceConfig[property].(map[string]interface{}), value.(map[string]interface{})) {
+			servicePropertyMap, ok := utils.InterfaceToMap(serviceConfig[property])
+			if !ok {
+				s.logger.Warn().Msg(fmt.Sprintf(FailedToConvert, property))
 				return false
 			}
-		} else {
-			if !reflect.DeepEqual(serviceConfig[property], value) {
+			valueMap, ok := utils.InterfaceToMap(value)
+			if !ok {
+				s.logger.Warn().Msg(fmt.Sprintf(FailedToConvert, Value))
 				return false
 			}
+			if !s.equivalentConfigSource(servicePropertyMap, valueMap) {
+				return false
+			}
+		} else if !reflect.DeepEqual(serviceConfig[property], value) {
+			return false
 		}
 	}
 	return true
@@ -172,7 +201,12 @@ func (s *s3) DatabaseFQN(serviceName string, createAssetRequest *models.CreateAs
 }
 
 func (s *s3) DatabaseSchemaName(createAssetRequest *models.CreateAssetRequest) string {
-	connectionProperties := createAssetRequest.Details.GetConnection().AdditionalProperties[S3].(map[string]interface{})
+	connectionProperties, ok := utils.InterfaceToMap(createAssetRequest.Details.GetConnection().
+		AdditionalProperties[S3])
+	if !ok {
+		s.logger.Warn().Msg(fmt.Sprintf(FailedToConvert, AdditionalProperties))
+		return ""
+	}
 	bucket, found := connectionProperties[Bucket]
 	if found {
 		return bucket.(string)
@@ -194,7 +228,11 @@ func (s *s3) DatabaseSchemaFQN(serviceName string, createAssetRequest *models.Cr
 }
 
 func (s *s3) TableName(createAssetRequest *models.CreateAssetRequest) string {
-	connectionProperties := createAssetRequest.Details.GetConnection().AdditionalProperties[S3].(map[string]interface{})
+	connectionProperties, ok := utils.InterfaceToMap(createAssetRequest.Details.GetConnection().AdditionalProperties[S3])
+	if !ok {
+		s.logger.Warn().Msg(fmt.Sprintf(FailedToConvert, AdditionalProperties))
+		return ""
+	}
 	objectKey, found := connectionProperties[ObjectKey]
 	if found {
 		return objectKey.(string)

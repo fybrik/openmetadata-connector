@@ -1,9 +1,11 @@
 package databasetypes
 
 import (
+	"fmt"
 	"reflect"
 
 	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
+	"fybrik.io/openmetadata-connector/utils"
 
 	zerolog "github.com/rs/zerolog"
 )
@@ -48,7 +50,11 @@ func (m *mysql) TranslateOpenMetadataConfigToFybrikConfig(tableName string, cred
 }
 
 func (m *mysql) TableFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) string {
-	connectionProperties := createAssetRequest.Details.GetConnection().AdditionalProperties["mysql"].(map[string]interface{})
+	connectionProperties, ok := utils.InterfaceToMap(createAssetRequest.Details.GetConnection().AdditionalProperties["mysql"])
+	if !ok {
+		m.logger.Warn().Msg(fmt.Sprintf(FailedToConvert, AdditionalProperties))
+		return ""
+	}
 	assetName := *createAssetRequest.DestinationAssetID
 	databaseSchema, found := connectionProperties[DatabaseSchema]
 	if found {

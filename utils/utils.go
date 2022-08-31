@@ -56,3 +56,8 @@ func ExtractColumns(resourceColumns []models.ResourceColumn) []client.Column {
 	}
 	return ret
 }
+
+func InterfaceToMap(i interface{}) (map[string]interface{}, bool) {
+	m, ok := i.(map[string]interface{})
+	return m, ok
+}

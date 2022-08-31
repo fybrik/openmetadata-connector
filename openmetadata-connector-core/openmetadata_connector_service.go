@@ -23,6 +23,8 @@ import (
 	utils "fybrik.io/openmetadata-connector/utils"
 )
 
+const FailedToCovert = "Failed to convert connection additional properties to map"
+
 type OpenMetadataApiService struct {
 	Endpoint             string
 	SleepIntervalMS      int
@@ -61,9 +63,12 @@ func (s *OpenMetadataApiService) CreateAsset(ctx context.Context,
 	// step 1: Translate the fybrik connection information to the OM connection information.
 	//         This configuration information will later be used to create an OM connection
 	//         (if it does not already exist)
-	omConfig := dt.TranslateFybrikConfigToOpenMetadataConfig(
-		createAssetRequest.Details.GetConnection().AdditionalProperties[connectionType].(map[string]interface{}),
-		createAssetRequest.Credentials)
+	config, ok := utils.InterfaceToMap(createAssetRequest.Details.GetConnection().AdditionalProperties[connectionType])
+	if !ok {
+		s.logger.Error().Msg(FailedToCovert)
+		return api.Response(http.StatusBadRequest, nil), errors.New(FailedToCovert)
+	}
+	omConfig := dt.TranslateFybrikConfigToOpenMetadataConfig(config, createAssetRequest.Credentials)
 	// step 2: compare the transformed connection information to that of all existing services
 	databaseServiceId, databaseServiceName, found = s.findService(ctx, c, dt, omConfig)
 
