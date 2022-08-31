@@ -18,26 +18,6 @@ type s3 struct {
 	vaultClientConfiguration map[interface{}]interface{}
 }
 
-const Region = "region"
-const Endpoint = "endpoint"
-const AccessKeyID = "access_key_id"
-const SecretAccessID = "secret_access_id"
-const AwsRegion = "awsRegion"
-const EndPointURL = "endPointURL"
-const AwsAccessKeyID = "awsAccessKeyId"
-const AwsSecretAccessKey = "awsSecretAccessKey"
-const Datalake = "Datalake"
-const ConfigSource = "configSource"
-const BucketName = "bucketName"
-const Bucket = "bucket"
-const SecurityConfig = "securityConfig"
-const S3 = "s3"
-const ObjectKey = "object_key"
-const Type = "type"
-const FailedToConvert = "%s: failed to convert interface to map"
-const Value = "value"
-const AdditionalProperties = "additional properties"
-
 var translate = map[string]string{
 	Region:         AwsRegion,
 	Endpoint:       EndPointURL,
@@ -55,9 +35,6 @@ func NewS3(vaultClientConfiguration map[interface{}]interface{}, logger *zerolog
 	return &s3{dataBase: dataBase{name: Datalake, logger: logger},
 		vaultClientConfiguration: vaultClientConfiguration}
 }
-
-const GetTokenFailed = "GetToken failed"
-const GetSecretFailed = "GetSecret failed"
 
 func (s *s3) getS3Credentials(vaultClientConfiguration map[interface{}]interface{},
 	credentialsPath *string) (string, string, error) {

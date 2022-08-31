@@ -6,9 +6,6 @@ import (
 	zerolog "github.com/rs/zerolog"
 )
 
-const Default = "default"
-const DatabaseSchema = "databaseSchema"
-
 type DatabaseType interface {
 	// OMTypeName() returns the OpenMetadata name for different connections types. For instance, it
 	// return "Mysql" for MYSQL and "Deltalake" for s3

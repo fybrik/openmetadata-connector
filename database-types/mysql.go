@@ -10,9 +10,6 @@ import (
 	zerolog "github.com/rs/zerolog"
 )
 
-const MYSQL = "Mysql"
-const Other = "other"
-
 type mysql struct {
 	dataBase
 	standardFields map[string]bool
@@ -26,7 +23,7 @@ func NewMysql(logger *zerolog.Logger) *mysql {
 		"scheme":       true,
 		"username":     true,
 	}
-	return &mysql{standardFields: standardFields, dataBase: dataBase{name: MYSQL, logger: logger}}
+	return &mysql{standardFields: standardFields, dataBase: dataBase{name: Mysql, logger: logger}}
 }
 
 func (m *mysql) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interface{}, credentials *string) map[string]interface{} {
