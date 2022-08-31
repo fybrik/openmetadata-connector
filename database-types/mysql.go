@@ -7,6 +7,7 @@ import (
 )
 
 const MYSQL = "Mysql"
+const Other = "other"
 
 type mysql struct {
 	dataBase
@@ -40,7 +41,7 @@ func (m *mysql) TranslateOpenMetadataConfigToFybrikConfig(tableName string, cred
 		}
 	}
 
-	ret["other"] = other
+	ret[Other] = other
 	return ret
 }
 
