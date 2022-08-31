@@ -32,6 +32,7 @@ const Bucket = "bucket"
 const SecurityConfig = "securityConfig"
 const S3 = "s3"
 const ObjectKey = "object_key"
+const Type = "type"
 
 var translate = map[string]string{
 	Region:         AwsRegion,
@@ -78,14 +79,14 @@ func (s *s3) getS3Credentials(vaultClientConfiguration map[interface{}]interface
 func (s *s3) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interface{}, credentialsPath *string) map[string]interface{} {
 	ret := make(map[string]interface{})
 	configSourceMap := make(map[string]interface{})
-	ret["type"] = Datalake
+	ret[Type] = Datalake
 	bucketName, found := config[Bucket]
 	if found {
 		ret[BucketName] = bucketName
 	}
 
 	securityMap := make(map[string]interface{})
-	securityMap["awsRegion"] = "eu-de" // awsRegion field is mandatory, although it is persumably ignored if endpoint is provided
+	securityMap[AwsRegion] = "eu-de" // awsRegion field is mandatory, although it is persumably ignored if endpoint is provided
 	for key, value := range config {
 		translation, found := translate[key]
 		if found {
@@ -96,8 +97,8 @@ func (s *s3) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interfa
 	if s.vaultClientConfiguration != nil && credentialsPath != nil {
 		awsAccessKeyID, awsSecretAccessKey, err := s.getS3Credentials(s.vaultClientConfiguration, credentialsPath)
 		if err == nil && awsAccessKeyID != "" && awsSecretAccessKey != "" {
-			securityMap["awsAccessKeyId"] = awsAccessKeyID
-			securityMap["awsSecretAccessKey"] = awsSecretAccessKey
+			securityMap[AwsAccessKeyID] = awsAccessKeyID
+			securityMap[AwsSecretAccessKey] = awsSecretAccessKey
 		}
 	}
 
