@@ -4,6 +4,7 @@ import (
 	"reflect"
 
 	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
+	zerolog "github.com/rs/zerolog"
 )
 
 const MYSQL = "Mysql"
@@ -14,7 +15,7 @@ type mysql struct {
 	standardFields map[string]bool
 }
 
-func NewMysql() *mysql {
+func NewMysql(logger *zerolog.Logger) *mysql {
 	standardFields := map[string]bool{
 		DatabaseSchema: true,
 		"hostPort":     true,
@@ -22,7 +23,7 @@ func NewMysql() *mysql {
 		"scheme":       true,
 		"username":     true,
 	}
-	return &mysql{standardFields: standardFields, dataBase: dataBase{name: MYSQL}}
+	return &mysql{standardFields: standardFields, dataBase: dataBase{name: MYSQL, logger: logger}}
 }
 
 func (m *mysql) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interface{}, credentials *string) map[string]interface{} {

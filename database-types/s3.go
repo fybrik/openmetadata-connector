@@ -15,7 +15,6 @@ import (
 type s3 struct {
 	dataBase
 	vaultClientConfiguration map[interface{}]interface{}
-	logger                   *zerolog.Logger
 }
 
 const Region = "region"
@@ -48,9 +47,8 @@ var translateInv = map[string]string{
 }
 
 func NewS3(vaultClientConfiguration map[interface{}]interface{}, logger *zerolog.Logger) *s3 {
-	return &s3{dataBase: dataBase{name: Datalake},
-		vaultClientConfiguration: vaultClientConfiguration,
-		logger:                   logger}
+	return &s3{dataBase: dataBase{name: Datalake, logger: logger},
+		vaultClientConfiguration: vaultClientConfiguration}
 }
 
 const GetTokenFailed = "GetToken failed"

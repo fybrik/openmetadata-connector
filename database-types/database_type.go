@@ -1,6 +1,9 @@
 package databasetypes
 
-import models "fybrik.io/openmetadata-connector/datacatalog-go-models"
+import (
+	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
+	zerolog "github.com/rs/zerolog"
+)
 
 const Default = "default"
 const DatabaseSchema = "databaseSchema"
@@ -43,7 +46,8 @@ type DatabaseType interface {
 }
 
 type dataBase struct {
-	name string
+	name   string
+	logger *zerolog.Logger
 }
 
 func (db dataBase) OMTypeName() string {
