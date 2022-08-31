@@ -23,8 +23,6 @@ import (
 	utils "fybrik.io/openmetadata-connector/utils"
 )
 
-const FailedToCovert = "Failed to convert connection additional properties to map"
-
 type OpenMetadataApiService struct {
 	Endpoint             string
 	SleepIntervalMS      int

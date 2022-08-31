@@ -16,17 +16,6 @@ import (
 	utils "fybrik.io/openmetadata-connector/utils"
 )
 
-const FullHTTPResponse = "Full HTTP response: %v\n"
-const Fybrik = "Fybrik"
-const ErrorInPrepareOpenMetadataForFybrik = "Error in prepareOpenMetadataForFybrik"
-
-const Credentials = "credentials"
-const Geography = "geography"
-const Name = "name"
-const Owner = "owner"
-const DataFormat = "dataFormat"
-const ConnectionType = "connectionType"
-
 func getTag(ctx context.Context, c *client.APIClient, tagFQN string) client.TagLabel {
 	if strings.Count(tagFQN, ".") == 0 {
 		// Since this is not a 'category.primary' or 'category.primary.secondary' format,
@@ -59,8 +48,6 @@ func tagColumn(ctx context.Context, c *client.APIClient, columns []client.Column
 	}
 	return columns
 }
-
-const TypeListLengthLimit = 100
 
 func (s *OpenMetadataApiService) prepareOpenMetadataForFybrik() bool {
 	ctx := context.Background()
@@ -122,39 +109,34 @@ func (s *OpenMetadataApiService) prepareOpenMetadataForFybrik() bool {
 		return false
 	}
 
-	const STRING = "string"
 	// Add custom properties for tables
 	r1, _ := c.MetadataApi.AddProperty(ctx, tableID).CustomProperty(*client.NewCustomProperty(
 		"The vault plugin path where the destination data credentials will be stored as kubernetes secrets", Credentials,
-		*client.NewEntityReference(stringID, STRING))).Execute()
+		*client.NewEntityReference(stringID, String))).Execute()
 	defer r1.Body.Close()
 	r2, _ := c.MetadataApi.AddProperty(ctx, tableID).CustomProperty(*client.NewCustomProperty(
 		"Connection type, e.g.: s3 or mysql", ConnectionType,
-		*client.NewEntityReference(stringID, STRING))).Execute()
+		*client.NewEntityReference(stringID, String))).Execute()
 	defer r2.Body.Close()
 	r3, _ := c.MetadataApi.AddProperty(ctx, tableID).CustomProperty(*client.NewCustomProperty(
 		"Name of the resource", Name,
-		*client.NewEntityReference(stringID, STRING))).Execute()
+		*client.NewEntityReference(stringID, String))).Execute()
 	defer r3.Body.Close()
 	r4, _ := c.MetadataApi.AddProperty(ctx, tableID).CustomProperty(*client.NewCustomProperty(
 		"Geography of the resource", Geography,
-		*client.NewEntityReference(stringID, STRING))).Execute()
+		*client.NewEntityReference(stringID, String))).Execute()
 	defer r4.Body.Close()
 	r5, _ := c.MetadataApi.AddProperty(ctx, tableID).CustomProperty(*client.NewCustomProperty(
 		"Owner of the resource", Owner,
-		*client.NewEntityReference(stringID, STRING))).Execute()
+		*client.NewEntityReference(stringID, String))).Execute()
 	defer r5.Body.Close()
 	r6, _ := c.MetadataApi.AddProperty(ctx, tableID).CustomProperty(*client.NewCustomProperty(
 		"Data format", DataFormat,
-		*client.NewEntityReference(stringID, STRING))).Execute()
+		*client.NewEntityReference(stringID, String))).Execute()
 	r6.Body.Close()
 
 	return true
 }
-
-const DefaultSleepIntervalMS = 500
-const DefaultNumRetries = 500
-const DefaultNumRenameRetries = 10
 
 // NewOpenMetadataApiService creates a new api service.
 // It is initialized base on the configuration
@@ -240,11 +222,6 @@ func (s *OpenMetadataApiService) findService(ctx context.Context,
 	s.logger.Trace().Msg("Identical database service not found")
 	return "", "", false
 }
-
-const RandomStringLength = 5
-const ErrorCallingCreateDatabaseService = "Error when calling `ServicesApi.CreateDatabaseService``: %v\n"
-const FailedToCreateDatabaseService = "Failed to create Database Service: "
-const SucceededInCreatingDatabaseService = "Succeeded in creating Database Service: "
 
 func (s *OpenMetadataApiService) createDatabaseService(ctx context.Context,
 	c *client.APIClient,
@@ -362,9 +339,6 @@ func (s *OpenMetadataApiService) findIngestionPipeline(ctx context.Context, c *c
 	s.logger.Info().Msg("Ingestion Pipeline found: " + ingestionPipelineName)
 	return *pipeline.Id, true
 }
-
-const ForDatabaseServiceID = " for Database Service Id: "
-const DatabaseService = "databaseService"
 
 func (s *OpenMetadataApiService) createIngestionPipeline(ctx context.Context,
 	c *client.APIClient,
@@ -510,11 +484,6 @@ func (s *OpenMetadataApiService) enrichAsset(ctx context.Context, table *client.
 	propertiesUpdate["value"] = customProperties
 	requestBody = append(requestBody, propertiesUpdate)
 
-	const OP = "op"
-	const PATH = "path"
-	const VALUE = "value"
-	const ADD = "add"
-
 	if requestTags != nil {
 		var tags []client.TagLabel
 		// traverse createAssetRequest.ResourceMetadata.Tags
@@ -524,9 +493,9 @@ func (s *OpenMetadataApiService) enrichAsset(ctx context.Context, table *client.
 		}
 
 		tagsUpdate := make(map[string]interface{})
-		tagsUpdate[OP] = ADD
-		tagsUpdate[PATH] = "/tags"
-		tagsUpdate[VALUE] = tags
+		tagsUpdate[Op] = Add
+		tagsUpdate[Path] = "/tags"
+		tagsUpdate[Value] = tags
 		requestBody = append(requestBody, tagsUpdate)
 	}
 
@@ -546,9 +515,9 @@ func (s *OpenMetadataApiService) enrichAsset(ctx context.Context, table *client.
 		}
 
 		columnUpdate := make(map[string]interface{})
-		columnUpdate[OP] = ADD
-		columnUpdate[PATH] = "/columns"
-		columnUpdate[VALUE] = columns
+		columnUpdate[Op] = Add
+		columnUpdate[Path] = "/columns"
+		columnUpdate[Value] = columns
 		requestBody = append(requestBody, columnUpdate)
 	}
 
