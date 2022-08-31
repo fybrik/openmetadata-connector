@@ -134,7 +134,11 @@ func (s *s3) TranslateOpenMetadataConfigToFybrikConfig(tableName string, credent
 	return ret
 }
 
-func (s *s3) compareConfigSource(fromService, fromRequest map[string]interface{}) bool {
+// Check whether the fields in the 'configSource' sectin are equivalent.
+// They don't have to be identical. We allow additional fields (e.g. 'aws_token')
+// in the OM configuration, but we require that all fields in the request configuration
+// also appear in the OM configuration, and that the values be identical
+func (s *s3) equivalentConfigSource(fromService, fromRequest map[string]interface{}) bool {
 	// ignore some fields, such as 'aws_token' which would appear only serviceSecurityConfig
 	serviceSecurityConfig := fromService[SecurityConfig].(map[string]interface{})
 	requestSecurityConfig := fromRequest[SecurityConfig].(map[string]interface{})
@@ -149,7 +153,7 @@ func (s *s3) compareConfigSource(fromService, fromRequest map[string]interface{}
 func (s *s3) CompareServiceConfigurations(requestConfig, serviceConfig map[string]interface{}) bool {
 	for property, value := range requestConfig {
 		if property == ConfigSource {
-			if !s.compareConfigSource(serviceConfig[property].(map[string]interface{}), value.(map[string]interface{})) {
+			if !s.equivalentConfigSource(serviceConfig[property].(map[string]interface{}), value.(map[string]interface{})) {
 				return false
 			}
 		} else {
