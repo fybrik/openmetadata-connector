@@ -54,7 +54,7 @@ func (m *mysql) TableFQN(serviceName string, createAssetRequest *models.CreateAs
 	return serviceName + "." + Default + "." + assetName
 }
 
-func (m *mysql) CompareServiceConfigurations(requestConfig, serviceConfig map[string]interface{}) bool {
+func (m *mysql) EquivalentServiceConfigurations(requestConfig, serviceConfig map[string]interface{}) bool {
 	for property, value := range requestConfig {
 		if !reflect.DeepEqual(serviceConfig[property], value) {
 			return false

@@ -150,7 +150,7 @@ func (s *s3) equivalentConfigSource(fromService, fromRequest map[string]interfac
 	return true
 }
 
-func (s *s3) CompareServiceConfigurations(requestConfig, serviceConfig map[string]interface{}) bool {
+func (s *s3) EquivalentServiceConfigurations(requestConfig, serviceConfig map[string]interface{}) bool {
 	for property, value := range requestConfig {
 		if property == ConfigSource {
 			if !s.equivalentConfigSource(serviceConfig[property].(map[string]interface{}), value.(map[string]interface{})) {

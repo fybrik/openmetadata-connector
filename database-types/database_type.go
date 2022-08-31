@@ -18,7 +18,7 @@ type DatabaseType interface {
 
 	// In checking whether a certain databaseService already exists, compare whether two
 	// OM configuration informations are equivalent.Return 'true' if they are
-	CompareServiceConfigurations(map[string]interface{}, map[string]interface{}) bool
+	EquivalentServiceConfigurations(map[string]interface{}, map[string]interface{}) bool
 
 	// The hierarchy in OM is:
 	// - Database Service

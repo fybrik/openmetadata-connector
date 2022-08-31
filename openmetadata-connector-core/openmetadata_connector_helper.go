@@ -229,7 +229,7 @@ func (s *OpenMetadataApiService) findService(ctx context.Context,
 		// first let us compare connection types (e.g. s3, mysql)
 		if connectionType != serviceList.Data[i].ServiceType {
 			found = false
-		} else if !dt.CompareServiceConfigurations(connectionProperties, serviceList.Data[i].Connection.Config) {
+		} else if !dt.EquivalentServiceConfigurations(connectionProperties, serviceList.Data[i].Connection.Config) {
 			found = false
 		}
 		if found {
