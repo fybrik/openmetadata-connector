@@ -1,0 +1,9 @@
+openmetadata_endpoint: "http://localhost:8585/api"
+openmetadata_sleep_interval: 100
+openmetadata_num_retries: 1000
+
+vault:
+  address: http://localhost:8200
+  authPath: kubernetes
+  role: fybrik
+  jwt_file_path: /tmp/openmetadata-connector/jwt/jwt

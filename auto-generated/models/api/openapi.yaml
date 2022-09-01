@@ -1,0 +1,309 @@
+openapi: 3.0.1
+info:
+  license:
+    name: Apache 2.0
+  title: Data Catalog Service - Asset Details
+  version: 1.0.0
+servers:
+- url: https://localhost:8080
+paths:
+  /getAssetInfo:
+    post:
+      operationId: getAssetInfo
+      parameters:
+      - description: This header carries credential information related to relevant
+          catalog from which the asset information needs to be retrieved.
+        explode: false
+        in: header
+        name: X-Request-Datacatalog-Cred
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetAssetRequest'
+        description: Data Catalog Request Object.
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetAssetResponse'
+          description: successful operation
+        "400":
+          description: Bad request - server cannot process the request due to client
+            error
+      summary: This REST API gets data asset information from the data catalog configured
+        in fybrik for the data sets indicated in FybrikApplication yaml
+  /createAsset:
+    post:
+      operationId: createAsset
+      parameters:
+      - description: This header carries credential information related to accessing
+          the relevant destination catalog.
+        explode: false
+        in: header
+        name: X-Request-Datacatalog-Write-Cred
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAssetRequest'
+        description: Write Asset Request
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateAssetResponse'
+          description: successful operation
+        "400":
+          description: Bad request - server cannot process the request due to client
+            error
+      summary: This REST API writes data asset information to the data catalog configured
+        in fybrik
+  /deleteAsset:
+    delete:
+      operationId: deleteAsset
+      parameters:
+      - description: This header carries credential information related to relevant
+          catalog from which the asset information needs to be retrieved.
+        explode: false
+        in: header
+        name: X-Request-Datacatalog-Cred
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteAssetRequest'
+        description: Delete Asset Request
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteAssetResponse'
+          description: successful operation
+        "400":
+          description: Bad request - server cannot process the request due to client
+            error
+        "404":
+          description: id not found
+        "401":
+          description: Unauthorized
+      summary: This REST API deletes data asset
+  /updateAsset:
+    patch:
+      operationId: updateAsset
+      parameters:
+      - description: This header carries credential information related to accessing
+          the relevant destination catalog.
+        explode: false
+        in: header
+        name: X-Request-Datacatalog-Update-Cred
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAssetRequest'
+        description: Update Asset Request
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateAssetResponse'
+          description: successful operation
+        "400":
+          description: Bad request - server cannot process the request due to client
+            error
+        "404":
+          description: id not found
+        "401":
+          description: Unauthorized
+      summary: This REST API updates data asset information in the data catalog configured
+        in fybrik
+components:
+  schemas:
+    GetAssetRequest:
+      properties:
+        assetID:
+          type: string
+        operationType:
+          $ref: '#/components/schemas/OperationType'
+      required:
+      - assetID
+      - operationType
+      type: object
+    OperationType:
+      description: OperationType Type of operation requested for the asset
+      enum:
+      - read
+      type: string
+    GetAssetResponse:
+      properties:
+        credentials:
+          description: Vault plugin path where the data credentials will be stored
+            as kubernetes secrets This value is assumed to be known to the catalog
+            connector.
+          type: string
+        details:
+          $ref: '#/components/schemas/ResourceDetails'
+        resourceMetadata:
+          $ref: '#/components/schemas/ResourceMetadata'
+      required:
+      - credentials
+      - details
+      - resourceMetadata
+      type: object
+    ResourceDetails:
+      description: ResourceDetails includes asset connection details
+      properties:
+        connection:
+          $ref: '#/components/schemas/Connection'
+        dataFormat:
+          type: string
+      required:
+      - connection
+      type: object
+    ResourceMetadata:
+      description: ResourceMetadata defines model for resource metadata
+      properties:
+        columns:
+          description: Columns associated with the asset
+          items:
+            $ref: '#/components/schemas/ResourceColumn'
+          type: array
+        geography:
+          description: Geography of the resource
+          type: string
+        name:
+          description: Name of the resource
+          type: string
+        owner:
+          description: Owner of the resource
+          type: string
+        tags:
+          additionalProperties: true
+          type: object
+      type: object
+    ResourceColumn:
+      description: ResourceColumn represents a column in a tabular resource
+      properties:
+        name:
+          description: Name of the column
+          type: string
+        tags:
+          additionalProperties: true
+          type: object
+      required:
+      - name
+      type: object
+    CreateAssetRequest:
+      properties:
+        credentials:
+          description: The vault plugin path where the destination data credentials
+            will be stored as kubernetes secrets
+          type: string
+        destinationAssetID:
+          description: Asset ID to be used for the created asset
+          type: string
+        destinationCatalogID:
+          description: The destination catalog id in which the new asset will be created
+            based on the information provided in ResourceMetadata and ResourceDetails
+            field
+          type: string
+        details:
+          $ref: '#/components/schemas/ResourceDetails'
+        resourceMetadata:
+          $ref: '#/components/schemas/ResourceMetadata'
+      required:
+      - destinationCatalogID
+      - details
+      - resourceMetadata
+      type: object
+    CreateAssetResponse:
+      properties:
+        assetID:
+          description: The ID of the created asset based on the source asset information
+            given in CreateAssetRequest object
+          type: string
+      required:
+      - assetID
+      type: object
+    DeleteAssetRequest:
+      properties:
+        assetID:
+          type: string
+      required:
+      - assetID
+      type: object
+    DeleteAssetResponse:
+      properties:
+        status:
+          description: The deletion status
+          type: string
+      type: object
+    UpdateAssetRequest:
+      properties:
+        assetID:
+          type: string
+        columns:
+          description: New columns associated with the asset
+          items:
+            $ref: '#/components/schemas/ResourceColumn'
+          type: array
+        name:
+          description: New name of the resource
+          type: string
+        owner:
+          description: New owner of the resource
+          type: string
+        tags:
+          additionalProperties: true
+          type: object
+      required:
+      - assetID
+      type: object
+    UpdateAssetResponse:
+      properties:
+        status:
+          description: The updation status
+          type: string
+      type: object
+    AssetID:
+      type: string
+    Connection:
+      additionalProperties: true
+      properties:
+        name:
+          type: string
+      required:
+      - name
+      type: object
+    ConnectionType:
+      type: string
+    DataFormat:
+      type: string
+    Tags:
+      additionalProperties: true
+      type: object
