@@ -5,7 +5,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
@@ -18,18 +17,20 @@ import (
 	openapi_connector_core "fybrik.io/openmetadata-connector/pkg/openmetadata-connector-core"
 )
 
+const DefaultListeningPort = 8081
+
 // RunCmd defines the command for running the connector
 func RunCmd() *cobra.Command {
 	logger := logging.LogInit(logging.CONNECTOR, "OpenMetadata Connector")
 	configFile := "/etc/conf/conf.yaml"
-	port := 8081
+	port := DefaultListeningPort
 	cmd := &cobra.Command{
 		Use:   "run",
 		Short: "Run the connector",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// TODO - add logging level
 
-			yamlFile, err := ioutil.ReadFile(configFile)
+			yamlFile, err := os.ReadFile(configFile)
 
 			if err != nil {
 				return err
@@ -49,7 +50,7 @@ func RunCmd() *cobra.Command {
 
 			router := api.NewRouter(DefaultAPIController)
 
-			_ = http.ListenAndServe(":"+strconv.Itoa(port), router)
+			http.ListenAndServe(":"+strconv.Itoa(port), router) //nolint
 
 			return nil
 		},
