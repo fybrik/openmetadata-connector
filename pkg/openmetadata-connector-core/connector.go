@@ -12,26 +12,26 @@ import (
 	api "fybrik.io/openmetadata-connector/datacatalog-go/go"
 )
 
-// DefaultApiController binds http requests to an api service and writes the service results to the http response
-type DefaultApiController struct {
+// DefaultAPIController binds http requests to an api service and writes the service results to the http response
+type DefaultAPIController struct {
 	// replace 'DefaultAPIServicer' with 'OpenMetadataAPIServicer'
 	service      OpenMetadataAPIServicer
 	errorHandler api.ErrorHandler
 }
 
 // DefaultApiOption for how the controller is set up.
-type DefaultApiOption func(*DefaultApiController)
+type DefaultAPIOption func(*DefaultAPIController)
 
 // WithDefaultApiErrorHandler inject ErrorHandler into controller
-func WithDefaultAPIErrorHandler(h api.ErrorHandler) DefaultApiOption {
-	return func(c *DefaultApiController) {
+func WithDefaultAPIErrorHandler(h api.ErrorHandler) DefaultAPIOption {
+	return func(c *DefaultAPIController) {
 		c.errorHandler = h
 	}
 }
 
 // NewDefaultApiController creates a default api controller
-func NewOpenMetadataAPIController(s OpenMetadataAPIServicer, opts ...DefaultApiOption) api.Router {
-	controller := &DefaultApiController{
+func NewOpenMetadataAPIController(s OpenMetadataAPIServicer, opts ...DefaultAPIOption) api.Router {
+	controller := &DefaultAPIController{
 		service:      s,
 		errorHandler: api.DefaultErrorHandler,
 	}
@@ -44,7 +44,7 @@ func NewOpenMetadataAPIController(s OpenMetadataAPIServicer, opts ...DefaultApiO
 }
 
 // Routes returns all the api routes for the DefaultApiController
-func (c *DefaultApiController) Routes() api.Routes {
+func (c *DefaultAPIController) Routes() api.Routes {
 	return api.Routes{
 		api.Route{
 			Name:        "CreateAsset",
@@ -74,7 +74,7 @@ func (c *DefaultApiController) Routes() api.Routes {
 }
 
 // CreateAsset - This REST API writes data asset information to the data catalog configured in fybrik
-func (c *DefaultApiController) CreateAsset(w http.ResponseWriter, r *http.Request) {
+func (c *DefaultAPIController) CreateAsset(w http.ResponseWriter, r *http.Request) {
 	xRequestDatacatalogWriteCredParam := r.Header.Get("X-Request-Datacatalog-Write-Cred")
 
 	// CHANGE-FROM-GENERATED-CODE: we translate the body to be a CreateAssetRequest object
@@ -108,7 +108,7 @@ func (c *DefaultApiController) CreateAsset(w http.ResponseWriter, r *http.Reques
 }
 
 // DeleteAsset - This REST API deletes data asset
-func (c *DefaultApiController) DeleteAsset(w http.ResponseWriter, r *http.Request) {
+func (c *DefaultAPIController) DeleteAsset(w http.ResponseWriter, r *http.Request) {
 	xRequestDatacatalogCredParam := r.Header.Get("X-Request-Datacatalog-Cred")
 	deleteAssetRequestParam := api.DeleteAssetRequest{}
 	d := json.NewDecoder(r.Body)
@@ -133,7 +133,7 @@ func (c *DefaultApiController) DeleteAsset(w http.ResponseWriter, r *http.Reques
 }
 
 // GetAssetInfo - This REST API gets data asset information from the data catalog configured in fybrik for the data sets indicated in FybrikApplication yaml
-func (c *DefaultApiController) GetAssetInfo(w http.ResponseWriter, r *http.Request) {
+func (c *DefaultAPIController) GetAssetInfo(w http.ResponseWriter, r *http.Request) {
 	xRequestDatacatalogCredParam := r.Header.Get("X-Request-Datacatalog-Cred")
 	getAssetRequestParam := api.GetAssetRequest{}
 	d := json.NewDecoder(r.Body)
@@ -157,7 +157,7 @@ func (c *DefaultApiController) GetAssetInfo(w http.ResponseWriter, r *http.Reque
 }
 
 // UpdateAsset - This REST API updates data asset information in the data catalog configured in fybrik
-func (c *DefaultApiController) UpdateAsset(w http.ResponseWriter, r *http.Request) {
+func (c *DefaultAPIController) UpdateAsset(w http.ResponseWriter, r *http.Request) {
 	xRequestDatacatalogUpdateCredParam := r.Header.Get("X-Request-Datacatalog-Update-Cred")
 	updateAssetRequestParam := api.UpdateAssetRequest{}
 	d := json.NewDecoder(r.Body)
