@@ -17,10 +17,10 @@ import (
 
 	"github.com/rs/zerolog"
 
-	database_types "fybrik.io/openmetadata-connector/database-types"
 	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
 	api "fybrik.io/openmetadata-connector/datacatalog-go/go"
-	utils "fybrik.io/openmetadata-connector/utils"
+	database_types "fybrik.io/openmetadata-connector/pkg/openmetadata-connector-core/database-types"
+	utils "fybrik.io/openmetadata-connector/pkg/openmetadata-connector-core/utils"
 )
 
 type OpenMetadataApiService struct {

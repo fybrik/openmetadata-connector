@@ -22,7 +22,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	api "fybrik.io/openmetadata-connector/datacatalog-go/go"
-	openapi_connector_core "fybrik.io/openmetadata-connector/openmetadata-connector-core"
+	openapi_connector_core "fybrik.io/openmetadata-connector/pkg/openmetadata-connector-core"
 )
 
 // RunCmd defines the command for running the connector

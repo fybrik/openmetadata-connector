@@ -9,8 +9,8 @@ import (
 	zerolog "github.com/rs/zerolog"
 
 	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
-	utils "fybrik.io/openmetadata-connector/utils"
-	vault "fybrik.io/openmetadata-connector/vault"
+	utils "fybrik.io/openmetadata-connector/pkg/openmetadata-connector-core/utils"
+	vault "fybrik.io/openmetadata-connector/pkg/openmetadata-connector-core/vault"
 )
 
 type s3 struct {

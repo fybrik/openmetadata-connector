@@ -9,11 +9,11 @@ import (
 
 	zerolog "github.com/rs/zerolog"
 
-	database_types "fybrik.io/openmetadata-connector/database-types"
 	client "fybrik.io/openmetadata-connector/datacatalog-go-client"
 	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
 	api "fybrik.io/openmetadata-connector/datacatalog-go/go"
-	utils "fybrik.io/openmetadata-connector/utils"
+	database_types "fybrik.io/openmetadata-connector/pkg/openmetadata-connector-core/database-types"
+	utils "fybrik.io/openmetadata-connector/pkg/openmetadata-connector-core/utils"
 )
 
 func getTag(ctx context.Context, c *client.APIClient, tagFQN string) client.TagLabel {
