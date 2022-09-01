@@ -23,6 +23,8 @@ const ApplicationJSON = "application/json"
 var logger zerolog.Logger
 var jwtFile *os.File
 var mockVaultServer *httptest.Server
+var mockOMServer *httptest.Server
+var vaultConf map[interface{}]interface{}
 
 func mustAsJSON(t *testing.T, in interface{}) []byte {
 	result, err := json.Marshal(in)
@@ -40,7 +42,7 @@ func createMockVaultServer(t *testing.T) *httptest.Server {
 			return
 		}
 
-		if r.Method == "POST" && r.RequestURI == "/v1/auth/kubernetes/login" {
+		if r.Method == http.MethodPost && r.RequestURI == "/v1/auth/kubernetes/login" {
 			requestMap := make(map[string]interface{})
 			err = json.Unmarshal(requestBytes, &requestMap)
 			if err != nil {
@@ -71,7 +73,7 @@ func createMockVaultServer(t *testing.T) *httptest.Server {
 			return
 		}
 
-		if r.Method == "GET" {
+		if r.Method == http.MethodGet {
 			if r.Header.Get("X-Vault-Token") != Token {
 				t.Error(err)
 			}
@@ -93,7 +95,41 @@ func createMockVaultServer(t *testing.T) *httptest.Server {
 
 			return
 		}
-		t.Error(errors.New(""))
+		t.Fatal("unexpected request")
+	}))
+
+	return svr
+}
+
+func createMockOMServer(t *testing.T) *httptest.Server {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var response map[string]interface{}
+		requestBytes, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Fatal(err)
+			return
+		}
+
+		requestMap := make(map[string]interface{})
+		err = json.Unmarshal(requestBytes, &requestMap)
+		if err != nil {
+			t.Fatal(err)
+			return
+		}
+
+		if r.Method == http.MethodPost && r.RequestURI == "/v1/tags" {
+			response = map[string]interface{}{}
+		} else {
+			t.Fatal("unexpected request")
+		}
+
+		responseBytes := mustAsJSON(t, response)
+
+		w.Header().Add(ContentType, ApplicationJSON)
+		_, err = w.Write(responseBytes)
+		if err != nil {
+			t.Error(err)
+		}
 	}))
 
 	return svr

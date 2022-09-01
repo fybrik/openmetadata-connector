@@ -25,6 +25,12 @@ func setupSuite(t *testing.T) func() {
 	}
 
 	mockVaultServer = createMockVaultServer(t)
+	mockOMServer = createMockOMServer(t)
+
+	// populate vault configuration
+	vaultConf = make(map[interface{}]interface{})
+	vaultConf["address"] = mockVaultServer.URL
+	vaultConf["jwt_file_path"] = jwtFile.Name()
 
 	// Return a function to teardown the test
 	return func() {
@@ -37,10 +43,7 @@ func TestVault(t *testing.T) {
 	teardownSuite := setupSuite(t)
 	defer teardownSuite()
 
-	conf := make(map[interface{}]interface{})
-	conf["address"] = mockVaultServer.URL
-	conf["jwt_file_path"] = jwtFile.Name()
-	vaultClient := vault.NewVaultClient(conf, &logger)
+	vaultClient := vault.NewVaultClient(vaultConf, &logger)
 
 	token, err := vaultClient.GetToken()
 	if err != nil || token != Token {
@@ -56,4 +59,14 @@ func TestVault(t *testing.T) {
 	if err != nil || accessKey != AccessKey || secretKey != SecretKey {
 		t.Error(err)
 	}
+}
+
+func TestCreateAsset(t *testing.T) {
+	teardownSuite := setupSuite(t)
+	defer teardownSuite()
+
+	conf := make(map[interface{}]interface{})
+	conf["openmetadata_endpoint"] = mockOMServer.URL
+	conf["vault"] = vaultConf
+	NewOpenMetadataAPIService(conf, &logger)
 }
