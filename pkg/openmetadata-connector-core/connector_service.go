@@ -6,6 +6,7 @@ package openapiconnectorcore
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/rs/zerolog"
@@ -27,7 +28,7 @@ type OpenMetadataAPIService struct {
 }
 
 // CreateAsset - This REST API writes data asset information to the data catalog configured in fybrik
-func (s *OpenMetadataAPIService) CreateAsset(ctx context.Context,
+func (s *OpenMetadataAPIService) CreateAsset(ctx context.Context, //nolint
 	xRequestDatacatalogWriteCred string,
 	createAssetRequest *models.CreateAssetRequest) (api.ImplResponse, error) {
 	if !s.initialized {
@@ -39,9 +40,9 @@ func (s *OpenMetadataAPIService) CreateAsset(ctx context.Context,
 	// check whether connectionType is one of the connection types supported by the OM connector
 	dt, found := s.NameToDatabaseStruct[connectionType]
 	if !found {
-		s.logger.Error().Msg("currently, " + connectionType + " connection type not supported")
-		return api.Response(http.StatusBadRequest, nil), errors.New("currently, " + connectionType +
-			" connection type not supported")
+		s.logger.Error().Msg(fmt.Sprintf(ConnectionTypeNotSupported, connectionType))
+		return api.Response(http.StatusBadRequest, nil),
+			fmt.Errorf(ConnectionTypeNotSupported, connectionType)
 	}
 
 	c := s.getOpenMetadataClient()
@@ -194,14 +195,14 @@ func (s *OpenMetadataAPIService) UpdateAsset(ctx context.Context, xRequestDataca
 
 	found, table := s.findLatestAsset(ctx, c, assetID)
 	if !found {
-		s.logger.Error().Msg("Asset not found")
-		return api.Response(http.StatusNotFound, nil), errors.New("Asset not found")
+		s.logger.Error().Msg(AssetNotFound)
+		return api.Response(http.StatusNotFound, nil), errors.New(AssetNotFound)
 	}
 
 	err := s.enrichAsset(ctx, table, c, nil, nil, &updateAssetRequest.Name, &updateAssetRequest.Owner, nil,
 		updateAssetRequest.Tags, nil, updateAssetRequest.Columns, "")
 	if err != nil {
-		s.logger.Error().Msg("Asset enrichment failed")
+		s.logger.Error().Msg("asset enrichment failed")
 		return api.Response(http.StatusBadRequest, nil), err
 	}
 

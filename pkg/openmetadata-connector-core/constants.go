@@ -4,7 +4,9 @@
 package openapiconnectorcore
 
 const Add = "add"
+const AssetNotFound = "asset not found"
 const ConnectionType = "connectionType"
+const ConnectionTypeNotSupported = "currently, %s connection type not supported"
 const Credentials = "credentials"
 const DatabaseService = "databaseService"
 const DataFormat = "dataFormat"
@@ -13,7 +15,7 @@ const DefaultNumRetries = 500
 const DefaultSleepIntervalMS = 500
 const ErrorCallingCreateDatabaseService = "Error when calling `ServicesApi.CreateDatabaseService``: %v\n"
 const ErrorInPrepareOpenMetadataForFybrik = "Error in prepareOpenMetadataForFybrik: "
-const FailedToCovert = "Failed to convert connection additional properties to map"
+const FailedToCovert = "failed to convert connection additional properties to map"
 const FailedToCreateDatabaseService = "Failed to create Database Service: "
 const ForDatabaseServiceID = " for Database Service Id: "
 const Fybrik = "Fybrik"
@@ -29,3 +31,4 @@ const String = "string"
 const SucceededInCreatingDatabaseService = "Succeeded in creating Database Service: "
 const TypeListLengthLimit = 100
 const Value = "value"
+const XRequestDatacatalogCred = "X-Request-Datacatalog-Cred" //nolint

@@ -108,8 +108,8 @@ func (c *DefaultAPIController) CreateAsset(w http.ResponseWriter, r *http.Reques
 }
 
 // DeleteAsset - This REST API deletes data asset
-func (c *DefaultAPIController) DeleteAsset(w http.ResponseWriter, r *http.Request) {
-	xRequestDatacatalogCredParam := r.Header.Get("X-Request-Datacatalog-Cred")
+func (c *DefaultAPIController) DeleteAsset(w http.ResponseWriter, r *http.Request) { //nolint
+	xRequestDatacatalogCredParam := r.Header.Get(XRequestDatacatalogCred)
 	deleteAssetRequestParam := api.DeleteAssetRequest{}
 	d := json.NewDecoder(r.Body)
 	d.DisallowUnknownFields()
@@ -129,12 +129,12 @@ func (c *DefaultAPIController) DeleteAsset(w http.ResponseWriter, r *http.Reques
 	}
 	// If no error, encode the body and the result code
 	_ = api.EncodeJSONResponse(result.Body, &result.Code, w)
-
 }
 
-// GetAssetInfo - This REST API gets data asset information from the data catalog configured in fybrik for the data sets indicated in FybrikApplication yaml
-func (c *DefaultAPIController) GetAssetInfo(w http.ResponseWriter, r *http.Request) {
-	xRequestDatacatalogCredParam := r.Header.Get("X-Request-Datacatalog-Cred")
+// GetAssetInfo - This REST API gets data asset information from the data catalog configured in fybrik
+// for the data sets indicated in FybrikApplication yaml
+func (c *DefaultAPIController) GetAssetInfo(w http.ResponseWriter, r *http.Request) { //nolint
+	xRequestDatacatalogCredParam := r.Header.Get(XRequestDatacatalogCred)
 	getAssetRequestParam := api.GetAssetRequest{}
 	d := json.NewDecoder(r.Body)
 	d.DisallowUnknownFields()
