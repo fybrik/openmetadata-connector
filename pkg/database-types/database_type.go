@@ -4,9 +4,9 @@
 package databasetypes
 
 import (
-	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
-
 	zerolog "github.com/rs/zerolog"
+
+	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
 )
 
 type DatabaseType interface {

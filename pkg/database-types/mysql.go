@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"reflect"
 
+	zerolog "github.com/rs/zerolog"
+
 	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
 	utils "fybrik.io/openmetadata-connector/pkg/utils"
-
-	zerolog "github.com/rs/zerolog"
 )
 
 type mysql struct {
@@ -21,10 +21,10 @@ type mysql struct {
 func NewMysql(logger *zerolog.Logger) *mysql {
 	standardFields := map[string]bool{
 		DatabaseSchema: true,
-		"hostPort":     true,
-		"password":     true,
-		"scheme":       true,
-		"username":     true,
+		HostPort:       true,
+		Password:       true,
+		Scheme:         true,
+		Username:       true,
 	}
 	return &mysql{standardFields: standardFields, dataBase: dataBase{name: Mysql, logger: logger}}
 }
@@ -58,9 +58,9 @@ func (m *mysql) TableFQN(serviceName string, createAssetRequest *models.CreateAs
 	assetName := *createAssetRequest.DestinationAssetID
 	databaseSchema, found := connectionProperties[DatabaseSchema]
 	if found {
-		return serviceName + "." + Default + "." + databaseSchema.(string) + "." + assetName
+		return fmt.Sprintf("%s.%s.%s.%s", serviceName, Default, databaseSchema.(string), assetName)
 	}
-	return serviceName + "." + Default + "." + assetName
+	return fmt.Sprintf("%s.%s.%s", serviceName, Default, assetName)
 }
 
 func (m *mysql) EquivalentServiceConfigurations(requestConfig, serviceConfig map[string]interface{}) bool {
