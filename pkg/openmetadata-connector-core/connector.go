@@ -14,8 +14,8 @@ import (
 
 // DefaultApiController binds http requests to an api service and writes the service results to the http response
 type DefaultApiController struct {
-	// replace 'DefaultApiServicer' with 'OpenMetadataApiServicer'
-	service      OpenMetadataApiServicer
+	// replace 'DefaultAPIServicer' with 'OpenMetadataAPIServicer'
+	service      OpenMetadataAPIServicer
 	errorHandler api.ErrorHandler
 }
 
@@ -30,7 +30,7 @@ func WithDefaultAPIErrorHandler(h api.ErrorHandler) DefaultApiOption {
 }
 
 // NewDefaultApiController creates a default api controller
-func NewOpenMetadataAPIController(s OpenMetadataApiServicer, opts ...DefaultApiOption) api.Router {
+func NewOpenMetadataAPIController(s OpenMetadataAPIServicer, opts ...DefaultApiOption) api.Router {
 	controller := &DefaultApiController{
 		service:      s,
 		errorHandler: api.DefaultErrorHandler,

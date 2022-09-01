@@ -10,7 +10,7 @@ import (
 	api "fybrik.io/openmetadata-connector/datacatalog-go/go"
 )
 
-type OpenMetadataApiServicer interface {
+type OpenMetadataAPIServicer interface {
 	// CHANGE-FROM-GENERATED-CODE: replaced api.CreateAssetRequest with models.CreateAssetRequest
 	CreateAsset(context.Context, string, models.CreateAssetRequest) (api.ImplResponse, error)
 

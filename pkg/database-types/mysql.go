@@ -8,7 +8,7 @@ import (
 	"reflect"
 
 	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
-	utils "fybrik.io/openmetadata-connector/pkg/openmetadata-connector-core/utils"
+	utils "fybrik.io/openmetadata-connector/pkg/utils"
 
 	zerolog "github.com/rs/zerolog"
 )

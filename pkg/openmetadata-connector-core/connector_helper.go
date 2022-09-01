@@ -15,8 +15,8 @@ import (
 	client "fybrik.io/openmetadata-connector/datacatalog-go-client"
 	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
 	api "fybrik.io/openmetadata-connector/datacatalog-go/go"
-	database_types "fybrik.io/openmetadata-connector/pkg/openmetadata-connector-core/database-types"
-	utils "fybrik.io/openmetadata-connector/pkg/openmetadata-connector-core/utils"
+	database_types "fybrik.io/openmetadata-connector/pkg/database-types"
+	utils "fybrik.io/openmetadata-connector/pkg/utils"
 )
 
 func getTag(ctx context.Context, c *client.APIClient, tagFQN string) client.TagLabel {
@@ -52,7 +52,7 @@ func tagColumn(ctx context.Context, c *client.APIClient, columns []client.Column
 	return columns
 }
 
-func (s *OpenMetadataApiService) prepareOpenMetadataForFybrik() bool {
+func (s *OpenMetadataAPIService) prepareOpenMetadataForFybrik() bool {
 	ctx := context.Background()
 	c := s.getOpenMetadataClient()
 
@@ -139,7 +139,7 @@ func (s *OpenMetadataApiService) prepareOpenMetadataForFybrik() bool {
 
 // NewOpenMetadataApiService creates a new api service.
 // It is initialized base on the configuration
-func NewOpenMetadataAPIService(conf map[interface{}]interface{}, logger *zerolog.Logger) OpenMetadataApiServicer {
+func NewOpenMetadataAPIService(conf map[interface{}]interface{}, logger *zerolog.Logger) OpenMetadataAPIServicer {
 	var SleepIntervalMS int
 	var NumRetries int
 
@@ -166,7 +166,7 @@ func NewOpenMetadataAPIService(conf map[interface{}]interface{}, logger *zerolog
 	nameToDatabaseStruct[MysqlLowercase] = database_types.NewMysql(logger)
 	nameToDatabaseStruct[S3] = database_types.NewS3(vaultConf, logger)
 
-	s := &OpenMetadataApiService{Endpoint: conf["openmetadata_endpoint"].(string),
+	s := &OpenMetadataAPIService{Endpoint: conf["openmetadata_endpoint"].(string),
 		SleepIntervalMS:      SleepIntervalMS,
 		NumRetries:           NumRetries,
 		NameToDatabaseStruct: nameToDatabaseStruct,
@@ -178,7 +178,7 @@ func NewOpenMetadataAPIService(conf map[interface{}]interface{}, logger *zerolog
 	return s
 }
 
-func (s *OpenMetadataApiService) getOpenMetadataClient() *client.APIClient {
+func (s *OpenMetadataAPIService) getOpenMetadataClient() *client.APIClient {
 	conf := client.Configuration{Servers: client.ServerConfigurations{
 		client.ServerConfiguration{
 			URL:         s.Endpoint,
@@ -190,7 +190,7 @@ func (s *OpenMetadataApiService) getOpenMetadataClient() *client.APIClient {
 }
 
 // traverse database services looking for a service with identical configuration
-func (s *OpenMetadataApiService) findService(ctx context.Context,
+func (s *OpenMetadataAPIService) findService(ctx context.Context,
 	c *client.APIClient,
 	dt database_types.DatabaseType,
 	connectionProperties map[string]interface{}) (string, string, bool) {
@@ -222,7 +222,7 @@ func (s *OpenMetadataApiService) findService(ctx context.Context,
 	return "", "", false
 }
 
-func (s *OpenMetadataApiService) createDatabaseService(ctx context.Context,
+func (s *OpenMetadataAPIService) createDatabaseService(ctx context.Context,
 	c *client.APIClient,
 	createAssetRequest *models.CreateAssetRequest,
 	connectionName string,
@@ -260,7 +260,7 @@ func (s *OpenMetadataApiService) createDatabaseService(ctx context.Context,
 	return databaseService.Id, *databaseService.FullyQualifiedName, nil
 }
 
-func (s *OpenMetadataApiService) findAsset(ctx context.Context, c *client.APIClient, assetID string) (bool, *client.Table) {
+func (s *OpenMetadataAPIService) findAsset(ctx context.Context, c *client.APIClient, assetID string) (bool, *client.Table) {
 	fields := "tags"
 	include := "all"
 	table, r, err := c.TablesApi.GetTableByFQN(ctx, assetID).Fields(fields).Include(include).Execute()
@@ -273,7 +273,7 @@ func (s *OpenMetadataApiService) findAsset(ctx context.Context, c *client.APICli
 	return err == nil, table
 }
 
-func (s *OpenMetadataApiService) findLatestAsset(ctx context.Context, c *client.APIClient, assetID string) (bool, *client.Table) {
+func (s *OpenMetadataAPIService) findLatestAsset(ctx context.Context, c *client.APIClient, assetID string) (bool, *client.Table) {
 	found, table := s.findAsset(ctx, c, assetID)
 	if !found {
 		return false, nil
@@ -292,7 +292,7 @@ func (s *OpenMetadataApiService) findLatestAsset(ctx context.Context, c *client.
 	return true, table
 }
 
-func (s *OpenMetadataApiService) findIngestionPipeline(ctx context.Context, c *client.APIClient,
+func (s *OpenMetadataAPIService) findIngestionPipeline(ctx context.Context, c *client.APIClient,
 	ingestionPipelineName string) (string, bool) {
 	pipeline, r, err := c.IngestionPipelinesApi.GetSpecificIngestionPipelineByFQN(ctx, ingestionPipelineName).Execute()
 	if err != nil {
@@ -304,7 +304,7 @@ func (s *OpenMetadataApiService) findIngestionPipeline(ctx context.Context, c *c
 	return *pipeline.Id, true
 }
 
-func (s *OpenMetadataApiService) createIngestionPipeline(ctx context.Context,
+func (s *OpenMetadataAPIService) createIngestionPipeline(ctx context.Context,
 	c *client.APIClient,
 	databaseServiceID string,
 	ingestionPipelineName string) (string, error) {
@@ -327,7 +327,7 @@ func (s *OpenMetadataApiService) createIngestionPipeline(ctx context.Context,
 	return *ingestionPipeline.Id, nil
 }
 
-func (s *OpenMetadataApiService) findOrCreateDatabase(ctx context.Context,
+func (s *OpenMetadataAPIService) findOrCreateDatabase(ctx context.Context,
 	c *client.APIClient,
 	databaseServiceID string,
 	databaseFQN string,
@@ -351,7 +351,7 @@ func (s *OpenMetadataApiService) findOrCreateDatabase(ctx context.Context,
 	return *database.Id, nil
 }
 
-func (s *OpenMetadataApiService) findOrCreateDatabaseSchema(ctx context.Context,
+func (s *OpenMetadataAPIService) findOrCreateDatabaseSchema(ctx context.Context,
 	c *client.APIClient,
 	databaseID string,
 	databaseSchemaFQN string,
@@ -374,7 +374,7 @@ func (s *OpenMetadataApiService) findOrCreateDatabaseSchema(ctx context.Context,
 	return *databaseSchema.Id, nil
 }
 
-func (s *OpenMetadataApiService) createTable(ctx context.Context,
+func (s *OpenMetadataAPIService) createTable(ctx context.Context,
 	c *client.APIClient,
 	databaseSchemaID string,
 	tableName string,
@@ -393,7 +393,7 @@ func (s *OpenMetadataApiService) createTable(ctx context.Context,
 
 // enrichAsset is called after asset is created, or during an updateAsset request
 // OM uses the JsonPatch format for updates
-func (s *OpenMetadataApiService) enrichAsset(ctx context.Context, table *client.Table, c *client.APIClient,
+func (s *OpenMetadataAPIService) enrichAsset(ctx context.Context, table *client.Table, c *client.APIClient,
 	credentials *string, geography *string, name *string, owner *string,
 	dataFormat *string,
 	requestTags map[string]interface{},
@@ -463,7 +463,7 @@ func (s *OpenMetadataApiService) enrichAsset(ctx context.Context, table *client.
 	return nil
 }
 
-func (s *OpenMetadataApiService) deleteAsset(ctx context.Context, c *client.APIClient, assetID string) (int, error) {
+func (s *OpenMetadataAPIService) deleteAsset(ctx context.Context, c *client.APIClient, assetID string) (int, error) {
 	table, r, err := c.TablesApi.GetTableByFQN(ctx, assetID).Execute()
 	if err != nil {
 		s.logger.Error().Msg("Asset deletion failed -- asset not found")
@@ -486,7 +486,7 @@ func (s *OpenMetadataApiService) deleteAsset(ctx context.Context, c *client.APIC
 // populate the values in a GetAssetResponse structure to include everything:
 // credentials, name, owner, geography, dataFormat, connection informations,
 // tags, and columns
-func (s *OpenMetadataApiService) constructAssetResponse(ctx context.Context,
+func (s *OpenMetadataAPIService) constructAssetResponse(ctx context.Context,
 	c *client.APIClient,
 	table *client.Table) (*models.GetAssetResponse, error) {
 	// Let's begin by finding the Database Service.

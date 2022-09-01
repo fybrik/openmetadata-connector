@@ -12,11 +12,11 @@ import (
 
 	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
 	api "fybrik.io/openmetadata-connector/datacatalog-go/go"
-	database_types "fybrik.io/openmetadata-connector/pkg/openmetadata-connector-core/database-types"
-	utils "fybrik.io/openmetadata-connector/pkg/openmetadata-connector-core/utils"
+	database_types "fybrik.io/openmetadata-connector/pkg/database-types"
+	utils "fybrik.io/openmetadata-connector/pkg/utils"
 )
 
-type OpenMetadataApiService struct {
+type OpenMetadataAPIService struct {
 	Endpoint             string
 	SleepIntervalMS      int
 	NumRetries           int
@@ -27,7 +27,7 @@ type OpenMetadataApiService struct {
 }
 
 // CreateAsset - This REST API writes data asset information to the data catalog configured in fybrik
-func (s *OpenMetadataApiService) CreateAsset(ctx context.Context,
+func (s *OpenMetadataAPIService) CreateAsset(ctx context.Context,
 	xRequestDatacatalogWriteCred string,
 	createAssetRequest models.CreateAssetRequest) (api.ImplResponse, error) {
 	if !s.initialized {
@@ -94,7 +94,7 @@ func (s *OpenMetadataApiService) CreateAsset(ctx context.Context,
 	if !found {
 		// Let us create an ingestion pipeline
 		s.logger.Info().Msg("Ingestion Pipeline not found. Creating.")
-		//ingestionPipelineID, err = s.createIngestionPipeline(ctx, c, databaseServiceId, ingestionPipelineName)
+		// ingestionPipelineID, err = s.createIngestionPipeline(ctx, c, databaseServiceId, ingestionPipelineName)
 		_, err = s.createIngestionPipeline(ctx, c, databaseServiceId, ingestionPipelineName)
 	}
 
@@ -136,7 +136,7 @@ func (s *OpenMetadataApiService) CreateAsset(ctx context.Context,
 }
 
 // DeleteAsset - This REST API deletes data asset
-func (s *OpenMetadataApiService) DeleteAsset(ctx context.Context, xRequestDatacatalogCred string, deleteAssetRequest api.DeleteAssetRequest) (api.ImplResponse, error) {
+func (s *OpenMetadataAPIService) DeleteAsset(ctx context.Context, xRequestDatacatalogCred string, deleteAssetRequest api.DeleteAssetRequest) (api.ImplResponse, error) {
 	if !s.initialized {
 		s.initialized = s.prepareOpenMetadataForFybrik()
 	}
@@ -154,7 +154,7 @@ func (s *OpenMetadataApiService) DeleteAsset(ctx context.Context, xRequestDataca
 }
 
 // GetAssetInfo - This REST API gets data asset information from the data catalog configured in fybrik for the data sets indicated in FybrikApplication yaml
-func (s *OpenMetadataApiService) GetAssetInfo(ctx context.Context, xRequestDatacatalogCred string, getAssetRequest api.GetAssetRequest) (api.ImplResponse, error) {
+func (s *OpenMetadataAPIService) GetAssetInfo(ctx context.Context, xRequestDatacatalogCred string, getAssetRequest api.GetAssetRequest) (api.ImplResponse, error) {
 	if !s.initialized {
 		s.initialized = s.prepareOpenMetadataForFybrik()
 	}
@@ -180,7 +180,7 @@ func (s *OpenMetadataApiService) GetAssetInfo(ctx context.Context, xRequestDatac
 }
 
 // UpdateAsset - This REST API updates data asset information in the data catalog configured in fybrik
-func (s *OpenMetadataApiService) UpdateAsset(ctx context.Context, xRequestDatacatalogUpdateCred string, updateAssetRequest api.UpdateAssetRequest) (api.ImplResponse, error) {
+func (s *OpenMetadataAPIService) UpdateAsset(ctx context.Context, xRequestDatacatalogUpdateCred string, updateAssetRequest api.UpdateAssetRequest) (api.ImplResponse, error) {
 	if !s.initialized {
 		s.initialized = s.prepareOpenMetadataForFybrik()
 	}
