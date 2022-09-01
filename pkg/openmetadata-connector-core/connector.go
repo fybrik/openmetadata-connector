@@ -97,7 +97,7 @@ func (c *DefaultApiController) CreateAsset(w http.ResponseWriter, r *http.Reques
 	//	return
 	//}
 
-	result, err := c.service.CreateAsset(r.Context(), xRequestDatacatalogWriteCredParam, createAssetRequestParam)
+	result, err := c.service.CreateAsset(r.Context(), xRequestDatacatalogWriteCredParam, &createAssetRequestParam)
 	// If an error occurred, encode the error with the status code
 	if err != nil {
 		c.errorHandler(w, r, err, &result)
@@ -121,7 +121,7 @@ func (c *DefaultApiController) DeleteAsset(w http.ResponseWriter, r *http.Reques
 		c.errorHandler(w, r, err, nil)
 		return
 	}
-	result, err := c.service.DeleteAsset(r.Context(), xRequestDatacatalogCredParam, deleteAssetRequestParam)
+	result, err := c.service.DeleteAsset(r.Context(), xRequestDatacatalogCredParam, &deleteAssetRequestParam)
 	// If an error occurred, encode the error with the status code
 	if err != nil {
 		c.errorHandler(w, r, err, &result)
@@ -146,7 +146,7 @@ func (c *DefaultApiController) GetAssetInfo(w http.ResponseWriter, r *http.Reque
 		c.errorHandler(w, r, err, nil)
 		return
 	}
-	result, err := c.service.GetAssetInfo(r.Context(), xRequestDatacatalogCredParam, getAssetRequestParam)
+	result, err := c.service.GetAssetInfo(r.Context(), xRequestDatacatalogCredParam, &getAssetRequestParam)
 	// If an error occurred, encode the error with the status code
 	if err != nil {
 		c.errorHandler(w, r, err, &result)
@@ -170,7 +170,7 @@ func (c *DefaultApiController) UpdateAsset(w http.ResponseWriter, r *http.Reques
 		c.errorHandler(w, r, err, nil)
 		return
 	}
-	result, err := c.service.UpdateAsset(r.Context(), xRequestDatacatalogUpdateCredParam, updateAssetRequestParam)
+	result, err := c.service.UpdateAsset(r.Context(), xRequestDatacatalogUpdateCredParam, &updateAssetRequestParam)
 	// If an error occurred, encode the error with the status code
 	if err != nil {
 		c.errorHandler(w, r, err, &result)

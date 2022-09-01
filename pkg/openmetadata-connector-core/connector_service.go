@@ -29,7 +29,7 @@ type OpenMetadataAPIService struct {
 // CreateAsset - This REST API writes data asset information to the data catalog configured in fybrik
 func (s *OpenMetadataAPIService) CreateAsset(ctx context.Context,
 	xRequestDatacatalogWriteCred string,
-	createAssetRequest models.CreateAssetRequest) (api.ImplResponse, error) {
+	createAssetRequest *models.CreateAssetRequest) (api.ImplResponse, error) {
 	if !s.initialized {
 		s.initialized = s.prepareOpenMetadataForFybrik()
 	}
@@ -66,7 +66,7 @@ func (s *OpenMetadataAPIService) CreateAsset(ctx context.Context,
 	if !found {
 		// If does not exist, let us create database service
 		databaseServiceID, databaseServiceName, err =
-			s.createDatabaseService(ctx, c, &createAssetRequest, connectionType, omConfig, dt.OMTypeName())
+			s.createDatabaseService(ctx, c, createAssetRequest, connectionType, omConfig, dt.OMTypeName())
 		if err != nil {
 			s.logger.Error().Msg("unable to create Database Service for " + dt.OMTypeName() + " connection")
 			return api.Response(http.StatusBadRequest, nil), err
@@ -74,7 +74,7 @@ func (s *OpenMetadataAPIService) CreateAsset(ctx context.Context,
 	}
 
 	// now that we know the of the database service, we can determine the asset name in OpenMetadata
-	assetID := dt.TableFQN(databaseServiceName, &createAssetRequest)
+	assetID := dt.TableFQN(databaseServiceName, createAssetRequest)
 
 	// Let's check whether OM already has this asset
 	found, _ = s.findAsset(ctx, c, assetID)
@@ -99,18 +99,18 @@ func (s *OpenMetadataAPIService) CreateAsset(ctx context.Context,
 	}
 
 	databaseID, err := s.findOrCreateDatabase(ctx, c, databaseServiceID,
-		dt.DatabaseFQN(databaseServiceName, &createAssetRequest),
-		dt.DatabaseName(&createAssetRequest))
+		dt.DatabaseFQN(databaseServiceName, createAssetRequest),
+		dt.DatabaseName(createAssetRequest))
 	if err != nil {
 		return api.Response(http.StatusBadRequest, nil), err
 	}
 
 	databaseSchemaID, _ := s.findOrCreateDatabaseSchema(ctx, c, databaseID,
-		dt.DatabaseSchemaFQN(databaseServiceName, &createAssetRequest),
-		dt.DatabaseSchemaName(&createAssetRequest))
+		dt.DatabaseSchemaFQN(databaseServiceName, createAssetRequest),
+		dt.DatabaseSchemaName(createAssetRequest))
 
 	columns := utils.ExtractColumns(createAssetRequest.ResourceMetadata.Columns)
-	table, err := s.createTable(ctx, c, databaseSchemaID, dt.TableName(&createAssetRequest), columns)
+	table, err := s.createTable(ctx, c, databaseSchemaID, dt.TableName(createAssetRequest), columns)
 	if err != nil {
 		return api.Response(http.StatusBadRequest, nil), err
 	}
@@ -137,7 +137,7 @@ func (s *OpenMetadataAPIService) CreateAsset(ctx context.Context,
 
 // DeleteAsset - This REST API deletes data asset
 func (s *OpenMetadataAPIService) DeleteAsset(ctx context.Context, xRequestDatacatalogCred string,
-	deleteAssetRequest api.DeleteAssetRequest) (api.ImplResponse, error) {
+	deleteAssetRequest *api.DeleteAssetRequest) (api.ImplResponse, error) {
 	if !s.initialized {
 		s.initialized = s.prepareOpenMetadataForFybrik()
 	}
@@ -157,7 +157,7 @@ func (s *OpenMetadataAPIService) DeleteAsset(ctx context.Context, xRequestDataca
 // GetAssetInfo - This REST API gets data asset information from the data catalog configured in
 // fybrik for the data sets indicated in FybrikApplication yaml
 func (s *OpenMetadataAPIService) GetAssetInfo(ctx context.Context, xRequestDatacatalogCred string,
-	getAssetRequest api.GetAssetRequest) (api.ImplResponse, error) {
+	getAssetRequest *api.GetAssetRequest) (api.ImplResponse, error) {
 	if !s.initialized {
 		s.initialized = s.prepareOpenMetadataForFybrik()
 	}
@@ -169,7 +169,7 @@ func (s *OpenMetadataAPIService) GetAssetInfo(ctx context.Context, xRequestDatac
 	found, table := s.findLatestAsset(ctx, c, assetID)
 	if !found {
 		s.logger.Error().Msg("Asset not found")
-		return api.Response(http.StatusNotFound, nil), errors.New("Asset not found")
+		return api.Response(http.StatusNotFound, nil), errors.New("asset not found")
 	}
 
 	assetResponse, err := s.constructAssetResponse(ctx, c, table)
@@ -183,15 +183,16 @@ func (s *OpenMetadataAPIService) GetAssetInfo(ctx context.Context, xRequestDatac
 }
 
 // UpdateAsset - This REST API updates data asset information in the data catalog configured in fybrik
-func (s *OpenMetadataAPIService) UpdateAsset(ctx context.Context, xRequestDatacatalogUpdateCred string, updateAssetRequest api.UpdateAssetRequest) (api.ImplResponse, error) {
+func (s *OpenMetadataAPIService) UpdateAsset(ctx context.Context, xRequestDatacatalogUpdateCred string,
+	updateAssetRequest *api.UpdateAssetRequest) (api.ImplResponse, error) {
 	if !s.initialized {
 		s.initialized = s.prepareOpenMetadataForFybrik()
 	}
 
 	c := s.getOpenMetadataClient()
-	assetId := updateAssetRequest.AssetID
+	assetID := updateAssetRequest.AssetID
 
-	found, table := s.findLatestAsset(ctx, c, assetId)
+	found, table := s.findLatestAsset(ctx, c, assetID)
 	if !found {
 		s.logger.Error().Msg("Asset not found")
 		return api.Response(http.StatusNotFound, nil), errors.New("Asset not found")

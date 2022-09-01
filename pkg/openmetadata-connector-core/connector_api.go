@@ -12,9 +12,9 @@ import (
 
 type OpenMetadataAPIServicer interface {
 	// CHANGE-FROM-GENERATED-CODE: replaced api.CreateAssetRequest with models.CreateAssetRequest
-	CreateAsset(context.Context, string, models.CreateAssetRequest) (api.ImplResponse, error)
+	CreateAsset(context.Context, string, *models.CreateAssetRequest) (api.ImplResponse, error)
 
-	DeleteAsset(context.Context, string, api.DeleteAssetRequest) (api.ImplResponse, error)
-	GetAssetInfo(context.Context, string, api.GetAssetRequest) (api.ImplResponse, error)
-	UpdateAsset(context.Context, string, api.UpdateAssetRequest) (api.ImplResponse, error)
+	DeleteAsset(context.Context, string, *api.DeleteAssetRequest) (api.ImplResponse, error)
+	GetAssetInfo(context.Context, string, *api.GetAssetRequest) (api.ImplResponse, error)
+	UpdateAsset(context.Context, string, *api.UpdateAssetRequest) (api.ImplResponse, error)
 }
