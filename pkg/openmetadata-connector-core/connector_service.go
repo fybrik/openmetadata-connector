@@ -46,7 +46,7 @@ func (s *OpenMetadataAPIService) CreateAsset(ctx context.Context,
 
 	c := s.getOpenMetadataClient()
 
-	var databaseServiceId string
+	var databaseServiceID string
 	var databaseServiceName string
 	var err error
 
@@ -61,11 +61,12 @@ func (s *OpenMetadataAPIService) CreateAsset(ctx context.Context,
 	}
 	omConfig := dt.TranslateFybrikConfigToOpenMetadataConfig(config, createAssetRequest.Credentials)
 	// step 2: compare the transformed connection information to that of all existing services
-	databaseServiceId, databaseServiceName, found = s.findService(ctx, c, dt, omConfig)
+	databaseServiceID, databaseServiceName, found = s.findService(ctx, c, dt, omConfig)
 
 	if !found {
 		// If does not exist, let us create database service
-		databaseServiceId, databaseServiceName, err = s.createDatabaseService(ctx, c, &createAssetRequest, connectionType, omConfig, dt.OMTypeName())
+		databaseServiceID, databaseServiceName, err =
+			s.createDatabaseService(ctx, c, &createAssetRequest, connectionType, omConfig, dt.OMTypeName())
 		if err != nil {
 			s.logger.Error().Msg("unable to create Database Service for " + dt.OMTypeName() + " connection")
 			return api.Response(http.StatusBadRequest, nil), err
@@ -73,13 +74,13 @@ func (s *OpenMetadataAPIService) CreateAsset(ctx context.Context,
 	}
 
 	// now that we know the of the database service, we can determine the asset name in OpenMetadata
-	assetId := dt.TableFQN(databaseServiceName, &createAssetRequest)
+	assetID := dt.TableFQN(databaseServiceName, &createAssetRequest)
 
 	// Let's check whether OM already has this asset
-	found, _ = s.findAsset(ctx, c, assetId)
+	found, _ = s.findAsset(ctx, c, assetID)
 	if found {
 		s.logger.Error().Msg("Could not create asset, as asset already exists")
-		return api.Response(http.StatusBadRequest, nil), errors.New("Asset already exists")
+		return api.Response(http.StatusBadRequest, nil), errors.New("asset already exists")
 	}
 
 	// Asset not discovered yet
@@ -87,30 +88,29 @@ func (s *OpenMetadataAPIService) CreateAsset(ctx context.Context,
 	ingestionPipelineName := "pipeline-" + createAssetRequest.DestinationCatalogID + "." + *createAssetRequest.DestinationAssetID
 	ingestionPipelineNameFull := utils.AppendStrings(databaseServiceName, ingestionPipelineName)
 
-	//var ingestionPipelineID string
-	//ingestionPipelineID, found = s.findIngestionPipeline(ctx, c, ingestionPipelineNameFull)
+	// var ingestionPipelineID string nolint
+	// ingestionPipelineID, found = s.findIngestionPipeline(ctx, c, ingestionPipelineNameFull)
 	_, found = s.findIngestionPipeline(ctx, c, ingestionPipelineNameFull)
 
 	if !found {
 		// Let us create an ingestion pipeline
 		s.logger.Info().Msg("Ingestion Pipeline not found. Creating.")
-		// ingestionPipelineID, err = s.createIngestionPipeline(ctx, c, databaseServiceId, ingestionPipelineName)
-		_, err = s.createIngestionPipeline(ctx, c, databaseServiceId, ingestionPipelineName)
+		_, _ = s.createIngestionPipeline(ctx, c, databaseServiceID, ingestionPipelineName)
 	}
 
-	databaseId, err := s.findOrCreateDatabase(ctx, c, databaseServiceId,
+	databaseID, err := s.findOrCreateDatabase(ctx, c, databaseServiceID,
 		dt.DatabaseFQN(databaseServiceName, &createAssetRequest),
 		dt.DatabaseName(&createAssetRequest))
 	if err != nil {
 		return api.Response(http.StatusBadRequest, nil), err
 	}
 
-	databaseSchemaId, _ := s.findOrCreateDatabaseSchema(ctx, c, databaseId,
+	databaseSchemaID, _ := s.findOrCreateDatabaseSchema(ctx, c, databaseID,
 		dt.DatabaseSchemaFQN(databaseServiceName, &createAssetRequest),
 		dt.DatabaseSchemaName(&createAssetRequest))
 
 	columns := utils.ExtractColumns(createAssetRequest.ResourceMetadata.Columns)
-	table, err := s.createTable(ctx, c, databaseSchemaId, dt.TableName(&createAssetRequest), columns)
+	table, err := s.createTable(ctx, c, databaseSchemaID, dt.TableName(&createAssetRequest), columns)
 	if err != nil {
 		return api.Response(http.StatusBadRequest, nil), err
 	}
@@ -132,11 +132,12 @@ func (s *OpenMetadataAPIService) CreateAsset(ctx context.Context,
 
 	s.logger.Info().Msg("Asset creation and enrichment successful")
 
-	return api.Response(http.StatusCreated, api.CreateAssetResponse{AssetID: assetId}), nil
+	return api.Response(http.StatusCreated, api.CreateAssetResponse{AssetID: assetID}), nil
 }
 
 // DeleteAsset - This REST API deletes data asset
-func (s *OpenMetadataAPIService) DeleteAsset(ctx context.Context, xRequestDatacatalogCred string, deleteAssetRequest api.DeleteAssetRequest) (api.ImplResponse, error) {
+func (s *OpenMetadataAPIService) DeleteAsset(ctx context.Context, xRequestDatacatalogCred string,
+	deleteAssetRequest api.DeleteAssetRequest) (api.ImplResponse, error) {
 	if !s.initialized {
 		s.initialized = s.prepareOpenMetadataForFybrik()
 	}
@@ -150,11 +151,13 @@ func (s *OpenMetadataAPIService) DeleteAsset(ctx context.Context, xRequestDataca
 	}
 
 	s.logger.Info().Msg("Asset deletion successful")
-	return api.Response(200, api.DeleteAssetResponse{}), nil
+	return api.Response(http.StatusOK, api.DeleteAssetResponse{}), nil
 }
 
-// GetAssetInfo - This REST API gets data asset information from the data catalog configured in fybrik for the data sets indicated in FybrikApplication yaml
-func (s *OpenMetadataAPIService) GetAssetInfo(ctx context.Context, xRequestDatacatalogCred string, getAssetRequest api.GetAssetRequest) (api.ImplResponse, error) {
+// GetAssetInfo - This REST API gets data asset information from the data catalog configured in
+// fybrik for the data sets indicated in FybrikApplication yaml
+func (s *OpenMetadataAPIService) GetAssetInfo(ctx context.Context, xRequestDatacatalogCred string,
+	getAssetRequest api.GetAssetRequest) (api.ImplResponse, error) {
 	if !s.initialized {
 		s.initialized = s.prepareOpenMetadataForFybrik()
 	}
