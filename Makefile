@@ -9,6 +9,14 @@ GIT_REPO_ID_CLIENT := datacatalog-go-client
 
 FYBRIK_VERSION ?= v1.0.1
 
+DOCKER_HOSTNAME ?= ghcr.io
+DOCKER_NAMESPACE ?= fybrik
+DOCKER_TAG ?= 0.0.0
+DOCKER_NAME ?= openmetadata-connector
+
+IMG := ${DOCKER_HOSTNAME}/${DOCKER_NAMESPACE}/${DOCKER_NAME}:${DOCKER_TAG}
+export HELM_EXPERIMENTAL_OCI=1
+
 TMP_FILE = tmpfile.tmp
 
 all: compile
@@ -62,3 +70,15 @@ generate-code:
 patch: generate-code
 	awk '($$1 != "\"github.com/gorilla/mux\"") {print}' auto-generated/api/go/api_default.go > ${TMP_FILE}
 	mv ${TMP_FILE} auto-generated/api/go/api_default.go
+
+.PHONY: build
+build: compile
+	docker build . -t ${IMG}; cd ..
+
+.PHONY: docker-push
+docker-push:
+	docker push ${IMG}
+
+.PHONY: push-to-kind
+push-to-kind:
+	kind load docker-image ${IMG}
