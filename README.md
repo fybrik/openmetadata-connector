@@ -30,7 +30,7 @@ The configuration file also contains a path to a JWT file which is used to ident
 [database_type.go](pkg/database-types/database_type.go) file, which defines the DatabaseType interface. It also contains 
 [mysql.go](pkg/database-types/mysql.go) and [s3.go](pkg/database-types/s3.go) which provide implementations of the 
 DatabaseType interface for `mysql` and `s3`.
-- [pkg/copenmetadata-connector-core](pkg/openmetadata-connector-core): The core files of openmetadata connector, they 
+- [pkg/openmetadata-connector-core](pkg/openmetadata-connector-core): The core files of openmetadata connector, they 
 are implement the connector REST API.  
 - [pkg/utils](pkg/utils): Includes utility methods used in the connector code
 - [pkg/vault](pkg/vault): Includes methods to obtain a token and secrets from Vault
