@@ -19,13 +19,21 @@ To run the connector locally, run:
 make run
 ```
 
-`make run` runs the connector with the configuration file in `conf/conf.yaml`. This configuration assumes that OM is running on localhost and listening on port 8585. In addition, it assumes that Vault is running on localhost too and listening on port 8200. If that is not the case, change the configuration file or employ port-forwarding.
+`make run` runs the connector with the configuration file in `conf/conf.yaml`. This configuration assumes that OM is 
+running on localhost and listening on port 8585. In addition, it assumes that Vault is running on localhost too and 
+listening on port 8200. If that is not the case, change the configuration file or employ port-forwarding.
 The configuration file also contains a path to a JWT file which is used to identify against Vault.
 
 ## Directory Structure
-- [database-types](database-types): Currently, the OM connector supports two types of data sources: mysql and s3 (future versions may support additional data sources). The direcory contains the [database_type.go](database-types/database_type.go) file, which defines the DatabaseType interface. It also contains [mysql.go](database-types/mysql.go) and [s3.go](database-types/s3.go) which provide implementations of the DatabaseType interface for `mysql` and `s3`.
-- [utils](utils): Includes utility methods used in the connector code
-- [vault](vault): Includes methods to obtain a token and secrets from Vault
+- [pkg/database-types](pkg/database-types): Currently, the OM connector supports two types of data sources: mysql and s3 
+(future versions may support additional data sources). The direcory contains the
+[database_type.go](pkg/database-types/database_type.go) file, which defines the DatabaseType interface. It also contains 
+[mysql.go](pkg/database-types/mysql.go) and [s3.go](pkg/database-types/s3.go) which provide implementations of the 
+DatabaseType interface for `mysql` and `s3`.
+- [pkg/copenmetadata-connector-core](pkg/openmetadata-connector-core): The core files of openmetadata connector, they 
+are implement the connector REST API.  
+- [pkg/utils](pkg/utils): Includes utility methods used in the connector code
+- [pkg/vault](pkg/vault): Includes methods to obtain a token and secrets from Vault
 - [conf](conf): Contains a sample configuration file
 - [client-swagger](client-swagger): The OpenMetadata API Specification, used to generate OpenMetadata client code in the golang language. This directory contains the original YAML file and a modified YAML file to fix the auto-generated code
 - [auto-generated](auto-generated): Automatically generated OpenAPI code, both for OpenMetadata (client code) and Fybrik Data Catalog (server code)
