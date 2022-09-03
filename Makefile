@@ -15,14 +15,13 @@ DOCKER_TAG ?= 0.0.0
 DOCKER_NAME ?= openmetadata-connector
 
 IMG := ${DOCKER_HOSTNAME}/${DOCKER_NAMESPACE}/${DOCKER_NAME}:${DOCKER_TAG}
-export HELM_EXPERIMENTAL_OCI=1
 
 TMP_FILE = tmpfile.tmp
 
-all: compile
+all: source-build
 
-.PHONY: compile
-compile:
+.PHONY: source-build
+source-build:
 	go build .
 
 .PHONY: run
@@ -71,12 +70,17 @@ patch: generate-code
 	awk '($$1 != "\"github.com/gorilla/mux\"") {print}' auto-generated/api/go/api_default.go > ${TMP_FILE}
 	mv ${TMP_FILE} auto-generated/api/go/api_default.go
 
-.PHONY: build
-build: compile
+.PHONY: docker-build
+docker-build: source-build
 	docker build . -t ${IMG}; cd ..
 
 .PHONY: docker-push
 docker-push:
+ifneq (${DOCKER_PASSWORD},)
+	@docker login \
+		--username ${DOCKER_USERNAME} \
+		--password ${DOCKER_PASSWORD} ${DOCKER_HOSTNAME}
+endif
 	docker push ${IMG}
 
 .PHONY: push-to-kind
