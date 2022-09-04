@@ -43,7 +43,6 @@ var mockOMServer *httptest.Server
 var vaultConf map[interface{}]interface{}
 
 func getCreateAssetRequest() *models.CreateAssetRequest {
-
 	var destinationAssetID = "assetID"
 	var name = "Fake data"
 	var geography = "Hogwarts"
@@ -156,9 +155,42 @@ func createMockVaultServer(t *testing.T) *httptest.Server {
 	return svr
 }
 
+func handleGetMockOMServer(r *http.Request) (map[string]interface{}, int) {
+	if r.RequestURI == "/v1/metadata/types?category=entity&limit=100" {
+		var types []interface{}
+		types = append(types, map[string]interface{}{"fullyQualifiedName": "table", "id": "1"})
+		return map[string]interface{}{"data": types}, 0
+	}
+	if r.RequestURI == "/v1/services/databaseServices" {
+		var databaseServices []interface{}
+		return map[string]interface{}{"data": databaseServices}, 0
+	}
+	if r.RequestURI == "/v1/metadata/types?category=field&limit=100" {
+		var types []interface{}
+		types = append(types, map[string]interface{}{"fullyQualifiedName": "string", "id": "2"})
+		return map[string]interface{}{"data": types}, 0
+	}
+	if strings.HasPrefix(r.RequestURI, "/v1/tables/name/openmetadata-s3.default.fakeBucket.csvAsset") {
+		return nil, http.StatusNotFound
+	}
+	if r.RequestURI == "/v1/services/ingestionPipelines/name/openmetadata-s3.%22pipeline-openmetadata.assetID%22" {
+		return nil, http.StatusNotFound
+	}
+	if r.RequestURI == "/v1/databases/name/openmetadata-s3.default" {
+		return nil, http.StatusNotFound
+	}
+	if r.RequestURI == "/v1/databaseSchemas/name/openmetadata-s3.default.fakeBucket" {
+		return nil, http.StatusNotFound
+	}
+
+	return nil, http.StatusInternalServerError
+}
+
 func createMockOMServer(t *testing.T) *httptest.Server {
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var response map[string]interface{}
+		var statusCode int
+
 		requestBytes, err := io.ReadAll(r.Body)
 		if err != nil {
 			t.Fatal(err)
@@ -178,39 +210,22 @@ func createMockOMServer(t *testing.T) *httptest.Server {
 			}
 		}
 
-		if r.Method == http.MethodPost && r.RequestURI == "/v1/tags" {
+		if r.Method == http.MethodGet {
+			response, statusCode = handleGetMockOMServer(r)
+			if statusCode != 0 {
+				w.WriteHeader(statusCode)
+				return
+			}
+		} else if r.Method == http.MethodPost && r.RequestURI == "/v1/tags" {
 			response = map[string]interface{}{}
-		} else if r.Method == http.MethodGet && r.RequestURI == "/v1/metadata/types?category=entity&limit=100" {
-			var types []interface{}
-			types = append(types, map[string]interface{}{"fullyQualifiedName": "table", "id": "1"})
-			response = map[string]interface{}{"data": types}
-		} else if r.Method == http.MethodGet && r.RequestURI == "/v1/metadata/types?category=field&limit=100" {
-			var types []interface{}
-			types = append(types, map[string]interface{}{"fullyQualifiedName": "string", "id": "2"})
-			response = map[string]interface{}{"data": types}
 		} else if r.Method == http.MethodPut && r.RequestURI == "/v1/metadata/types/1" {
 			response = map[string]interface{}{}
-		} else if r.Method == http.MethodGet && r.RequestURI == "/v1/services/databaseServices" {
-			var databaseServices []interface{}
-			response = map[string]interface{}{"data": databaseServices}
 		} else if r.Method == http.MethodPost && r.RequestURI == "/v1/services/databaseServices" {
 			response = map[string]interface{}{"id": "00000000-0000-0000-0000-000000000000", "fullyQualifiedName": "openmetadata-s3"}
-		} else if r.Method == http.MethodGet && strings.HasPrefix(r.RequestURI, "/v1/tables/name/openmetadata-s3.default.fakeBucket.csvAsset") {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		} else if r.Method == http.MethodGet && r.RequestURI == "/v1/services/ingestionPipelines/name/openmetadata-s3.%22pipeline-openmetadata.assetID%22" {
-			w.WriteHeader(http.StatusNotFound)
-			return
 		} else if r.Method == http.MethodPost && r.RequestURI == "/v1/services/ingestionPipelines" {
 			response = map[string]interface{}{"id": "00000000-0000-0000-0000-000000000000", "fullyQualifiedName": "pipeline-openmetadata.assetID"}
-		} else if r.Method == http.MethodGet && r.RequestURI == "/v1/databases/name/openmetadata-s3.default" {
-			w.WriteHeader(http.StatusNotFound)
-			return
 		} else if r.Method == http.MethodPost && r.RequestURI == "/v1/databases" {
 			response = map[string]interface{}{"id": "00000000-0000-0000-0000-000000000000", "fullyQualifiedName": "openmetadata-s3.default"}
-		} else if r.Method == http.MethodGet && r.RequestURI == "/v1/databaseSchemas/name/openmetadata-s3.default.fakeBucket" {
-			w.WriteHeader(http.StatusNotFound)
-			return
 		} else if r.Method == http.MethodPost && r.RequestURI == "/v1/databaseSchemas" {
 			response = map[string]interface{}{"id": "00000000-0000-0000-0000-000000000000", "fullyQualifiedName": "openmetadata-s3.default.fakeBucket"}
 		} else if r.Method == http.MethodPost && r.RequestURI == "/v1/tables" {
