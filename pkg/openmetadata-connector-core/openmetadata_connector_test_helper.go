@@ -186,6 +186,23 @@ func handleGetMockOMServer(r *http.Request) (map[string]interface{}, int) {
 	return nil, http.StatusInternalServerError
 }
 
+func handlePostMockOMServer(r *http.Request) (map[string]interface{}, int) {
+	if r.RequestURI == "/v1/tags" {
+		return map[string]interface{}{}, 0
+	}
+	if r.RequestURI == "/v1/services/databaseServices" ||
+		r.RequestURI == "/v1/services/ingestionPipelines" ||
+		r.RequestURI == "/v1/databases" ||
+		r.RequestURI == "/v1/databaseSchemas" ||
+		r.RequestURI == "/v1/tables" {
+		return map[string]interface{}{
+			"id":                 "00000000-0000-0000-0000-000000000000",
+			"fullyQualifiedName": "openmetadata-s3"}, 0
+	}
+
+	return nil, http.StatusInternalServerError
+}
+
 func createMockOMServer(t *testing.T) *httptest.Server {
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var response map[string]interface{}
@@ -216,20 +233,14 @@ func createMockOMServer(t *testing.T) *httptest.Server {
 				w.WriteHeader(statusCode)
 				return
 			}
-		} else if r.Method == http.MethodPost && r.RequestURI == "/v1/tags" {
-			response = map[string]interface{}{}
+		} else if r.Method == http.MethodPost {
+			response, statusCode = handlePostMockOMServer(r)
+			if statusCode != 0 {
+				w.WriteHeader(statusCode)
+				return
+			}
 		} else if r.Method == http.MethodPut && r.RequestURI == "/v1/metadata/types/1" {
 			response = map[string]interface{}{}
-		} else if r.Method == http.MethodPost && r.RequestURI == "/v1/services/databaseServices" {
-			response = map[string]interface{}{"id": "00000000-0000-0000-0000-000000000000", "fullyQualifiedName": "openmetadata-s3"}
-		} else if r.Method == http.MethodPost && r.RequestURI == "/v1/services/ingestionPipelines" {
-			response = map[string]interface{}{"id": "00000000-0000-0000-0000-000000000000", "fullyQualifiedName": "pipeline-openmetadata.assetID"}
-		} else if r.Method == http.MethodPost && r.RequestURI == "/v1/databases" {
-			response = map[string]interface{}{"id": "00000000-0000-0000-0000-000000000000", "fullyQualifiedName": "openmetadata-s3.default"}
-		} else if r.Method == http.MethodPost && r.RequestURI == "/v1/databaseSchemas" {
-			response = map[string]interface{}{"id": "00000000-0000-0000-0000-000000000000", "fullyQualifiedName": "openmetadata-s3.default.fakeBucket"}
-		} else if r.Method == http.MethodPost && r.RequestURI == "/v1/tables" {
-			response = map[string]interface{}{"id": "00000000-0000-0000-0000-000000000000", "fullyQualifiedName": "openmetadata-s3.default.fakeBucket.assetID"}
 		} else if r.Method == http.MethodPatch && r.RequestURI == "/v1/tables/00000000-0000-0000-0000-000000000000" {
 			response = map[string]interface{}{}
 		} else {
