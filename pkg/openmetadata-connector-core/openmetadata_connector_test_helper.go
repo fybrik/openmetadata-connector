@@ -28,13 +28,18 @@ const Auth = "auth"
 const AuthPath = "authPath"
 const ClientToken = "client_token"
 const ContentType = "Content-Type"
+const Data = "data"
+const DatabaseServicesURI = "/v1/services/databaseServices"
+const FullyQualifiedName = "fullyQualifiedName"
 const FybrikLowerCase = "fybrik"
+const ID = "id"
 const JwtFilePath = "jwt_file_path"
 const JWT = "jwt"
 const Kubernetes = "kubernetes"
 const RequestID = "request_id"
 const Role = "role"
 const SecretKey = "secret_key"
+const ZeroUUID = "00000000-0000-0000-0000-000000000000"
 
 var logger zerolog.Logger
 var jwtFile *os.File
@@ -48,15 +53,22 @@ func getCreateAssetRequest() *models.CreateAssetRequest {
 	var geography = "Hogwarts"
 	var dataFormat = "csv"
 
+	const Name = "name"
+	const Age = "age"
+	const BuildingNumber = "building_number"
+	const Street = "street"
+	const City = "city"
+	const Postcode = "postcode"
+
 	return &models.CreateAssetRequest{
 		DestinationCatalogID: "openmetadata",
 		DestinationAssetID:   &destinationAssetID,
 		Details: models.ResourceDetails{
 			DataFormat: &dataFormat,
 			Connection: models.Connection{
-				Name: "s3",
+				Name: S3,
 				AdditionalProperties: map[string]interface{}{
-					"s3": map[string]interface{}{
+					S3: map[string]interface{}{
 						"endpoint":   "https://s3.eu-de.cloud-object-storage.appdomain.cloud",
 						"region":     "eu-de",
 						"bucket":     "fakeBucket",
@@ -69,12 +81,12 @@ func getCreateAssetRequest() *models.CreateAssetRequest {
 			Name:      &name,
 			Geography: &geography,
 			Columns: []models.ResourceColumn{
-				{Name: "name", Tags: map[string]interface{}{"name": "true"}},
-				{Name: "age", Tags: map[string]interface{}{"age": "true"}},
-				{Name: "building_number", Tags: map[string]interface{}{"building_number": "true"}},
-				{Name: "street", Tags: map[string]interface{}{"street": "true"}},
-				{Name: "city", Tags: map[string]interface{}{"city": "true"}},
-				{Name: "postcode", Tags: map[string]interface{}{"postcode": "true"}},
+				{Name: Name, Tags: map[string]interface{}{Name: "true"}},
+				{Name: Age, Tags: map[string]interface{}{Age: "true"}},
+				{Name: BuildingNumber, Tags: map[string]interface{}{BuildingNumber: "true"}},
+				{Name: Street, Tags: map[string]interface{}{Street: "true"}},
+				{Name: City, Tags: map[string]interface{}{City: "true"}},
+				{Name: Postcode, Tags: map[string]interface{}{Postcode: "true"}},
 			},
 		},
 	}
@@ -110,7 +122,7 @@ func createMockVaultServer(t *testing.T) *httptest.Server {
 			}
 
 			response := map[string]interface{}{
-				RequestID: "00000000-0000-0000-0000-000000000000",
+				RequestID: ZeroUUID,
 				Auth: map[string]interface{}{
 					ClientToken: TestToken,
 				},
@@ -133,7 +145,7 @@ func createMockVaultServer(t *testing.T) *httptest.Server {
 			}
 			logger.Trace().Msg("About to mock response secret request")
 			response := map[string]interface{}{
-				"data": map[string]interface{}{
+				Data: map[string]interface{}{
 					AccessKey: TestAccessKey,
 					SecretKey: TestSecretKey,
 				},
@@ -158,17 +170,17 @@ func createMockVaultServer(t *testing.T) *httptest.Server {
 func handleGetMockOMServer(r *http.Request) (map[string]interface{}, int) {
 	if r.RequestURI == "/v1/metadata/types?category=entity&limit=100" {
 		var types []interface{}
-		types = append(types, map[string]interface{}{"fullyQualifiedName": "table", "id": "1"})
-		return map[string]interface{}{"data": types}, 0
+		types = append(types, map[string]interface{}{FullyQualifiedName: "table", ID: "1"})
+		return map[string]interface{}{Data: types}, 0
 	}
-	if r.RequestURI == "/v1/services/databaseServices" {
+	if r.RequestURI == DatabaseServicesURI {
 		var databaseServices []interface{}
-		return map[string]interface{}{"data": databaseServices}, 0
+		return map[string]interface{}{Data: databaseServices}, 0
 	}
 	if r.RequestURI == "/v1/metadata/types?category=field&limit=100" {
 		var types []interface{}
-		types = append(types, map[string]interface{}{"fullyQualifiedName": "string", "id": "2"})
-		return map[string]interface{}{"data": types}, 0
+		types = append(types, map[string]interface{}{FullyQualifiedName: "string", ID: "2"})
+		return map[string]interface{}{Data: types}, 0
 	}
 	if strings.HasPrefix(r.RequestURI, "/v1/tables/name/openmetadata-s3.default.fakeBucket.csvAsset") {
 		return nil, http.StatusNotFound
@@ -190,14 +202,14 @@ func handlePostMockOMServer(r *http.Request) (map[string]interface{}, int) {
 	if r.RequestURI == "/v1/tags" {
 		return map[string]interface{}{}, 0
 	}
-	if r.RequestURI == "/v1/services/databaseServices" ||
+	if r.RequestURI == DatabaseServicesURI ||
 		r.RequestURI == "/v1/services/ingestionPipelines" ||
 		r.RequestURI == "/v1/databases" ||
 		r.RequestURI == "/v1/databaseSchemas" ||
 		r.RequestURI == "/v1/tables" {
 		return map[string]interface{}{
-			"id":                 "00000000-0000-0000-0000-000000000000",
-			"fullyQualifiedName": "openmetadata-s3"}, 0
+			ID:                 ZeroUUID,
+			FullyQualifiedName: "openmetadata-s3"}, 0
 	}
 
 	return nil, http.StatusInternalServerError
