@@ -11,6 +11,8 @@ import (
 	"testing"
 
 	zerolog "github.com/rs/zerolog"
+
+	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
 )
 
 const TestAccessKey = "myAccessKey"
@@ -39,6 +41,45 @@ var jwtFile *os.File
 var mockVaultServer *httptest.Server
 var mockOMServer *httptest.Server
 var vaultConf map[interface{}]interface{}
+
+func getCreateAssetRequest() *models.CreateAssetRequest {
+
+	var destinationAssetID = "assetID"
+	var name = "Fake data"
+	var geography = "Hogwarts"
+	var dataFormat = "csv"
+
+	return &models.CreateAssetRequest{
+		DestinationCatalogID: "openmetadata",
+		DestinationAssetID:   &destinationAssetID,
+		Details: models.ResourceDetails{
+			DataFormat: &dataFormat,
+			Connection: models.Connection{
+				Name: "s3",
+				AdditionalProperties: map[string]interface{}{
+					"s3": map[string]interface{}{
+						"endpoint":   "https://s3.eu-de.cloud-object-storage.appdomain.cloud",
+						"region":     "eu-de",
+						"bucket":     "fakeBucket",
+						"object_key": "csvAsset",
+					},
+				},
+			},
+		},
+		ResourceMetadata: models.ResourceMetadata{
+			Name:      &name,
+			Geography: &geography,
+			Columns: []models.ResourceColumn{
+				{Name: "name", Tags: map[string]interface{}{"name": "true"}},
+				{Name: "age", Tags: map[string]interface{}{"age": "true"}},
+				{Name: "building_number", Tags: map[string]interface{}{"building_number": "true"}},
+				{Name: "street", Tags: map[string]interface{}{"street": "true"}},
+				{Name: "city", Tags: map[string]interface{}{"city": "true"}},
+				{Name: "postcode", Tags: map[string]interface{}{"postcode": "true"}},
+			},
+		},
+	}
+}
 
 func mustAsJSON(t *testing.T, in interface{}) []byte {
 	result, err := json.Marshal(in)

@@ -9,7 +9,6 @@ import (
 
 	"fybrik.io/fybrik/pkg/logging"
 
-	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
 	"fybrik.io/openmetadata-connector/pkg/vault"
 )
 
@@ -75,41 +74,8 @@ func TestCreateAsset(t *testing.T) {
 	conf["vault"] = vaultConf
 	servicer := NewOpenMetadataAPIService(conf, &logger)
 
-	destinationAssetID := "assetID"
-	name := "Fake data"
-	geography := "Hogwarts"
-	dataFormat := "csv"
-	createAssetRequest := models.CreateAssetRequest{
-		DestinationCatalogID: "openmetadata",
-		DestinationAssetID:   &destinationAssetID,
-		Details: models.ResourceDetails{
-			DataFormat: &dataFormat,
-			Connection: models.Connection{
-				Name: "s3",
-				AdditionalProperties: map[string]interface{}{
-					"s3": map[string]interface{}{
-						"endpoint":   "https://s3.eu-de.cloud-object-storage.appdomain.cloud",
-						"region":     "eu-de",
-						"bucket":     "fakeBucket",
-						"object_key": "csvAsset",
-					},
-				},
-			},
-		},
-		ResourceMetadata: models.ResourceMetadata{
-			Name:      &name,
-			Geography: &geography,
-			Columns: []models.ResourceColumn{
-				{Name: "name", Tags: map[string]interface{}{"name": "true"}},
-				{Name: "age", Tags: map[string]interface{}{"age": "true"}},
-				{Name: "building_number", Tags: map[string]interface{}{"building_number": "true"}},
-				{Name: "street", Tags: map[string]interface{}{"street": "true"}},
-				{Name: "city", Tags: map[string]interface{}{"city": "true"}},
-				{Name: "postcode", Tags: map[string]interface{}{"postcode": "true"}},
-			},
-		},
-	}
-	response, err := servicer.CreateAsset(context.Background(), "fake-credentials", &createAssetRequest)
+	createAssetRequest := getCreateAssetRequest()
+	response, err := servicer.CreateAsset(context.Background(), "fake-credentials", createAssetRequest)
 	if err != nil {
 		t.Error(err)
 	}
