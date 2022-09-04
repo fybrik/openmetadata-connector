@@ -3,6 +3,7 @@ package openapiconnectorcore
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -16,8 +17,13 @@ import (
 )
 
 const TestAccessKey = "myAccessKey"
+const TestAuthPath = "kubernetes"
+const TestBucket = "fakeBucket"
+const TestDatabase = "default"
+const TestDatabaseService = "openmetadata-s3"
 const TestJWT = "myJWT"
-const TestPathInVault = "/v1/kubernetes/info?namespace=default"
+const TestObjectName = "csvAsset"
+const TestPathInVault = "/v1/" + TestAuthPath + "/info?namespace=default"
 const TestSecretKey = "mySecretKey"
 const TestToken = "vaultToken"
 
@@ -35,7 +41,6 @@ const FybrikLowerCase = "fybrik"
 const ID = "id"
 const JwtFilePath = "jwt_file_path"
 const JWT = "jwt"
-const Kubernetes = "kubernetes"
 const RequestID = "request_id"
 const Role = "role"
 const SecretKey = "secret_key"
@@ -71,8 +76,8 @@ func getCreateAssetRequest() *models.CreateAssetRequest {
 					S3: map[string]interface{}{
 						"endpoint":   "https://s3.eu-de.cloud-object-storage.appdomain.cloud",
 						"region":     "eu-de",
-						"bucket":     "fakeBucket",
-						"object_key": "csvAsset",
+						"bucket":     TestBucket,
+						"object_key": TestObjectName,
 					},
 				},
 			},
@@ -108,7 +113,7 @@ func createMockVaultServer(t *testing.T) *httptest.Server {
 			return
 		}
 
-		if r.Method == http.MethodPost && r.RequestURI == "/v1/auth/kubernetes/login" {
+		if r.Method == http.MethodPost && r.RequestURI == "/v1/auth/"+TestAuthPath+"/login" {
 			requestMap := make(map[string]interface{})
 			err = json.Unmarshal(requestBytes, &requestMap)
 			if err != nil {
@@ -167,8 +172,8 @@ func createMockVaultServer(t *testing.T) *httptest.Server {
 	return svr
 }
 
-func handleGetMockOMServer(r *http.Request) (map[string]interface{}, int) {
-	if r.RequestURI == "/v1/metadata/types?category=entity&limit=100" {
+func handleGetMockOMServer(t *testing.T, r *http.Request) (map[string]interface{}, int) {
+	if strings.HasPrefix(r.RequestURI, "/v1/metadata/types?category=entity") {
 		var types []interface{}
 		types = append(types, map[string]interface{}{FullyQualifiedName: "table", ID: "1"})
 		return map[string]interface{}{Data: types}, 0
@@ -177,28 +182,33 @@ func handleGetMockOMServer(r *http.Request) (map[string]interface{}, int) {
 		var databaseServices []interface{}
 		return map[string]interface{}{Data: databaseServices}, 0
 	}
-	if r.RequestURI == "/v1/metadata/types?category=field&limit=100" {
+	if strings.HasPrefix(r.RequestURI, "/v1/metadata/types?category=field") {
 		var types []interface{}
 		types = append(types, map[string]interface{}{FullyQualifiedName: "string", ID: "2"})
 		return map[string]interface{}{Data: types}, 0
 	}
-	if strings.HasPrefix(r.RequestURI, "/v1/tables/name/openmetadata-s3.default.fakeBucket.csvAsset") {
+	if strings.HasPrefix(r.RequestURI,
+		fmt.Sprintf("/v1/tables/name/%s.%s.%s.%s", TestDatabaseService, TestDatabase,
+			TestBucket, TestObjectName)) {
 		return nil, http.StatusNotFound
 	}
-	if r.RequestURI == "/v1/services/ingestionPipelines/name/openmetadata-s3.%22pipeline-openmetadata.assetID%22" {
+	if r.RequestURI ==
+		fmt.Sprintf("/v1/services/ingestionPipelines/name/%s.%%22pipeline-openmetadata.assetID%%22", TestDatabaseService) {
 		return nil, http.StatusNotFound
 	}
-	if r.RequestURI == "/v1/databases/name/openmetadata-s3.default" {
+	if r.RequestURI == fmt.Sprintf("/v1/databases/name/%s.%s", TestDatabaseService, TestDatabase) {
 		return nil, http.StatusNotFound
 	}
-	if r.RequestURI == "/v1/databaseSchemas/name/openmetadata-s3.default.fakeBucket" {
+	if r.RequestURI ==
+		fmt.Sprintf("/v1/databaseSchemas/name/%s.%s.%s", TestDatabaseService, TestDatabase, TestBucket) {
 		return nil, http.StatusNotFound
 	}
 
+	t.Fatalf("unrecognized GET request")
 	return nil, http.StatusInternalServerError
 }
 
-func handlePostMockOMServer(r *http.Request) (map[string]interface{}, int) {
+func handlePostMockOMServer(t *testing.T, r *http.Request) (map[string]interface{}, int) {
 	if r.RequestURI == "/v1/tags" {
 		return map[string]interface{}{}, 0
 	}
@@ -212,6 +222,7 @@ func handlePostMockOMServer(r *http.Request) (map[string]interface{}, int) {
 			FullyQualifiedName: "openmetadata-s3"}, 0
 	}
 
+	t.Fatalf("unrecognized POST request")
 	return nil, http.StatusInternalServerError
 }
 
@@ -240,13 +251,13 @@ func createMockOMServer(t *testing.T) *httptest.Server {
 		}
 
 		if r.Method == http.MethodGet {
-			response, statusCode = handleGetMockOMServer(r)
+			response, statusCode = handleGetMockOMServer(t, r)
 			if statusCode != 0 {
 				w.WriteHeader(statusCode)
 				return
 			}
 		} else if r.Method == http.MethodPost {
-			response, statusCode = handlePostMockOMServer(r)
+			response, statusCode = handlePostMockOMServer(t, r)
 			if statusCode != 0 {
 				w.WriteHeader(statusCode)
 				return

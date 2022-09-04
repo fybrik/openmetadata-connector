@@ -33,7 +33,7 @@ func setupSuite(t *testing.T) func() {
 	vaultConf = make(map[interface{}]interface{})
 	vaultConf[Address] = mockVaultServer.URL
 	vaultConf[JwtFilePath] = jwtFile.Name()
-	vaultConf[AuthPath] = Kubernetes
+	vaultConf[AuthPath] = TestAuthPath
 	vaultConf[Role] = FybrikLowerCase
 
 	// Return a function to teardown the test
