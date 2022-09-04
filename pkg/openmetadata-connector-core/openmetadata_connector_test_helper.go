@@ -17,10 +17,15 @@ import (
 )
 
 const TestAccessKey = "myAccessKey"
+const TestAssetName = "Fake data"
 const TestAuthPath = "kubernetes"
 const TestBucket = "fakeBucket"
 const TestDatabase = "default"
 const TestDatabaseService = "openmetadata-s3"
+const TestDataFormat = "csv"
+const TestDestinationAssetID = "assetID"
+const TestDestinationCatalogID = "openmetadata"
+const TestGeography = "Hogwarts"
 const TestJWT = "myJWT"
 const TestObjectName = "csvAsset"
 const TestPathInVault = "/v1/" + TestAuthPath + "/info?namespace=default"
@@ -53,10 +58,10 @@ var mockOMServer *httptest.Server
 var vaultConf map[interface{}]interface{}
 
 func getCreateAssetRequest() *models.CreateAssetRequest {
-	var destinationAssetID = "assetID"
-	var name = "Fake data"
-	var geography = "Hogwarts"
-	var dataFormat = "csv"
+	var destinationAssetID = TestDestinationAssetID
+	var name = TestAssetName
+	var geography = TestGeography
+	var dataFormat = TestDataFormat
 
 	const Name = "name"
 	const Age = "age"
@@ -66,7 +71,7 @@ func getCreateAssetRequest() *models.CreateAssetRequest {
 	const Postcode = "postcode"
 
 	return &models.CreateAssetRequest{
-		DestinationCatalogID: "openmetadata",
+		DestinationCatalogID: TestDestinationCatalogID,
 		DestinationAssetID:   &destinationAssetID,
 		Details: models.ResourceDetails{
 			DataFormat: &dataFormat,
@@ -193,7 +198,8 @@ func handleGetMockOMServer(t *testing.T, r *http.Request) (map[string]interface{
 		return nil, http.StatusNotFound
 	}
 	if r.RequestURI ==
-		fmt.Sprintf("/v1/services/ingestionPipelines/name/%s.%%22pipeline-openmetadata.assetID%%22", TestDatabaseService) {
+		fmt.Sprintf("/v1/services/ingestionPipelines/name/%s.%%22pipeline-%s.%s%%22",
+			TestDatabaseService, TestDestinationCatalogID, TestDestinationAssetID) {
 		return nil, http.StatusNotFound
 	}
 	if r.RequestURI == fmt.Sprintf("/v1/databases/name/%s.%s", TestDatabaseService, TestDatabase) {
