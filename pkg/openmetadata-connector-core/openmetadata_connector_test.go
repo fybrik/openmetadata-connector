@@ -3,6 +3,7 @@ package openapiconnectorcore
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -81,7 +82,8 @@ func TestCreateAsset(t *testing.T) {
 	}
 
 	responseStr := string(mustAsJSON(t, response.Body))
-	if responseStr != "{\"assetID\":\"openmetadata-s3.default.fakeBucket.csvAsset\"}" {
+	if responseStr != fmt.Sprintf("{\"assetID\":\"%s.%s.%s.%s\"}",
+		TestDatabaseService, TestDatabase, TestBucket, TestObjectName) {
 		t.Error(errors.New("unexpected response from asset creation"))
 	}
 }

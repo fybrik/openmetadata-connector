@@ -219,7 +219,7 @@ func handlePostMockOMServer(t *testing.T, r *http.Request) (map[string]interface
 		r.RequestURI == "/v1/tables" {
 		return map[string]interface{}{
 			ID:                 ZeroUUID,
-			FullyQualifiedName: "openmetadata-s3"}, 0
+			FullyQualifiedName: TestDatabaseService}, 0
 	}
 
 	t.Fatalf("unrecognized POST request")
