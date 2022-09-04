@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 
 	zerolog "github.com/rs/zerolog"
@@ -36,6 +37,7 @@ const SecretKey = "secret_key"
 var logger zerolog.Logger
 var jwtFile *os.File
 var mockVaultServer *httptest.Server
+var mockOMServer *httptest.Server
 var vaultConf map[interface{}]interface{}
 
 func mustAsJSON(t *testing.T, in interface{}) []byte {
@@ -108,6 +110,83 @@ func createMockVaultServer(t *testing.T) *httptest.Server {
 			return
 		}
 		t.Fatal("unexpected request")
+	}))
+
+	return svr
+}
+
+func createMockOMServer(t *testing.T) *httptest.Server {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var response map[string]interface{}
+		requestBytes, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Fatal(err)
+			return
+		}
+
+		requestMap := make(map[string]interface{})
+		var requestArr []interface{}
+		if len(requestBytes) > 0 {
+			err = json.Unmarshal(requestBytes, &requestMap)
+			if err != nil {
+				err = json.Unmarshal(requestBytes, &requestArr)
+				if err != nil {
+					t.Fatalf(string(requestBytes))
+					return
+				}
+			}
+		}
+
+		if r.Method == http.MethodPost && r.RequestURI == "/v1/tags" {
+			response = map[string]interface{}{}
+		} else if r.Method == http.MethodGet && r.RequestURI == "/v1/metadata/types?category=entity&limit=100" {
+			var types []interface{}
+			types = append(types, map[string]interface{}{"fullyQualifiedName": "table", "id": "1"})
+			response = map[string]interface{}{"data": types}
+		} else if r.Method == http.MethodGet && r.RequestURI == "/v1/metadata/types?category=field&limit=100" {
+			var types []interface{}
+			types = append(types, map[string]interface{}{"fullyQualifiedName": "string", "id": "2"})
+			response = map[string]interface{}{"data": types}
+		} else if r.Method == http.MethodPut && r.RequestURI == "/v1/metadata/types/1" {
+			response = map[string]interface{}{}
+		} else if r.Method == http.MethodGet && r.RequestURI == "/v1/services/databaseServices" {
+			var databaseServices []interface{}
+			response = map[string]interface{}{"data": databaseServices}
+		} else if r.Method == http.MethodPost && r.RequestURI == "/v1/services/databaseServices" {
+			response = map[string]interface{}{"id": "00000000-0000-0000-0000-000000000000", "fullyQualifiedName": "openmetadata-s3"}
+		} else if r.Method == http.MethodGet && strings.HasPrefix(r.RequestURI, "/v1/tables/name/openmetadata-s3.default.fakeBucket.csvAsset") {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		} else if r.Method == http.MethodGet && r.RequestURI == "/v1/services/ingestionPipelines/name/openmetadata-s3.%22pipeline-openmetadata.assetID%22" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		} else if r.Method == http.MethodPost && r.RequestURI == "/v1/services/ingestionPipelines" {
+			response = map[string]interface{}{"id": "00000000-0000-0000-0000-000000000000", "fullyQualifiedName": "pipeline-openmetadata.assetID"}
+		} else if r.Method == http.MethodGet && r.RequestURI == "/v1/databases/name/openmetadata-s3.default" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		} else if r.Method == http.MethodPost && r.RequestURI == "/v1/databases" {
+			response = map[string]interface{}{"id": "00000000-0000-0000-0000-000000000000", "fullyQualifiedName": "openmetadata-s3.default"}
+		} else if r.Method == http.MethodGet && r.RequestURI == "/v1/databaseSchemas/name/openmetadata-s3.default.fakeBucket" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		} else if r.Method == http.MethodPost && r.RequestURI == "/v1/databaseSchemas" {
+			response = map[string]interface{}{"id": "00000000-0000-0000-0000-000000000000", "fullyQualifiedName": "openmetadata-s3.default.fakeBucket"}
+		} else if r.Method == http.MethodPost && r.RequestURI == "/v1/tables" {
+			response = map[string]interface{}{"id": "00000000-0000-0000-0000-000000000000", "fullyQualifiedName": "openmetadata-s3.default.fakeBucket.assetID"}
+		} else if r.Method == http.MethodPatch && r.RequestURI == "/v1/tables/00000000-0000-0000-0000-000000000000" {
+			response = map[string]interface{}{}
+		} else {
+			t.Fatalf("unexpected request: %s -- %s", r.Method, r.RequestURI)
+		}
+
+		responseBytes := mustAsJSON(t, response)
+
+		w.Header().Add(ContentType, ApplicationJSON)
+		_, err = w.Write(responseBytes)
+		if err != nil {
+			t.Error(err)
+		}
 	}))
 
 	return svr
