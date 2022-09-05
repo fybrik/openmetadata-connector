@@ -77,6 +77,7 @@ func getCreateAssetRequest() *models.CreateAssetRequest {
 	const Street = "street"
 	const City = "city"
 	const Postcode = "postcode"
+	const Financial = "financial"
 
 	return &models.CreateAssetRequest{
 		Credentials:          &credentials,
@@ -107,6 +108,7 @@ func getCreateAssetRequest() *models.CreateAssetRequest {
 				{Name: City, Tags: map[string]interface{}{City: "true"}},
 				{Name: Postcode, Tags: map[string]interface{}{Postcode: "true"}},
 			},
+			Tags: map[string]interface{}{Financial: "true"},
 		},
 	}
 }
