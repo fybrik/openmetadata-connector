@@ -33,6 +33,7 @@ const TestObjectName = "csvAsset"
 const TestPathInVault = "/v1/" + TestAuthPath + "/info?namespace=default"
 const TestSecretKey = "mySecretKey"
 const TestToken = "vaultToken"
+const TestVersion = 0.1
 
 const AccessKey = "access_key"
 const Address = "address"
@@ -51,6 +52,7 @@ const JWT = "jwt"
 const RequestID = "request_id"
 const Role = "role"
 const SecretKey = "secret_key"
+const TablesURI = "/v1/tables"
 const ZeroUUID = "00000000-0000-0000-0000-000000000000"
 
 var logger zerolog.Logger
@@ -215,7 +217,7 @@ func constructTableStruct(assetInfo map[string]interface{}) client.Table {
 		columnsWithTags = append(columnsWithTags, client.Column{Name: c[Name].(string), Tags: tags})
 	}
 
-	version := 0.1
+	version := TestVersion
 	return client.Table{
 		Id:        ZeroUUID,
 		Version:   &version,
@@ -241,9 +243,9 @@ func handleGetMockOMServer(t *testing.T, r *http.Request) (map[string]interface{
 		return map[string]interface{}{Data: types}, 0
 	}
 	if strings.HasPrefix(r.RequestURI,
-		fmt.Sprintf("/v1/tables/name/%s.%s.%s.%s", TestDatabaseService, TestDatabase,
+		fmt.Sprintf(TablesURI+"/name/%s.%s.%s.%s", TestDatabaseService, TestDatabase,
 			TestBucket, TestObjectName)) ||
-		strings.HasPrefix(r.RequestURI, "/v1/tables/"+ZeroUUID) {
+		strings.HasPrefix(r.RequestURI, TablesURI+"/"+ZeroUUID) {
 		assetInfo, ok := mockDataCatalog[ZeroUUID]
 		if ok {
 			table := constructTableStruct(assetInfo.(map[string]interface{}))
@@ -287,7 +289,7 @@ func handlePostMockOMServer(t *testing.T, r *http.Request,
 		mockDataCatalog[DatabaseService] = requestMap
 	}
 
-	if r.RequestURI == "/v1/tables" {
+	if r.RequestURI == TablesURI {
 		mockDataCatalog[ZeroUUID] = requestMap
 		requestColumns := requestMap["columns"].([]interface{})
 		var columns []client.Column
@@ -351,7 +353,7 @@ func createMockOMServer(t *testing.T) *httptest.Server {
 			}
 		} else if r.Method == http.MethodPut && r.RequestURI == "/v1/metadata/types/1" {
 			response = map[string]interface{}{}
-		} else if r.Method == http.MethodPatch && r.RequestURI == "/v1/tables/"+ZeroUUID {
+		} else if r.Method == http.MethodPatch && r.RequestURI == TablesURI+"/"+ZeroUUID {
 			assetMap := mockDataCatalog[ZeroUUID].(map[string]interface{})
 			for i := range requestArr {
 				patchName := requestArr[i].(map[string]interface{})[Path].(string)
