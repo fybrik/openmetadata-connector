@@ -67,6 +67,7 @@ func getCreateAssetRequest() *models.CreateAssetRequest {
 	var name = TestAssetName
 	var geography = TestGeography
 	var dataFormat = TestDataFormat
+	var credentials = TestPathInVault
 
 	const Name = "name"
 	const Age = "age"
@@ -76,6 +77,7 @@ func getCreateAssetRequest() *models.CreateAssetRequest {
 	const Postcode = "postcode"
 
 	return &models.CreateAssetRequest{
+		Credentials:          &credentials,
 		DestinationCatalogID: TestDestinationCatalogID,
 		DestinationAssetID:   &destinationAssetID,
 		Details: models.ResourceDetails{
@@ -183,7 +185,8 @@ func createMockVaultServer(t *testing.T) *httptest.Server {
 }
 
 func constructDataBaseServiceStruct(serviceInfo map[string]interface{}) client.DatabaseService {
-	connection := client.DatabaseConnection{Config: serviceInfo["connection"].(map[string]interface{})}
+	connectionConfig := serviceInfo["connection"].(map[string]interface{})["config"].(map[string]interface{})
+	connection := client.DatabaseConnection{Config: connectionConfig}
 	return client.DatabaseService{
 		Name:        serviceInfo[Name].(string),
 		ServiceType: serviceInfo["serviceType"].(string),
