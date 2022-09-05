@@ -11,8 +11,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/fatih/structs"
 	zerolog "github.com/rs/zerolog"
 
+	client "fybrik.io/openmetadata-connector/datacatalog-go-client"
 	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
 )
 
@@ -55,6 +57,7 @@ var logger zerolog.Logger
 var jwtFile *os.File
 var mockVaultServer *httptest.Server
 var mockOMServer *httptest.Server
+var mockDataCatalog = make(map[string]interface{})
 var vaultConf map[interface{}]interface{}
 
 func getCreateAssetRequest() *models.CreateAssetRequest {
@@ -214,15 +217,34 @@ func handleGetMockOMServer(t *testing.T, r *http.Request) (map[string]interface{
 	return nil, http.StatusInternalServerError
 }
 
-func handlePostMockOMServer(t *testing.T, r *http.Request) (map[string]interface{}, int) {
+func handlePostMockOMServer(t *testing.T, r *http.Request,
+	requestMap map[string]interface{}) (map[string]interface{}, int) {
 	if r.RequestURI == "/v1/tags" {
 		return map[string]interface{}{}, 0
 	}
+
+	if r.RequestURI == DatabaseServicesURI {
+		// keep the connection information in the mock data catalog
+		mockDataCatalog[DatabaseService] = requestMap
+	}
+
+	if r.RequestURI == "/v1/tables" {
+		mockDataCatalog[ZeroUUID] = requestMap
+		requestColumns := requestMap["columns"].([]interface{})
+		var columns []client.Column
+		for i := range requestColumns {
+			c := requestColumns[i].(map[string]interface{})
+			columns = append(columns, client.Column{Name: c[Name].(string)})
+		}
+		table := client.Table{Columns: columns, Id: ZeroUUID}
+		return structs.Map(table), 0
+	}
+
 	if r.RequestURI == DatabaseServicesURI ||
 		r.RequestURI == "/v1/services/ingestionPipelines" ||
 		r.RequestURI == "/v1/databases" ||
 		r.RequestURI == "/v1/databaseSchemas" ||
-		r.RequestURI == "/v1/tables" {
+		r.RequestURI == "/v1/tags/Fybrik" {
 		return map[string]interface{}{
 			ID:                 ZeroUUID,
 			FullyQualifiedName: TestDatabaseService}, 0
@@ -263,14 +285,19 @@ func createMockOMServer(t *testing.T) *httptest.Server {
 				return
 			}
 		} else if r.Method == http.MethodPost {
-			response, statusCode = handlePostMockOMServer(t, r)
+			response, statusCode = handlePostMockOMServer(t, r, requestMap)
 			if statusCode != 0 {
 				w.WriteHeader(statusCode)
 				return
 			}
 		} else if r.Method == http.MethodPut && r.RequestURI == "/v1/metadata/types/1" {
 			response = map[string]interface{}{}
-		} else if r.Method == http.MethodPatch && r.RequestURI == "/v1/tables/00000000-0000-0000-0000-000000000000" {
+		} else if r.Method == http.MethodPatch && r.RequestURI == "/v1/tables/"+ZeroUUID {
+			assetMap := mockDataCatalog[ZeroUUID].(map[string]interface{})
+			for i := range requestArr {
+				patchName := requestArr[i].(map[string]interface{})[Path].(string)
+				assetMap[patchName] = requestArr[i]
+			}
 			response = map[string]interface{}{}
 		} else {
 			t.Fatalf("unexpected request: %s -- %s", r.Method, r.RequestURI)

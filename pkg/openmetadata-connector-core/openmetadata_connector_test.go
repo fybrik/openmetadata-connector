@@ -66,7 +66,7 @@ func TestVault(t *testing.T) {
 	}
 }
 
-func TestCreateAsset(t *testing.T) {
+func TestCreateAndGetAsset(t *testing.T) {
 	teardownSuite := setupSuite(t)
 	defer teardownSuite()
 
@@ -75,15 +75,18 @@ func TestCreateAsset(t *testing.T) {
 	conf["vault"] = vaultConf
 	servicer := NewOpenMetadataAPIService(conf, &logger)
 
+	ctx := context.Background()
 	createAssetRequest := getCreateAssetRequest()
-	response, err := servicer.CreateAsset(context.Background(), "fake-credentials", createAssetRequest)
+	response, err := servicer.CreateAsset(ctx, "fake-credentials", createAssetRequest)
 	if err != nil {
 		t.Error(err)
 	}
 
+	assetID := fmt.Sprintf("%s.%s.%s.%s", TestDatabaseService, TestDatabase, TestBucket, TestObjectName)
+
+	// check the asset ID in the response
 	responseStr := string(mustAsJSON(t, response.Body))
-	if responseStr != fmt.Sprintf("{\"assetID\":\"%s.%s.%s.%s\"}",
-		TestDatabaseService, TestDatabase, TestBucket, TestObjectName) {
+	if responseStr != fmt.Sprintf("{\"assetID\":%q}", assetID) {
 		t.Error(errors.New("unexpected response from asset creation"))
 	}
 }
