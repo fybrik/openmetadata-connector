@@ -10,6 +10,7 @@ import (
 
 	"fybrik.io/fybrik/pkg/logging"
 
+	api "fybrik.io/openmetadata-connector/datacatalog-go/go"
 	"fybrik.io/openmetadata-connector/pkg/vault"
 )
 
@@ -88,5 +89,10 @@ func TestCreateAndGetAsset(t *testing.T) {
 	responseStr := string(mustAsJSON(t, response.Body))
 	if responseStr != fmt.Sprintf("{\"assetID\":%q}", assetID) {
 		t.Error(errors.New("unexpected response from asset creation"))
+	}
+
+	response, err = servicer.GetAssetInfo(ctx, "fake-credentials", &api.GetAssetRequest{AssetID: assetID, OperationType: "read"})
+	if err != nil {
+		t.Error(err)
 	}
 }

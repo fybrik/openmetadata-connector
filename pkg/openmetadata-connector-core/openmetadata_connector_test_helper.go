@@ -180,6 +180,51 @@ func createMockVaultServer(t *testing.T) *httptest.Server {
 	return svr
 }
 
+func constructDataBaseServiceStruct(serviceInfo map[string]interface{}) client.DatabaseService {
+	connection := client.DatabaseConnection{Config: serviceInfo["connection"].(map[string]interface{})}
+	return client.DatabaseService{
+		Name:        serviceInfo[Name].(string),
+		ServiceType: serviceInfo["serviceType"].(string),
+		Connection:  connection,
+	}
+}
+
+func constructTableStruct(assetInfo map[string]interface{}) client.Table {
+	var extension interface{}
+	var columns interface{}
+	var ok bool
+	if extension, ok = assetInfo["/extension"]; !ok {
+		return client.Table{}
+	}
+	if columns, ok = assetInfo["/columns"]; !ok {
+		return client.Table{}
+	}
+
+	extension = extension.(map[string]interface{})[Value]
+
+	columnValue := columns.(map[string]interface{})[Value].([]interface{})
+	var columnsWithTags []client.Column
+	for i := range columnValue {
+		c := columnValue[i].(map[string]interface{})
+		var tags []client.TagLabel
+		tagsArr := c["tags"].([]interface{})
+		for j := range tagsArr {
+			columnTagMap := tagsArr[j].(map[string]interface{})
+			tags = append(tags, client.TagLabel{TagFQN: columnTagMap["tagFQN"].(string)})
+		}
+		columnsWithTags = append(columnsWithTags, client.Column{Name: c[Name].(string), Tags: tags})
+	}
+
+	version := 0.1
+	return client.Table{
+		Id:        ZeroUUID,
+		Version:   &version,
+		Extension: extension.(map[string]interface{}),
+		Columns:   columnsWithTags,
+		Service:   &client.EntityReference{Id: ZeroUUID},
+	}
+}
+
 func handleGetMockOMServer(t *testing.T, r *http.Request) (map[string]interface{}, int) {
 	if strings.HasPrefix(r.RequestURI, "/v1/metadata/types?category=entity") {
 		var types []interface{}
@@ -197,7 +242,13 @@ func handleGetMockOMServer(t *testing.T, r *http.Request) (map[string]interface{
 	}
 	if strings.HasPrefix(r.RequestURI,
 		fmt.Sprintf("/v1/tables/name/%s.%s.%s.%s", TestDatabaseService, TestDatabase,
-			TestBucket, TestObjectName)) {
+			TestBucket, TestObjectName)) ||
+		strings.HasPrefix(r.RequestURI, "/v1/tables/"+ZeroUUID) {
+		assetInfo, ok := mockDataCatalog[ZeroUUID]
+		if ok {
+			table := constructTableStruct(assetInfo.(map[string]interface{}))
+			return structs.Map(table), 0
+		}
 		return nil, http.StatusNotFound
 	}
 	if r.RequestURI ==
@@ -210,6 +261,14 @@ func handleGetMockOMServer(t *testing.T, r *http.Request) (map[string]interface{
 	}
 	if r.RequestURI ==
 		fmt.Sprintf("/v1/databaseSchemas/name/%s.%s.%s", TestDatabaseService, TestDatabase, TestBucket) {
+		return nil, http.StatusNotFound
+	}
+	if r.RequestURI == "/v1/services/databaseServices/"+ZeroUUID {
+		serviceInfo, ok := mockDataCatalog[DatabaseService]
+		if ok {
+			service := constructDataBaseServiceStruct(serviceInfo.(map[string]interface{}))
+			return structs.Map(service), 0
+		}
 		return nil, http.StatusNotFound
 	}
 
