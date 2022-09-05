@@ -11,7 +11,7 @@ import (
 	"fybrik.io/fybrik/pkg/logging"
 
 	api "fybrik.io/openmetadata-connector/datacatalog-go/go"
-	"fybrik.io/openmetadata-connector/pkg/vault"
+	vault "fybrik.io/openmetadata-connector/pkg/vault"
 )
 
 func setupSuite(t *testing.T) func() {
@@ -78,7 +78,7 @@ func TestCreateAndGetAsset(t *testing.T) {
 
 	ctx := context.Background()
 	createAssetRequest := getCreateAssetRequest()
-	response, err := servicer.CreateAsset(ctx, "fake-credentials", createAssetRequest)
+	response, err := servicer.CreateAsset(ctx, TestConnectorCredentials, createAssetRequest)
 	if err != nil {
 		t.Error(err)
 	}
@@ -91,7 +91,7 @@ func TestCreateAndGetAsset(t *testing.T) {
 		t.Error(errors.New("unexpected response from asset creation"))
 	}
 
-	response, err = servicer.GetAssetInfo(ctx, "fake-credentials", &api.GetAssetRequest{AssetID: assetID, OperationType: "read"})
+	response, err = servicer.GetAssetInfo(ctx, TestConnectorCredentials, &api.GetAssetRequest{AssetID: assetID, OperationType: "read"})
 	if err != nil {
 		t.Error(err)
 	}

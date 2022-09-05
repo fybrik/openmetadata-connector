@@ -64,3 +64,8 @@ func InterfaceToMap(i interface{}) (map[string]interface{}, bool) {
 	m, ok := i.(map[string]interface{})
 	return m, ok
 }
+
+func InterfaceToArray(i interface{}) ([]interface{}, bool) {
+	m, ok := i.([]interface{})
+	return m, ok
+}

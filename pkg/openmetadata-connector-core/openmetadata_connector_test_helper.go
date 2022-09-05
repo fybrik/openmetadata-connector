@@ -11,17 +11,19 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/fatih/structs"
+	structs "github.com/fatih/structs"
 	zerolog "github.com/rs/zerolog"
 
 	client "fybrik.io/openmetadata-connector/datacatalog-go-client"
 	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
+	utils "fybrik.io/openmetadata-connector/pkg/utils"
 )
 
 const TestAccessKey = "myAccessKey"
 const TestAssetName = "Fake data"
 const TestAuthPath = "kubernetes"
 const TestBucket = "fakeBucket"
+const TestConnectorCredentials = "fake-credentials"
 const TestDatabase = "default"
 const TestDatabaseService = "openmetadata-s3"
 const TestDataFormat = "csv"
@@ -185,7 +187,15 @@ func createMockVaultServer(t *testing.T) *httptest.Server {
 }
 
 func constructDataBaseServiceStruct(serviceInfo map[string]interface{}) client.DatabaseService {
-	connectionConfig := serviceInfo["connection"].(map[string]interface{})["config"].(map[string]interface{})
+	connectionInfo, ok := utils.InterfaceToMap(serviceInfo["connection"])
+	if !ok {
+		return client.DatabaseService{}
+	}
+	connectionConfig, ok := utils.InterfaceToMap(connectionInfo["config"])
+	if !ok {
+		return client.DatabaseService{}
+	}
+
 	connection := client.DatabaseConnection{Config: connectionConfig}
 	return client.DatabaseService{
 		Name:        serviceInfo[Name].(string),
@@ -205,16 +215,43 @@ func constructTableStruct(assetInfo map[string]interface{}) client.Table {
 		return client.Table{}
 	}
 
-	extension = extension.(map[string]interface{})[Value]
+	extensionMap, ok := utils.InterfaceToMap(extension)
+	if !ok {
+		return client.Table{}
+	}
+	extensionValue := extensionMap[Value]
+	extensionValueMap, ok := utils.InterfaceToMap(extensionValue)
+	if !ok {
+		return client.Table{}
+	}
 
-	columnValue := columns.(map[string]interface{})[Value].([]interface{})
+	columnsMap, ok := utils.InterfaceToMap(columns)
+	if !ok {
+		return client.Table{}
+	}
+
+	columnValue := columnsMap[Value]
+	columnValueArr, ok := utils.InterfaceToArray(columnValue)
+	if !ok {
+		return client.Table{}
+	}
+
 	var columnsWithTags []client.Column
-	for i := range columnValue {
-		c := columnValue[i].(map[string]interface{})
+	for i := range columnValueArr {
+		c, ok := utils.InterfaceToMap(columnValueArr[i])
+		if !ok {
+			return client.Table{}
+		}
 		var tags []client.TagLabel
-		tagsArr := c["tags"].([]interface{})
+		tagsArr, ok := utils.InterfaceToArray(c["tags"])
+		if !ok {
+			return client.Table{}
+		}
 		for j := range tagsArr {
-			columnTagMap := tagsArr[j].(map[string]interface{})
+			columnTagMap, ok := utils.InterfaceToMap(tagsArr[j])
+			if !ok {
+				return client.Table{}
+			}
 			tags = append(tags, client.TagLabel{TagFQN: columnTagMap["tagFQN"].(string)})
 		}
 		columnsWithTags = append(columnsWithTags, client.Column{Name: c[Name].(string), Tags: tags})
@@ -224,7 +261,7 @@ func constructTableStruct(assetInfo map[string]interface{}) client.Table {
 	return client.Table{
 		Id:        ZeroUUID,
 		Version:   &version,
-		Extension: extension.(map[string]interface{}),
+		Extension: extensionValueMap,
 		Columns:   columnsWithTags,
 		Service:   &client.EntityReference{Id: ZeroUUID},
 	}
@@ -250,11 +287,15 @@ func handleGetMockOMServer(t *testing.T, r *http.Request) (map[string]interface{
 			TestBucket, TestObjectName)) ||
 		strings.HasPrefix(r.RequestURI, TablesURI+"/"+ZeroUUID) {
 		assetInfo, ok := mockDataCatalog[ZeroUUID]
-		if ok {
-			table := constructTableStruct(assetInfo.(map[string]interface{}))
-			return structs.Map(table), 0
+		if !ok {
+			return nil, http.StatusNotFound
 		}
-		return nil, http.StatusNotFound
+		assetInfoMap, ok := utils.InterfaceToMap(assetInfo)
+		if !ok {
+			return nil, http.StatusNotFound
+		}
+		table := constructTableStruct(assetInfoMap)
+		return structs.Map(table), 0
 	}
 	if r.RequestURI ==
 		fmt.Sprintf("/v1/services/ingestionPipelines/name/%s.%%22pipeline-%s.%s%%22",
@@ -270,11 +311,15 @@ func handleGetMockOMServer(t *testing.T, r *http.Request) (map[string]interface{
 	}
 	if r.RequestURI == "/v1/services/databaseServices/"+ZeroUUID {
 		serviceInfo, ok := mockDataCatalog[DatabaseService]
-		if ok {
-			service := constructDataBaseServiceStruct(serviceInfo.(map[string]interface{}))
-			return structs.Map(service), 0
+		if !ok {
+			return nil, http.StatusNotFound
 		}
-		return nil, http.StatusNotFound
+		serviceInfoMap, ok := utils.InterfaceToMap(serviceInfo)
+		if !ok {
+			return nil, http.StatusNotFound
+		}
+		service := constructDataBaseServiceStruct(serviceInfoMap)
+		return structs.Map(service), 0
 	}
 
 	t.Fatalf("unrecognized GET request")
@@ -294,10 +339,16 @@ func handlePostMockOMServer(t *testing.T, r *http.Request,
 
 	if r.RequestURI == TablesURI {
 		mockDataCatalog[ZeroUUID] = requestMap
-		requestColumns := requestMap["columns"].([]interface{})
+		requestColumns, ok := utils.InterfaceToArray(requestMap["columns"])
+		if !ok {
+			return nil, http.StatusInternalServerError
+		}
 		var columns []client.Column
 		for i := range requestColumns {
-			c := requestColumns[i].(map[string]interface{})
+			c, ok := utils.InterfaceToMap(requestColumns[i])
+			if !ok {
+				return nil, http.StatusInternalServerError
+			}
 			columns = append(columns, client.Column{Name: c[Name].(string)})
 		}
 		table := client.Table{Columns: columns, Id: ZeroUUID}
@@ -318,7 +369,7 @@ func handlePostMockOMServer(t *testing.T, r *http.Request,
 	return nil, http.StatusInternalServerError
 }
 
-func createMockOMServer(t *testing.T) *httptest.Server {
+func createMockOMServer(t *testing.T) *httptest.Server { //nolint
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var response map[string]interface{}
 		var statusCode int
@@ -357,9 +408,16 @@ func createMockOMServer(t *testing.T) *httptest.Server {
 		} else if r.Method == http.MethodPut && r.RequestURI == "/v1/metadata/types/1" {
 			response = map[string]interface{}{}
 		} else if r.Method == http.MethodPatch && r.RequestURI == TablesURI+"/"+ZeroUUID {
-			assetMap := mockDataCatalog[ZeroUUID].(map[string]interface{})
+			assetMap, ok := utils.InterfaceToMap(mockDataCatalog[ZeroUUID])
+			if !ok {
+				t.Fatalf("error transforming asset information to map")
+			}
 			for i := range requestArr {
-				patchName := requestArr[i].(map[string]interface{})[Path].(string)
+				patchMap, ok := utils.InterfaceToMap(requestArr[i])
+				if !ok {
+					t.Fatalf("error transforming patch to map")
+				}
+				patchName := patchMap[Path].(string)
 				assetMap[patchName] = requestArr[i]
 			}
 			response = map[string]interface{}{}
