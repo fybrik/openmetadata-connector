@@ -30,14 +30,14 @@ jobs:
         if [[ ${GITHUB_REF} == refs/tags/* ]] ;
         then
             version="${GITHUB_REF#refs/tags/v}"
-        elif  [[ ${GITHUB_REF} == refs/heads/master ]] ;
+        elif  [[ ${GITHUB_REF} == refs/heads/build-action ]] ;
         then
             version=master
         fi
         echo ::set-output name=version::$version
         echo "DOCKER_TAG=${version}" >> $GITHUB_ENV
     - name: Build docker image 
-      run: make build
+      run: make docker-build
     - name: Docker push
       run: |
         echo "${{ secrets.GITHUB_TOKEN }}" | docker login -u "${{ env.DOCKER_USERNAME }}" --password-stdin "${{ env.DOCKER_HOSTNAME }}"
