@@ -3,7 +3,7 @@ name: Push
 on:
   push:
     branches:
-      - 'build-action'
+      - 'master'
     tags:
       - '*'
 
@@ -30,7 +30,7 @@ jobs:
         if [[ ${GITHUB_REF} == refs/tags/* ]] ;
         then
             version="${GITHUB_REF#refs/tags/v}"
-        elif  [[ ${GITHUB_REF} == refs/heads/build-action ]] ;
+        elif  [[ ${GITHUB_REF} == refs/heads/master ]] ;
         then
             version=master
         fi
