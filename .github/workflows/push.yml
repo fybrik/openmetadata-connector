@@ -19,11 +19,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    # Versions are created as follows (In helm 3.7 and above OCI reference tags
-    # must be valid SemVer):
+    # Versions are created as follows:
     # - Tags starting with v will be released as what comes after `v`. (e.g. refs/tags/v1.0 -> 1.0).
-    # - Master branch will be released with `master` as version tag for the docker images and
-    #   `0.0.0-master` tag for helm chart.
+    # - Master branch will be released with `master` as version tag for the docker images.
     - id: version
       name: Infer version
       run: |
