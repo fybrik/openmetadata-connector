@@ -67,6 +67,9 @@ var mockOMServer *httptest.Server
 var mockDataCatalog = make(map[string]interface{})
 var vaultConf map[interface{}]interface{}
 
+// returns two similar structures: The structure used for requesting an asset creation,
+// and a structure representing the response to a getAssetInfo request regarding the
+// same asset
 func getCreateAssetRequestAndReponse() (*models.CreateAssetRequest, *models.GetAssetResponse) {
 	var destinationAssetID = TestDestinationAssetID
 	var name = TestAssetName
@@ -137,6 +140,7 @@ func mustAsJSON(t *testing.T, in interface{}) []byte {
 	return result
 }
 
+// Code for mock vault server. Handles both a request for a token, and a request for a secret
 func createMockVaultServer(t *testing.T) *httptest.Server {
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requestBytes, err := io.ReadAll(r.Body)
@@ -204,6 +208,8 @@ func createMockVaultServer(t *testing.T) *httptest.Server {
 	return svr
 }
 
+// creates a client.DatabaseConnection structure, based on a request sent to the mock
+// OM server
 func constructDataBaseServiceStruct(serviceInfo map[string]interface{}) *client.DatabaseService {
 	connectionInfo, ok := utils.InterfaceToMap(serviceInfo["connection"])
 	if !ok {
@@ -222,6 +228,8 @@ func constructDataBaseServiceStruct(serviceInfo map[string]interface{}) *client.
 	}
 }
 
+// returns a table structure, based on a table creation request sent to the
+// mock OM server. This table will be enriched using the patchTable method
 func constructTableStruct(assetInfo map[string]interface{}) (*client.Table, bool) {
 	version := TestVersion
 	requestColumns, ok := utils.InterfaceToArray(assetInfo[Columns])
@@ -246,11 +254,11 @@ func constructTableStruct(assetInfo map[string]interface{}) (*client.Table, bool
 	}, true
 }
 
-func patchTable(table *client.Table, patchArray []interface{}) (*client.Table, bool) { //nolint
+func patchTable(table *client.Table, patchArray []interface{}) bool { //nolint
 	for i := range patchArray {
 		patchMap, ok := utils.InterfaceToMap(patchArray[i])
 		if !ok {
-			return nil, false
+			return false
 		}
 		patchName := patchMap[Path].(string)
 		switch {
@@ -258,12 +266,12 @@ func patchTable(table *client.Table, patchArray []interface{}) (*client.Table, b
 			var assetTags []client.TagLabel
 			tagsArr, ok := utils.InterfaceToArray(patchMap[Value])
 			if !ok {
-				return nil, false
+				return false
 			}
 			for j := range tagsArr {
 				columnTagMap, ok2 := utils.InterfaceToMap(tagsArr[j])
 				if !ok2 {
-					return nil, false
+					return false
 				}
 				assetTags = append(assetTags, client.TagLabel{TagFQN: columnTagMap[TagFQNStr].(string)})
 			}
@@ -271,29 +279,29 @@ func patchTable(table *client.Table, patchArray []interface{}) (*client.Table, b
 		case patchName == ExtensionPath:
 			extensionValueMap, ok1 := utils.InterfaceToMap(patchMap[Value])
 			if !ok1 {
-				return nil, false
+				return false
 			}
 			table.Extension = extensionValueMap
 		case patchName == ColumnsPath:
 			var columnsWithTags []client.Column
 			columnValueArr, ok := utils.InterfaceToArray(patchMap[Value])
 			if !ok {
-				return nil, false
+				return false
 			}
 			for i := range columnValueArr {
 				c, ok := utils.InterfaceToMap(columnValueArr[i])
 				if !ok {
-					return nil, false
+					return false
 				}
 				var tags []client.TagLabel
 				tagsArr, ok := utils.InterfaceToArray(c["tags"])
 				if !ok {
-					return nil, false
+					return false
 				}
 				for j := range tagsArr {
 					columnTagMap, ok := utils.InterfaceToMap(tagsArr[j])
 					if !ok {
-						return nil, false
+						return false
 					}
 					tags = append(tags, client.TagLabel{TagFQN: columnTagMap[TagFQNStr].(string)})
 				}
@@ -302,7 +310,7 @@ func patchTable(table *client.Table, patchArray []interface{}) (*client.Table, b
 			table.Columns = columnsWithTags
 		}
 	}
-	return table, true
+	return true
 }
 
 func handleGetMockOMServer(t *testing.T, r *http.Request) (map[string]interface{}, int) {
@@ -435,7 +443,7 @@ func createMockOMServer(t *testing.T) *httptest.Server { //nolint
 			if !ok {
 				t.Fatalf("error: cannot find table")
 			}
-			table, ok = patchTable(table, requestArr)
+			ok = patchTable(table, requestArr)
 			if !ok {
 				t.Fatalf("error: table patch failed")
 			}
