@@ -202,18 +202,18 @@ func createMockVaultServer(t *testing.T) *httptest.Server {
 	return svr
 }
 
-func constructDataBaseServiceStruct(serviceInfo map[string]interface{}) client.DatabaseService {
+func constructDataBaseServiceStruct(serviceInfo map[string]interface{}) *client.DatabaseService {
 	connectionInfo, ok := utils.InterfaceToMap(serviceInfo["connection"])
 	if !ok {
-		return client.DatabaseService{}
+		return nil
 	}
 	connectionConfig, ok := utils.InterfaceToMap(connectionInfo["config"])
 	if !ok {
-		return client.DatabaseService{}
+		return nil
 	}
 
 	connection := client.DatabaseConnection{Config: connectionConfig}
-	return client.DatabaseService{
+	return &client.DatabaseService{
 		Name:        serviceInfo[Name].(string),
 		ServiceType: serviceInfo["serviceType"].(string),
 		Connection:  connection,
@@ -361,6 +361,9 @@ func handlePostMockOMServer(t *testing.T, r *http.Request,
 	if r.RequestURI == DatabaseServicesURI {
 		// keep the connection information in the mock data catalog
 		service := constructDataBaseServiceStruct(requestMap)
+		if service == nil {
+			return nil, http.StatusInternalServerError
+		}
 		mockDataCatalog[DatabaseService] = service
 	}
 
