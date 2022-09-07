@@ -3,7 +3,7 @@ name: Push
 on:
   push:
     branches:
-      - 'master'
+      - 'main'
     tags:
       - '*'
 
@@ -21,16 +21,16 @@ jobs:
     - uses: actions/checkout@v3
     # Versions are created as follows:
     # - Tags starting with v will be released as what comes after `v`. (e.g. refs/tags/v1.0 -> 1.0).
-    # - Master branch will be released with `master` as version tag for the docker images.
+    # - Main branch will be released with `main` as version tag for the docker images.
     - id: version
       name: Infer version
       run: |
         if [[ ${GITHUB_REF} == refs/tags/* ]] ;
         then
             version="${GITHUB_REF#refs/tags/v}"
-        elif  [[ ${GITHUB_REF} == refs/heads/master ]] ;
+        elif  [[ ${GITHUB_REF} == refs/heads/main ]] ;
         then
-            version=master
+            version=main
         fi
         echo ::set-output name=version::$version
         echo "DOCKER_TAG=${version}" >> $GITHUB_ENV
