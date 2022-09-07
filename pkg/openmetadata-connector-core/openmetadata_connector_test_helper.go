@@ -55,6 +55,7 @@ const RequestID = "request_id"
 const Role = "role"
 const SecretKey = "secret_key"
 const TablesURI = "/v1/tables"
+const TagFQNStr = "tagFQN"
 const ZeroUUID = "00000000-0000-0000-0000-000000000000"
 
 var logger zerolog.Logger
@@ -206,57 +207,75 @@ func constructDataBaseServiceStruct(serviceInfo map[string]interface{}) client.D
 	}
 }
 
-func constructTableStruct(assetInfo map[string]interface{}) client.Table {
+func constructTableStruct(assetInfo map[string]interface{}) client.Table { //nolint
 	var extension interface{}
 	var columns interface{}
 	var ok bool
-	if extension, ok = assetInfo["/extension"]; !ok {
-		return client.Table{}
-	}
-	if columns, ok = assetInfo["/columns"]; !ok {
-		return client.Table{}
-	}
-
-	extensionMap, ok := utils.InterfaceToMap(extension)
-	if !ok {
-		return client.Table{}
-	}
-	extensionValue := extensionMap[Value]
-	extensionValueMap, ok := utils.InterfaceToMap(extensionValue)
-	if !ok {
-		return client.Table{}
-	}
-
-	columnsMap, ok := utils.InterfaceToMap(columns)
-	if !ok {
-		return client.Table{}
-	}
-
-	columnValue := columnsMap[Value]
-	columnValueArr, ok := utils.InterfaceToArray(columnValue)
-	if !ok {
-		return client.Table{}
-	}
-
 	var columnsWithTags []client.Column
-	for i := range columnValueArr {
-		c, ok := utils.InterfaceToMap(columnValueArr[i])
-		if !ok {
-			return client.Table{}
-		}
-		var tags []client.TagLabel
-		tagsArr, ok := utils.InterfaceToArray(c["tags"])
-		if !ok {
+	var assetTags []client.TagLabel
+
+	extensionValueMap := make(map[string]interface{})
+
+	var tags interface{}
+	if tags, ok = assetInfo["/tags"]; ok {
+		tagsMap, ok1 := utils.InterfaceToMap(tags)
+		tagsValue := tagsMap[Value]
+		tagsArr, ok2 := utils.InterfaceToArray(tagsValue)
+		if !ok1 || !ok2 {
 			return client.Table{}
 		}
 		for j := range tagsArr {
-			columnTagMap, ok := utils.InterfaceToMap(tagsArr[j])
+			columnTagMap, ok2 := utils.InterfaceToMap(tagsArr[j])
+			if !ok2 {
+				return client.Table{}
+			}
+			assetTags = append(assetTags, client.TagLabel{TagFQN: columnTagMap[TagFQNStr].(string)})
+		}
+	}
+
+	if extension, ok = assetInfo["/extension"]; ok {
+		extensionMap, ok1 := utils.InterfaceToMap(extension)
+		if !ok1 {
+			return client.Table{}
+		}
+		extensionValue := extensionMap[Value]
+		extensionValueMap, ok1 = utils.InterfaceToMap(extensionValue)
+		if !ok1 {
+			return client.Table{}
+		}
+	}
+
+	if columns, ok = assetInfo["/columns"]; ok {
+		columnsMap, ok := utils.InterfaceToMap(columns)
+		if !ok {
+			return client.Table{}
+		}
+
+		columnValue := columnsMap[Value]
+		columnValueArr, ok := utils.InterfaceToArray(columnValue)
+		if !ok {
+			return client.Table{}
+		}
+
+		for i := range columnValueArr {
+			c, ok := utils.InterfaceToMap(columnValueArr[i])
 			if !ok {
 				return client.Table{}
 			}
-			tags = append(tags, client.TagLabel{TagFQN: columnTagMap["tagFQN"].(string)})
+			var tags []client.TagLabel
+			tagsArr, ok := utils.InterfaceToArray(c["tags"])
+			if !ok {
+				return client.Table{}
+			}
+			for j := range tagsArr {
+				columnTagMap, ok := utils.InterfaceToMap(tagsArr[j])
+				if !ok {
+					return client.Table{}
+				}
+				tags = append(tags, client.TagLabel{TagFQN: columnTagMap[TagFQNStr].(string)})
+			}
+			columnsWithTags = append(columnsWithTags, client.Column{Name: c[Name].(string), Tags: tags})
 		}
-		columnsWithTags = append(columnsWithTags, client.Column{Name: c[Name].(string), Tags: tags})
 	}
 
 	version := TestVersion
@@ -266,6 +285,7 @@ func constructTableStruct(assetInfo map[string]interface{}) client.Table {
 		Extension: extensionValueMap,
 		Columns:   columnsWithTags,
 		Service:   &client.EntityReference{Id: ZeroUUID},
+		Tags:      assetTags,
 	}
 }
 

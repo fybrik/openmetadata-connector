@@ -530,20 +530,22 @@ func (s *OpenMetadataAPIService) constructAssetResponse(ctx context.Context,
 		ret.Details.DataFormat = &dataFormatStr
 	}
 
-	connectionType := customProperties[ConnectionType].(string)
+	connectionType := customProperties[ConnectionType]
+	if connectionType != nil {
+		connectionTypeStr := connectionType.(string)
+		dt, found := s.NameToDatabaseStruct[connectionTypeStr]
+		if !found {
+			return nil, errors.New("Unrecognized connection type: " + connectionTypeStr)
+		}
 
-	dt, found := s.NameToDatabaseStruct[connectionType]
-	if !found {
-		return nil, errors.New("Unrecognized connection type: " + connectionType)
+		config := dt.TranslateOpenMetadataConfigToFybrikConfig(table.Name, ret.Credentials,
+			respService.Connection.GetConfig())
+
+		additionalProperties := make(map[string]interface{})
+		ret.Details.Connection.Name = connectionTypeStr
+		additionalProperties[connectionTypeStr] = config
+		ret.Details.Connection.AdditionalProperties = additionalProperties
 	}
-
-	config := dt.TranslateOpenMetadataConfigToFybrikConfig(table.Name, ret.Credentials,
-		respService.Connection.GetConfig())
-
-	additionalProperties := make(map[string]interface{})
-	ret.Details.Connection.Name = connectionType
-	additionalProperties[connectionType] = config
-	ret.Details.Connection.AdditionalProperties = additionalProperties
 
 	for i := range table.Columns {
 		if len(table.Columns[i].Tags) > 0 {
