@@ -220,87 +220,87 @@ func constructDataBaseServiceStruct(serviceInfo map[string]interface{}) client.D
 	}
 }
 
-func constructTableStruct(assetInfo map[string]interface{}) client.Table { //nolint
-	var extension interface{}
-	var columns interface{}
-	var ok bool
-	var columnsWithTags []client.Column
-	var assetTags []client.TagLabel
-
-	extensionValueMap := make(map[string]interface{})
-
-	var tags interface{}
-	if tags, ok = assetInfo["/tags"]; ok {
-		tagsMap, ok1 := utils.InterfaceToMap(tags)
-		tagsValue := tagsMap[Value]
-		tagsArr, ok2 := utils.InterfaceToArray(tagsValue)
-		if !ok1 || !ok2 {
-			return client.Table{}
+func constructTableStruct(assetInfo map[string]interface{}) (*client.Table, bool) {
+	version := TestVersion
+	requestColumns, ok := utils.InterfaceToArray(assetInfo["columns"])
+	if !ok {
+		return nil, false
+	}
+	var columns []client.Column
+	for i := range requestColumns {
+		c, ok := utils.InterfaceToMap(requestColumns[i])
+		if !ok {
+			return nil, false
 		}
-		for j := range tagsArr {
-			columnTagMap, ok2 := utils.InterfaceToMap(tagsArr[j])
-			if !ok2 {
-				return client.Table{}
-			}
-			assetTags = append(assetTags, client.TagLabel{TagFQN: columnTagMap[TagFQNStr].(string)})
-		}
+		columns = append(columns, client.Column{Name: c[Name].(string)})
 	}
 
-	if extension, ok = assetInfo["/extension"]; ok {
-		extensionMap, ok1 := utils.InterfaceToMap(extension)
-		if !ok1 {
-			return client.Table{}
-		}
-		extensionValue := extensionMap[Value]
-		extensionValueMap, ok1 = utils.InterfaceToMap(extensionValue)
-		if !ok1 {
-			return client.Table{}
-		}
-	}
+	return &client.Table{
+		Id:      ZeroUUID,
+		Columns: columns,
+		Version: &version,
+		Service: &client.EntityReference{Id: ZeroUUID},
+		Name:    TestObjectName,
+	}, true
+}
 
-	if columns, ok = assetInfo["/columns"]; ok {
-		columnsMap, ok := utils.InterfaceToMap(columns)
+func patchTable(table *client.Table, patchArray []interface{}) (*client.Table, bool) { //nolint
+	for i := range patchArray {
+		patchMap, ok := utils.InterfaceToMap(patchArray[i])
 		if !ok {
-			return client.Table{}
+			return nil, false
 		}
-
-		columnValue := columnsMap[Value]
-		columnValueArr, ok := utils.InterfaceToArray(columnValue)
-		if !ok {
-			return client.Table{}
-		}
-
-		for i := range columnValueArr {
-			c, ok := utils.InterfaceToMap(columnValueArr[i])
+		patchName := patchMap[Path].(string)
+		switch {
+		case patchName == TagsPath:
+			var assetTags []client.TagLabel
+			tagsArr, ok := utils.InterfaceToArray(patchMap[Value])
 			if !ok {
-				return client.Table{}
-			}
-			var tags []client.TagLabel
-			tagsArr, ok := utils.InterfaceToArray(c["tags"])
-			if !ok {
-				return client.Table{}
+				return nil, false
 			}
 			for j := range tagsArr {
-				columnTagMap, ok := utils.InterfaceToMap(tagsArr[j])
-				if !ok {
-					return client.Table{}
+				columnTagMap, ok2 := utils.InterfaceToMap(tagsArr[j])
+				if !ok2 {
+					return nil, false
 				}
-				tags = append(tags, client.TagLabel{TagFQN: columnTagMap[TagFQNStr].(string)})
+				assetTags = append(assetTags, client.TagLabel{TagFQN: columnTagMap[TagFQNStr].(string)})
 			}
-			columnsWithTags = append(columnsWithTags, client.Column{Name: c[Name].(string), Tags: tags})
+			table.Tags = assetTags
+		case patchName == ExtensionPath:
+			extensionValueMap, ok1 := utils.InterfaceToMap(patchMap[Value])
+			if !ok1 {
+				return nil, false
+			}
+			table.Extension = extensionValueMap
+		case patchName == ColumnsPath:
+			var columnsWithTags []client.Column
+			columnValueArr, ok := utils.InterfaceToArray(patchMap[Value])
+			if !ok {
+				return nil, false
+			}
+			for i := range columnValueArr {
+				c, ok := utils.InterfaceToMap(columnValueArr[i])
+				if !ok {
+					return nil, false
+				}
+				var tags []client.TagLabel
+				tagsArr, ok := utils.InterfaceToArray(c["tags"])
+				if !ok {
+					return nil, false
+				}
+				for j := range tagsArr {
+					columnTagMap, ok := utils.InterfaceToMap(tagsArr[j])
+					if !ok {
+						return nil, false
+					}
+					tags = append(tags, client.TagLabel{TagFQN: columnTagMap[TagFQNStr].(string)})
+				}
+				columnsWithTags = append(columnsWithTags, client.Column{Name: c[Name].(string), Tags: tags})
+			}
+			table.Columns = columnsWithTags
 		}
 	}
-
-	version := TestVersion
-	return client.Table{
-		Id:        ZeroUUID,
-		Version:   &version,
-		Extension: extensionValueMap,
-		Columns:   columnsWithTags,
-		Service:   &client.EntityReference{Id: ZeroUUID},
-		Tags:      assetTags,
-		Name:      TestObjectName,
-	}
+	return table, true
 }
 
 func handleGetMockOMServer(t *testing.T, r *http.Request) (map[string]interface{}, int) {
@@ -322,15 +322,10 @@ func handleGetMockOMServer(t *testing.T, r *http.Request) (map[string]interface{
 		fmt.Sprintf(TablesURI+"/name/%s.%s.%s.%s", TestDatabaseService, TestDatabase,
 			TestBucket, TestObjectName)) ||
 		strings.HasPrefix(r.RequestURI, TablesURI+"/"+ZeroUUID) {
-		assetInfo, ok := mockDataCatalog[ZeroUUID]
+		table, ok := mockDataCatalog[ZeroUUID].(*client.Table)
 		if !ok {
 			return nil, http.StatusNotFound
 		}
-		assetInfoMap, ok := utils.InterfaceToMap(assetInfo)
-		if !ok {
-			return nil, http.StatusNotFound
-		}
-		table := constructTableStruct(assetInfoMap)
 		return structs.Map(table), 0
 	}
 	if r.RequestURI ==
@@ -370,20 +365,11 @@ func handlePostMockOMServer(t *testing.T, r *http.Request,
 	}
 
 	if r.RequestURI == TablesURI {
-		mockDataCatalog[ZeroUUID] = requestMap
-		requestColumns, ok := utils.InterfaceToArray(requestMap["columns"])
+		table, ok := constructTableStruct(requestMap)
 		if !ok {
 			return nil, http.StatusInternalServerError
 		}
-		var columns []client.Column
-		for i := range requestColumns {
-			c, ok := utils.InterfaceToMap(requestColumns[i])
-			if !ok {
-				return nil, http.StatusInternalServerError
-			}
-			columns = append(columns, client.Column{Name: c[Name].(string)})
-		}
-		table := client.Table{Columns: columns, Id: ZeroUUID}
+		mockDataCatalog[ZeroUUID] = table
 		return structs.Map(table), 0
 	}
 
@@ -440,18 +426,16 @@ func createMockOMServer(t *testing.T) *httptest.Server { //nolint
 		} else if r.Method == http.MethodPut && r.RequestURI == "/v1/metadata/types/1" {
 			response = map[string]interface{}{}
 		} else if r.Method == http.MethodPatch && r.RequestURI == TablesURI+"/"+ZeroUUID {
-			assetMap, ok := utils.InterfaceToMap(mockDataCatalog[ZeroUUID])
+			table, ok := mockDataCatalog[ZeroUUID].(*client.Table)
 			if !ok {
-				t.Fatalf("error transforming asset information to map")
+				t.Fatalf("error: cannot find table")
 			}
-			for i := range requestArr {
-				patchMap, ok := utils.InterfaceToMap(requestArr[i])
-				if !ok {
-					t.Fatalf("error transforming patch to map")
-				}
-				patchName := patchMap[Path].(string)
-				assetMap[patchName] = requestArr[i]
+			table, ok = patchTable(table, requestArr)
+			if !ok {
+				t.Fatalf("error: table patch failed")
 			}
+			mockDataCatalog[ZeroUUID] = table
+
 			response = map[string]interface{}{}
 		} else {
 			t.Fatalf("unexpected request: %s -- %s", r.Method, r.RequestURI)

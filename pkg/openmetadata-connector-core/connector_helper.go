@@ -411,7 +411,7 @@ func (s *OpenMetadataAPIService) enrichAsset(ctx context.Context, table *client.
 
 	propertiesUpdate := make(map[string]interface{})
 	propertiesUpdate["op"] = "add"
-	propertiesUpdate["path"] = "/extension"
+	propertiesUpdate["path"] = ExtensionPath
 	propertiesUpdate["value"] = customProperties
 	requestBody = append(requestBody, propertiesUpdate)
 
@@ -425,7 +425,7 @@ func (s *OpenMetadataAPIService) enrichAsset(ctx context.Context, table *client.
 
 		tagsUpdate := make(map[string]interface{})
 		tagsUpdate[Op] = Add
-		tagsUpdate[Path] = "/tags"
+		tagsUpdate[Path] = TagsPath
 		tagsUpdate[Value] = tags
 		requestBody = append(requestBody, tagsUpdate)
 	}
@@ -447,7 +447,7 @@ func (s *OpenMetadataAPIService) enrichAsset(ctx context.Context, table *client.
 
 		columnUpdate := make(map[string]interface{})
 		columnUpdate[Op] = Add
-		columnUpdate[Path] = "/columns"
+		columnUpdate[Path] = ColumnsPath
 		columnUpdate[Value] = columns
 		requestBody = append(requestBody, columnUpdate)
 	}
