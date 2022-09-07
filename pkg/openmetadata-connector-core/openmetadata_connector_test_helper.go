@@ -77,6 +77,7 @@ func getCreateAssetRequestAndReponse() (*models.CreateAssetRequest, *models.GetA
 	const BuildingNumber = "building_number"
 	const Street = "street"
 	const City = "city"
+	const PII = "PII"
 	const Postcode = "postcode"
 	const Financial = "financial"
 
@@ -99,12 +100,12 @@ func getCreateAssetRequestAndReponse() (*models.CreateAssetRequest, *models.GetA
 		Name:      &name,
 		Geography: &geography,
 		Columns: []models.ResourceColumn{
-			{Name: Name, Tags: map[string]interface{}{Name: "true"}},
-			{Name: Age, Tags: map[string]interface{}{Age: "true"}},
-			{Name: BuildingNumber, Tags: map[string]interface{}{BuildingNumber: "true"}},
-			{Name: Street, Tags: map[string]interface{}{Street: "true"}},
-			{Name: City, Tags: map[string]interface{}{City: "true"}},
-			{Name: Postcode, Tags: map[string]interface{}{Postcode: "true"}},
+			{Name: Name, Tags: map[string]interface{}{PII: "true"}},
+			{Name: Age, Tags: map[string]interface{}{PII: "true"}},
+			{Name: BuildingNumber, Tags: map[string]interface{}{PII: "true"}},
+			{Name: Street},
+			{Name: City},
+			{Name: Postcode},
 		},
 		Tags: map[string]interface{}{Financial: "true"},
 	}
