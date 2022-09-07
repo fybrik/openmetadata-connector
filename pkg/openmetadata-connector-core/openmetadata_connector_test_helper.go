@@ -65,7 +65,7 @@ var mockOMServer *httptest.Server
 var mockDataCatalog = make(map[string]interface{})
 var vaultConf map[interface{}]interface{}
 
-func getCreateAssetRequest() *models.CreateAssetRequest {
+func getCreateAssetRequestAndReponse() (*models.CreateAssetRequest, *models.GetAssetResponse) {
 	var destinationAssetID = TestDestinationAssetID
 	var name = TestAssetName
 	var geography = TestGeography
@@ -80,38 +80,50 @@ func getCreateAssetRequest() *models.CreateAssetRequest {
 	const Postcode = "postcode"
 	const Financial = "financial"
 
-	return &models.CreateAssetRequest{
-		Credentials:          &credentials,
-		DestinationCatalogID: TestDestinationCatalogID,
-		DestinationAssetID:   &destinationAssetID,
-		Details: models.ResourceDetails{
-			DataFormat: &dataFormat,
-			Connection: models.Connection{
-				Name: S3,
-				AdditionalProperties: map[string]interface{}{
-					S3: map[string]interface{}{
-						"endpoint":   "https://s3.eu-de.cloud-object-storage.appdomain.cloud",
-						"region":     "eu-de",
-						"bucket":     TestBucket,
-						"object_key": TestObjectName,
-					},
+	details := models.ResourceDetails{
+		DataFormat: &dataFormat,
+		Connection: models.Connection{
+			Name: S3,
+			AdditionalProperties: map[string]interface{}{
+				S3: map[string]interface{}{
+					"endpoint":   "https://s3.eu-de.cloud-object-storage.appdomain.cloud",
+					"region":     "eu-de",
+					"bucket":     TestBucket,
+					"object_key": TestObjectName,
 				},
 			},
 		},
-		ResourceMetadata: models.ResourceMetadata{
-			Name:      &name,
-			Geography: &geography,
-			Columns: []models.ResourceColumn{
-				{Name: Name, Tags: map[string]interface{}{Name: "true"}},
-				{Name: Age, Tags: map[string]interface{}{Age: "true"}},
-				{Name: BuildingNumber, Tags: map[string]interface{}{BuildingNumber: "true"}},
-				{Name: Street, Tags: map[string]interface{}{Street: "true"}},
-				{Name: City, Tags: map[string]interface{}{City: "true"}},
-				{Name: Postcode, Tags: map[string]interface{}{Postcode: "true"}},
-			},
-			Tags: map[string]interface{}{Financial: "true"},
-		},
 	}
+
+	resourceMetadata := models.ResourceMetadata{
+		Name:      &name,
+		Geography: &geography,
+		Columns: []models.ResourceColumn{
+			{Name: Name, Tags: map[string]interface{}{Name: "true"}},
+			{Name: Age, Tags: map[string]interface{}{Age: "true"}},
+			{Name: BuildingNumber, Tags: map[string]interface{}{BuildingNumber: "true"}},
+			{Name: Street, Tags: map[string]interface{}{Street: "true"}},
+			{Name: City, Tags: map[string]interface{}{City: "true"}},
+			{Name: Postcode, Tags: map[string]interface{}{Postcode: "true"}},
+		},
+		Tags: map[string]interface{}{Financial: "true"},
+	}
+
+	createAssetRequest := &models.CreateAssetRequest{
+		Credentials:          &credentials,
+		DestinationCatalogID: TestDestinationCatalogID,
+		DestinationAssetID:   &destinationAssetID,
+		Details:              details,
+		ResourceMetadata:     resourceMetadata,
+	}
+
+	getAssetResponse := &models.GetAssetResponse{
+		Credentials:      credentials,
+		Details:          details,
+		ResourceMetadata: resourceMetadata,
+	}
+
+	return createAssetRequest, getAssetResponse
 }
 
 func mustAsJSON(t *testing.T, in interface{}) []byte {
@@ -286,6 +298,7 @@ func constructTableStruct(assetInfo map[string]interface{}) client.Table { //nol
 		Columns:   columnsWithTags,
 		Service:   &client.EntityReference{Id: ZeroUUID},
 		Tags:      assetTags,
+		Name:      TestObjectName,
 	}
 }
 

@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"reflect"
 	"testing"
 
 	"fybrik.io/fybrik/pkg/logging"
+	"github.com/fatih/structs"
 
 	api "fybrik.io/openmetadata-connector/datacatalog-go/go"
 	vault "fybrik.io/openmetadata-connector/pkg/vault"
@@ -77,7 +79,7 @@ func TestCreateAndGetAsset(t *testing.T) {
 	servicer := NewOpenMetadataAPIService(conf, &logger)
 
 	ctx := context.Background()
-	createAssetRequest := getCreateAssetRequest()
+	createAssetRequest, getAssetResponse := getCreateAssetRequestAndReponse()
 	response, err := servicer.CreateAsset(ctx, TestConnectorCredentials, createAssetRequest)
 	if err != nil {
 		t.Error(err)
@@ -94,5 +96,12 @@ func TestCreateAndGetAsset(t *testing.T) {
 	response, err = servicer.GetAssetInfo(ctx, TestConnectorCredentials, &api.GetAssetRequest{AssetID: assetID, OperationType: "read"})
 	if err != nil {
 		t.Error(err)
+	}
+
+	responseMap := structs.Map(response.Body)
+	expectedMap := structs.Map(getAssetResponse)
+
+	if !reflect.DeepEqual(responseMap, expectedMap) {
+		t.Error("Test failed. getAssetInfo response not as expected")
 	}
 }
