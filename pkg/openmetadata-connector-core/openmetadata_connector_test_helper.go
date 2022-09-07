@@ -43,6 +43,7 @@ const ApplicationJSON = "application/json"
 const Auth = "auth"
 const AuthPath = "authPath"
 const ClientToken = "client_token"
+const Columns = "columns"
 const ContentType = "Content-Type"
 const Data = "data"
 const DatabaseServicesURI = "/v1/services/databaseServices"
@@ -54,6 +55,7 @@ const JWT = "jwt"
 const RequestID = "request_id"
 const Role = "role"
 const SecretKey = "secret_key"
+const ServiceType = "serviceType"
 const TablesURI = "/v1/tables"
 const TagFQNStr = "tagFQN"
 const ZeroUUID = "00000000-0000-0000-0000-000000000000"
@@ -215,14 +217,14 @@ func constructDataBaseServiceStruct(serviceInfo map[string]interface{}) *client.
 	connection := client.DatabaseConnection{Config: connectionConfig}
 	return &client.DatabaseService{
 		Name:        serviceInfo[Name].(string),
-		ServiceType: serviceInfo["serviceType"].(string),
+		ServiceType: serviceInfo[ServiceType].(string),
 		Connection:  connection,
 	}
 }
 
 func constructTableStruct(assetInfo map[string]interface{}) (*client.Table, bool) {
 	version := TestVersion
-	requestColumns, ok := utils.InterfaceToArray(assetInfo["columns"])
+	requestColumns, ok := utils.InterfaceToArray(assetInfo[Columns])
 	if !ok {
 		return nil, false
 	}
