@@ -346,15 +346,10 @@ func handleGetMockOMServer(t *testing.T, r *http.Request) (map[string]interface{
 		return nil, http.StatusNotFound
 	}
 	if r.RequestURI == "/v1/services/databaseServices/"+ZeroUUID {
-		serviceInfo, ok := mockDataCatalog[DatabaseService]
+		service, ok := mockDataCatalog[DatabaseService]
 		if !ok {
 			return nil, http.StatusNotFound
 		}
-		serviceInfoMap, ok := utils.InterfaceToMap(serviceInfo)
-		if !ok {
-			return nil, http.StatusNotFound
-		}
-		service := constructDataBaseServiceStruct(serviceInfoMap)
 		return structs.Map(service), 0
 	}
 
@@ -370,7 +365,8 @@ func handlePostMockOMServer(t *testing.T, r *http.Request,
 
 	if r.RequestURI == DatabaseServicesURI {
 		// keep the connection information in the mock data catalog
-		mockDataCatalog[DatabaseService] = requestMap
+		service := constructDataBaseServiceStruct(requestMap)
+		mockDataCatalog[DatabaseService] = service
 	}
 
 	if r.RequestURI == TablesURI {
