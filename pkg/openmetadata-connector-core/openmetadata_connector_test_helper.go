@@ -229,7 +229,7 @@ func constructDataBaseServiceStruct(serviceInfo map[string]interface{}) *client.
 }
 
 // returns a table structure, based on a table creation request sent to the
-// mock OM server. This table will be enriched using the patchTable method
+// mock OM server. This table is later enriched using the patchTable() method
 func constructTableStruct(assetInfo map[string]interface{}) (*client.Table, bool) {
 	version := TestVersion
 	requestColumns, ok := utils.InterfaceToArray(assetInfo[Columns])
@@ -254,6 +254,7 @@ func constructTableStruct(assetInfo map[string]interface{}) (*client.Table, bool
 	}, true
 }
 
+// enrich table structure using tags, custom properties, and column tags
 func patchTable(table *client.Table, patchArray []interface{}) bool { //nolint
 	for i := range patchArray {
 		patchMap, ok := utils.InterfaceToMap(patchArray[i])
@@ -313,6 +314,7 @@ func patchTable(table *client.Table, patchArray []interface{}) bool { //nolint
 	return true
 }
 
+// handle mock OM server GET requests
 func handleGetMockOMServer(t *testing.T, r *http.Request) (map[string]interface{}, int) {
 	if strings.HasPrefix(r.RequestURI, "/v1/metadata/types?category=entity") {
 		var types []interface{}
@@ -362,6 +364,7 @@ func handleGetMockOMServer(t *testing.T, r *http.Request) (map[string]interface{
 	return nil, http.StatusInternalServerError
 }
 
+// handle mock OM server POST requests
 func handlePostMockOMServer(t *testing.T, r *http.Request,
 	requestMap map[string]interface{}) (map[string]interface{}, int) {
 	if r.RequestURI == "/v1/tags" {
@@ -400,6 +403,7 @@ func handlePostMockOMServer(t *testing.T, r *http.Request,
 	return nil, http.StatusInternalServerError
 }
 
+// returns a mock OM server, which handles select GET, POST, PUT, and PATCH requests
 func createMockOMServer(t *testing.T) *httptest.Server { //nolint
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var response map[string]interface{}
