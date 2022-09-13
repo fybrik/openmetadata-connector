@@ -4,16 +4,15 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
-	"net/http/httptest"
 	"os"
 	"testing"
 
+	logging "fybrik.io/fybrik/pkg/logging"
 	structs "github.com/fatih/structs"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	zerolog "github.com/rs/zerolog"
 
-	"fybrik.io/fybrik/pkg/logging"
 	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
 	api "fybrik.io/openmetadata-connector/datacatalog-go/go"
 	vault "fybrik.io/openmetadata-connector/pkg/vault"
@@ -27,10 +26,7 @@ func TestOpenApiConnectorCore(t *testing.T) {
 var _ = Describe("Vault and OM connector", Ordered, func() {
 	var logger zerolog.Logger
 	var err error
-	var jwtFile *os.File
 	var n int
-	var vaultConf map[interface{}]interface{}
-	var mockOMServer *httptest.Server
 	BeforeEach(func() {
 		logger = logging.LogInit(logging.CONNECTOR, "OpenMetadata Connector Tests")
 		logger.Trace().Msg("Setting up OM Connector test suite")
@@ -39,7 +35,7 @@ var _ = Describe("Vault and OM connector", Ordered, func() {
 		n, err = jwtFile.WriteString(TestJWT)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(n).To(Equal(len(TestJWT)))
-		mockVaultServer := createMockVaultServer()
+		mockVaultServer = createMockVaultServer()
 		mockOMServer = createMockOMServer()
 
 		// populate vault configuration
@@ -55,9 +51,10 @@ var _ = Describe("Vault and OM connector", Ordered, func() {
 	})
 	Describe("Vault credentials retrieval flow", Ordered, func() {
 		var token string
-		var err error
 		var secret []byte
 		var vaultClient vault.VaultClient
+		var accessKey string
+		var secretKey string
 		It("should receive a vaild token", func() {
 			vaultClient = vault.NewVaultClient(vaultConf, &logger)
 			token, err = vaultClient.GetToken()
@@ -69,7 +66,7 @@ var _ = Describe("Vault and OM connector", Ordered, func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 		It("should receive vaild access and secret keys", func() {
-			accessKey, secretKey, err := vaultClient.ExtractS3CredentialsFromSecret(secret)
+			accessKey, secretKey, err = vaultClient.ExtractS3CredentialsFromSecret(secret)
 			Expect(accessKey).To(Equal(TestAccessKey))
 			Expect(secretKey).To(Equal(TestSecretKey))
 			Expect(err).ToNot(HaveOccurred())

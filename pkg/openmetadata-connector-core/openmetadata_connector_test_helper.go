@@ -10,8 +10,8 @@ import (
 	"strings"
 
 	structs "github.com/fatih/structs"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	. "github.com/onsi/ginkgo/v2" //nolint
+	. "github.com/onsi/gomega"    //nolint
 	zerolog "github.com/rs/zerolog"
 
 	client "fybrik.io/openmetadata-connector/datacatalog-go-client"
@@ -378,7 +378,7 @@ func handlePostMockOMServer(r *http.Request,
 }
 
 // returns a mock OM server, which handles select GET, POST, PUT, and PATCH requests
-func createMockOMServer() *httptest.Server { //nolint
+func createMockOMServer() *httptest.Server {
 	By("opreating a mock OM server")
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var response map[string]interface{}
