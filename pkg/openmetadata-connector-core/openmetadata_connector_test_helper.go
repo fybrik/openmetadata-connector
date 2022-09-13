@@ -2,16 +2,16 @@ package openapiconnectorcore
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"strings"
-	"testing"
 
 	structs "github.com/fatih/structs"
+	. "github.com/onsi/ginkgo/v2" //nolint
+	. "github.com/onsi/gomega"    //nolint
 	zerolog "github.com/rs/zerolog"
 
 	client "fybrik.io/openmetadata-connector/datacatalog-go-client"
@@ -132,58 +132,42 @@ func getCreateAssetRequestAndReponse() (*models.CreateAssetRequest, *models.GetA
 	return createAssetRequest, getAssetResponse
 }
 
-func mustAsJSON(t *testing.T, in interface{}) []byte {
+func mustAsJSON(in interface{}) []byte {
 	result, err := json.Marshal(in)
-	if err != nil {
-		t.Fatal(err)
-	}
+	Expect(err).ToNot(HaveOccurred())
 	return result
 }
 
 // Code for mock vault server. Handles both a request for a token, and a request for a secret
-func createMockVaultServer(t *testing.T) *httptest.Server {
+func createMockVaultServer() *httptest.Server {
+	By("opreating a mock Vault server")
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requestBytes, err := io.ReadAll(r.Body)
-		if err != nil {
-			t.Error(err)
-			return
-		}
-
-		if r.Method == http.MethodPost && r.RequestURI == "/v1/auth/"+TestAuthPath+"/login" {
+		Expect(err).ToNot(HaveOccurred())
+		Expect(r.Method).To(SatisfyAny(Equal(http.MethodPost), Equal(http.MethodGet)))
+		if r.Method == http.MethodPost {
+			By("receving a Post request")
+			Expect(r.RequestURI).To(Equal("/v1/auth/" + TestAuthPath + "/login"))
 			requestMap := make(map[string]interface{})
 			err = json.Unmarshal(requestBytes, &requestMap)
-			if err != nil {
-				t.Error(err)
-				return
-			}
-			if (requestMap[Role].(string) != FybrikLowerCase) ||
-				(requestMap[JWT].(string) != TestJWT) {
-				t.Error(errors.New("unexpected request format"))
-				return
-			}
-
+			Expect(err).ToNot(HaveOccurred())
+			Expect(requestMap[Role].(string)).To(Equal(FybrikLowerCase))
+			Expect(requestMap[JWT].(string)).To(Equal(TestJWT))
 			response := map[string]interface{}{
 				RequestID: ZeroUUID,
 				Auth: map[string]interface{}{
 					ClientToken: TestToken,
 				},
 			}
-
-			responseBytes := mustAsJSON(t, response)
-
+			responseBytes := mustAsJSON(response)
 			w.Header().Add(ContentType, ApplicationJSON)
 			_, err = w.Write(responseBytes)
-			if err != nil {
-				t.Error(err)
-			}
-
+			Expect(err).ToNot(HaveOccurred())
 			return
 		}
-
 		if r.Method == http.MethodGet {
-			if r.Header.Get("X-Vault-Token") != TestToken {
-				t.Error(err)
-			}
+			By("receving a Get request")
+			Expect(r.Header.Get("X-Vault-Token")).To(Equal(TestToken))
 			logger.Trace().Msg("About to mock response secret request")
 			response := map[string]interface{}{
 				Data: map[string]interface{}{
@@ -192,17 +176,13 @@ func createMockVaultServer(t *testing.T) *httptest.Server {
 				},
 			}
 
-			responseBytes := mustAsJSON(t, response)
+			responseBytes := mustAsJSON(response)
 
 			w.Header().Add(ContentType, ApplicationJSON)
 			_, err = w.Write(responseBytes)
-			if err != nil {
-				t.Error(err)
-			}
-
+			Expect(err).ToNot(HaveOccurred())
 			return
 		}
-		t.Fatal("unexpected request")
 	}))
 
 	return svr
@@ -315,7 +295,7 @@ func patchTable(table *client.Table, patchArray []interface{}) bool { //nolint
 }
 
 // handle mock OM server GET requests
-func handleGetMockOMServer(t *testing.T, r *http.Request) (map[string]interface{}, int) {
+func handleGetMockOMServer(r *http.Request) (map[string]interface{}, int) {
 	if strings.HasPrefix(r.RequestURI, "/v1/metadata/types?category=entity") {
 		var types []interface{}
 		types = append(types, map[string]interface{}{FullyQualifiedName: "table", ID: "1"})
@@ -360,17 +340,15 @@ func handleGetMockOMServer(t *testing.T, r *http.Request) (map[string]interface{
 		return structs.Map(service), 0
 	}
 
-	t.Fatalf("unrecognized GET request")
 	return nil, http.StatusInternalServerError
 }
 
 // handle mock OM server POST requests
-func handlePostMockOMServer(t *testing.T, r *http.Request,
+func handlePostMockOMServer(r *http.Request,
 	requestMap map[string]interface{}) (map[string]interface{}, int) {
 	if r.RequestURI == "/v1/tags" {
 		return map[string]interface{}{}, 0
 	}
-
 	if r.RequestURI == DatabaseServicesURI {
 		// keep the connection information in the mock data catalog
 		service := constructDataBaseServiceStruct(requestMap)
@@ -379,7 +357,6 @@ func handlePostMockOMServer(t *testing.T, r *http.Request,
 		}
 		mockDataCatalog[DatabaseService] = service
 	}
-
 	if r.RequestURI == TablesURI {
 		table, ok := constructTableStruct(requestMap)
 		if !ok {
@@ -388,7 +365,6 @@ func handlePostMockOMServer(t *testing.T, r *http.Request,
 		mockDataCatalog[ZeroUUID] = table
 		return structs.Map(table), 0
 	}
-
 	if r.RequestURI == DatabaseServicesURI ||
 		r.RequestURI == "/v1/services/ingestionPipelines" ||
 		r.RequestURI == "/v1/databases" ||
@@ -398,73 +374,61 @@ func handlePostMockOMServer(t *testing.T, r *http.Request,
 			ID:                 ZeroUUID,
 			FullyQualifiedName: TestDatabaseService}, 0
 	}
-
-	t.Fatalf("unrecognized POST request")
 	return nil, http.StatusInternalServerError
 }
 
 // returns a mock OM server, which handles select GET, POST, PUT, and PATCH requests
-func createMockOMServer(t *testing.T) *httptest.Server { //nolint
+func createMockOMServer() *httptest.Server {
+	By("opreating a mock OM server")
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var response map[string]interface{}
 		var statusCode int
-
 		requestBytes, err := io.ReadAll(r.Body)
-		if err != nil {
-			t.Fatal(err)
-			return
-		}
-
+		Expect(err).ToNot(HaveOccurred())
 		requestMap := make(map[string]interface{})
 		var requestArr []interface{}
 		if len(requestBytes) > 0 {
 			err = json.Unmarshal(requestBytes, &requestMap)
 			if err != nil {
 				err = json.Unmarshal(requestBytes, &requestArr)
-				if err != nil {
-					t.Fatalf(string(requestBytes))
-					return
-				}
+				Expect(err).ToNot(HaveOccurred())
 			}
 		}
-
+		Expect(r.Method).To(SatisfyAny(Equal(http.MethodGet), Equal(http.MethodPost), Equal(http.MethodPut), Equal(http.MethodPatch)))
 		if r.Method == http.MethodGet {
-			response, statusCode = handleGetMockOMServer(t, r)
+			By("receving a Get request to the OM server")
+			response, statusCode = handleGetMockOMServer(r)
+			Expect(statusCode).ToNot(Equal(http.StatusInternalServerError))
 			if statusCode != 0 {
 				w.WriteHeader(statusCode)
 				return
 			}
 		} else if r.Method == http.MethodPost {
-			response, statusCode = handlePostMockOMServer(t, r, requestMap)
+			By("receving a Post request to the OM server")
+			response, statusCode = handlePostMockOMServer(r, requestMap)
+			Expect(statusCode).ToNot(Equal(http.StatusInternalServerError))
 			if statusCode != 0 {
 				w.WriteHeader(statusCode)
 				return
 			}
-		} else if r.Method == http.MethodPut && r.RequestURI == "/v1/metadata/types/1" {
+		} else if r.Method == http.MethodPut {
+			By("receving a Put request to the OM server")
+			Expect(r.RequestURI).To(Equal("/v1/metadata/types/1"))
 			response = map[string]interface{}{}
-		} else if r.Method == http.MethodPatch && r.RequestURI == TablesURI+"/"+ZeroUUID {
+		} else if r.Method == http.MethodPatch {
+			By("receving a Patch request to the OM server")
+			Expect(r.RequestURI).To(Equal(TablesURI + "/" + ZeroUUID))
 			table, ok := mockDataCatalog[ZeroUUID].(*client.Table)
-			if !ok {
-				t.Fatalf("error: cannot find table")
-			}
+			Expect(ok).To(BeTrue())
 			ok = patchTable(table, requestArr)
-			if !ok {
-				t.Fatalf("error: table patch failed")
-			}
+			Expect(ok).To(BeTrue())
 			mockDataCatalog[ZeroUUID] = table
-
 			response = map[string]interface{}{}
-		} else {
-			t.Fatalf("unexpected request: %s -- %s", r.Method, r.RequestURI)
 		}
-
-		responseBytes := mustAsJSON(t, response)
-
+		responseBytes := mustAsJSON(response)
 		w.Header().Add(ContentType, ApplicationJSON)
 		_, err = w.Write(responseBytes)
-		if err != nil {
-			t.Error(err)
-		}
+		Expect(err).ToNot(HaveOccurred())
 	}))
 
 	return svr
