@@ -486,7 +486,7 @@ func (s *OpenMetadataAPIService) deleteAsset(ctx context.Context, c *client.APIC
 // populate the values in a GetAssetResponse structure to include everything:
 // credentials, name, owner, geography, dataFormat, connection informations,
 // tags, and columns
-func (s *OpenMetadataAPIService) constructAssetResponse(ctx context.Context,
+func (s *OpenMetadataAPIService) constructAssetResponse(ctx context.Context, //nolint
 	c *client.APIClient,
 	table *client.Table) (*models.GetAssetResponse, error) {
 	// Let's begin by finding the Database Service.
@@ -530,19 +530,22 @@ func (s *OpenMetadataAPIService) constructAssetResponse(ctx context.Context,
 		ret.Details.DataFormat = &dataFormatStr
 	}
 
-	connectionType := customProperties[ConnectionType].(string)
-
-	dt, found := s.NameToDatabaseStruct[connectionType]
+	connectionType := customProperties[ConnectionType]
+	if connectionType == nil {
+		return nil, errors.New(ConnectionType + " value missing from table custom properties")
+	}
+	connectionTypeStr := connectionType.(string)
+	dt, found := s.NameToDatabaseStruct[connectionTypeStr]
 	if !found {
-		return nil, errors.New("Unrecognized connection type: " + connectionType)
+		return nil, errors.New("Unrecognized connection type: " + connectionTypeStr)
 	}
 
 	config := dt.TranslateOpenMetadataConfigToFybrikConfig(table.Name, ret.Credentials,
 		respService.Connection.GetConfig())
 
 	additionalProperties := make(map[string]interface{})
-	ret.Details.Connection.Name = connectionType
-	additionalProperties[connectionType] = config
+	ret.Details.Connection.Name = connectionTypeStr
+	additionalProperties[connectionTypeStr] = config
 	ret.Details.Connection.AdditionalProperties = additionalProperties
 
 	for i := range table.Columns {
