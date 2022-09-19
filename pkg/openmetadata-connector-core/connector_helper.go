@@ -52,7 +52,7 @@ func tagColumn(ctx context.Context, c *client.APIClient, columns []client.Column
 	return columns
 }
 
-func (s *OpenMetadataAPIService) PrepareOpenMetadataForFybrik() bool {
+func (s *OpenMetadataAPIService) prepareOpenMetadataForFybrik() bool {
 	ctx := context.Background()
 	c := s.getOpenMetadataClient()
 
@@ -173,7 +173,7 @@ func NewOpenMetadataAPIService(conf map[interface{}]interface{}, logger *zerolog
 		logger:               logger,
 		NumRenameRetries:     DefaultNumRenameRetries}
 
-	s.initialized = s.PrepareOpenMetadataForFybrik()
+	s.initialized = s.prepareOpenMetadataForFybrik()
 
 	return s
 }
