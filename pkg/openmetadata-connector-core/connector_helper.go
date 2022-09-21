@@ -52,7 +52,10 @@ func tagColumn(ctx context.Context, c *client.APIClient, columns []client.Column
 	return columns
 }
 
-func (s *OpenMetadataAPIService) addTags(ctx context.Context, c *client.APIClient, categoryName string, tags interface{}) {
+// transform variable `tags` into an array.
+// traverse `tags` and create OM tags in the `categoryName` category
+func (s *OpenMetadataAPIService) addTags(ctx context.Context, c *client.APIClient,
+	categoryName string, tags interface{}) {
 	tagsArr, ok := tags.([]interface{})
 	if !ok {
 		return
@@ -76,10 +79,12 @@ func (s *OpenMetadataAPIService) addTags(ctx context.Context, c *client.APIClien
 	}
 }
 
-func (s *OpenMetadataAPIService) prepareOpenMetadataForFybrik() bool { //nolint
+func (s *OpenMetadataAPIService) PrepareOpenMetadataForFybrik() bool { //nolint
 	ctx := context.Background()
 	c := s.getOpenMetadataClient()
 
+	// traverse tag categories. create categories as needed.
+	// within each tag category, create the specified tags
 	if tagCategories, ok := s.taxonomy[TagCategories]; ok {
 		tagCategoriesArr, ok := tagCategories.([]interface{})
 		if ok {
@@ -151,6 +156,7 @@ func (s *OpenMetadataAPIService) prepareOpenMetadataForFybrik() bool { //nolint
 		return false
 	}
 
+	// traverse the table custom properties, and create each
 	tableProperties, ok := s.taxonomy[TableProperties]
 	if ok {
 		tablePropertiesArr, ok := tableProperties.([]interface{})
@@ -214,7 +220,7 @@ func NewOpenMetadataAPIService(conf map[interface{}]interface{}, taxonomy map[in
 		NumRenameRetries:     DefaultNumRenameRetries,
 		taxonomy:             taxonomy}
 
-	s.initialized = s.prepareOpenMetadataForFybrik()
+	s.initialized = s.PrepareOpenMetadataForFybrik()
 
 	return s
 }

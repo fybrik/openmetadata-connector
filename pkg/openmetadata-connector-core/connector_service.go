@@ -33,7 +33,7 @@ func (s *OpenMetadataAPIService) CreateAsset(ctx context.Context, //nolint
 	xRequestDatacatalogWriteCred string,
 	createAssetRequest *models.CreateAssetRequest) (api.ImplResponse, error) {
 	if !s.initialized {
-		s.initialized = s.prepareOpenMetadataForFybrik()
+		s.initialized = s.PrepareOpenMetadataForFybrik()
 	}
 
 	connectionType := createAssetRequest.Details.Connection.Name
@@ -141,7 +141,7 @@ func (s *OpenMetadataAPIService) CreateAsset(ctx context.Context, //nolint
 func (s *OpenMetadataAPIService) DeleteAsset(ctx context.Context, xRequestDatacatalogCred string,
 	deleteAssetRequest *api.DeleteAssetRequest) (api.ImplResponse, error) {
 	if !s.initialized {
-		s.initialized = s.prepareOpenMetadataForFybrik()
+		s.initialized = s.PrepareOpenMetadataForFybrik()
 	}
 
 	c := s.getOpenMetadataClient()
@@ -161,7 +161,7 @@ func (s *OpenMetadataAPIService) DeleteAsset(ctx context.Context, xRequestDataca
 func (s *OpenMetadataAPIService) GetAssetInfo(ctx context.Context, xRequestDatacatalogCred string,
 	getAssetRequest *api.GetAssetRequest) (api.ImplResponse, error) {
 	if !s.initialized {
-		s.initialized = s.prepareOpenMetadataForFybrik()
+		s.initialized = s.PrepareOpenMetadataForFybrik()
 	}
 
 	c := s.getOpenMetadataClient()
@@ -188,7 +188,7 @@ func (s *OpenMetadataAPIService) GetAssetInfo(ctx context.Context, xRequestDatac
 func (s *OpenMetadataAPIService) UpdateAsset(ctx context.Context, xRequestDatacatalogUpdateCred string,
 	updateAssetRequest *api.UpdateAssetRequest) (api.ImplResponse, error) {
 	if !s.initialized {
-		s.initialized = s.prepareOpenMetadataForFybrik()
+		s.initialized = s.PrepareOpenMetadataForFybrik()
 	}
 
 	c := s.getOpenMetadataClient()
