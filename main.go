@@ -4,6 +4,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -23,6 +24,7 @@ const DefaultListeningPort = 8081
 func RunCmd() *cobra.Command {
 	logger := logging.LogInit(logging.CONNECTOR, "OpenMetadata Connector")
 	configFile := "/etc/conf/conf.yaml"
+	taxonomyFile := "./taxonomy.yaml"
 	port := DefaultListeningPort
 	cmd := &cobra.Command{
 		Use:   "run",
@@ -30,17 +32,21 @@ func RunCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// TODO - add logging level
 
-			yamlFile, err := os.ReadFile(configFile)
+			configFileBytes, err1 := os.ReadFile(configFile)
+			taxonomyFileBytes, err2 := os.ReadFile(taxonomyFile)
 
-			if err != nil {
-				return err
+			if err1 != nil || err2 != nil {
+				return errors.New("failure to read config file or taxonomy file")
 			}
 
 			conf := make(map[interface{}]interface{})
+			taxonomy := make(map[interface{}]interface{})
 
-			err = yaml.Unmarshal(yamlFile, &conf)
-			if err != nil {
-				return err
+			err1 = yaml.Unmarshal(configFileBytes, &conf)
+			err2 = yaml.Unmarshal(taxonomyFileBytes, &taxonomy)
+
+			if err1 != nil || err2 != nil {
+				return errors.New("failure to parse config file or taxonomy file")
 			}
 
 			logger.Info().Msg("Server started")
@@ -57,6 +63,8 @@ func RunCmd() *cobra.Command {
 	}
 	cmd.Flags().StringVar(&configFile, "config", configFile, "Configuration file")
 	cmd.Flags().IntVar(&port, "port", port, "Listening port")
+	cmd.Flags().StringVar(&taxonomyFile, "taxonomy", taxonomyFile,
+		"File containing tags and custom properties needed for working with Fybrik")
 	return cmd
 }
 

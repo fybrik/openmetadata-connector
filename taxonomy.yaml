@@ -1,0 +1,19 @@
+tag-catgories:
+- name: Fybrik
+  description: Parent Category for all Fybrik labels
+  tags:
+  - name: PII
+    description: Personally Identifiable Information
+  - name: finance
+    description: Financial Information
+table-properties:
+- name: connectionType
+  description: "Connection type, e.g.: s3 or mysql"
+- name: name
+  description: Name of the resource
+- name: geography
+  description: Geography of the resource
+- name: owner
+  description: Owner of the resource
+- name: dataFormat
+  description: "Data Format, e.g.: csv"
