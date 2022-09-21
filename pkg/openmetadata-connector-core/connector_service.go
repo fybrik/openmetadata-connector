@@ -25,6 +25,7 @@ type OpenMetadataAPIService struct {
 	logger               *zerolog.Logger
 	NumRenameRetries     int
 	initialized          bool
+	taxonomy             map[interface{}]interface{}
 }
 
 // CreateAsset - This REST API writes data asset information to the data catalog configured in fybrik

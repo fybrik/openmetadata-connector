@@ -51,7 +51,7 @@ func RunCmd() *cobra.Command {
 
 			logger.Info().Msg("Server started")
 
-			DefaultAPIService := openapi_connector_core.NewOpenMetadataAPIService(conf, &logger)
+			DefaultAPIService := openapi_connector_core.NewOpenMetadataAPIService(conf, taxonomy, &logger)
 			DefaultAPIController := openapi_connector_core.NewOpenMetadataAPIController(DefaultAPIService)
 
 			router := api.NewRouter(DefaultAPIController)

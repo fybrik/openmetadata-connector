@@ -52,17 +52,60 @@ func tagColumn(ctx context.Context, c *client.APIClient, columns []client.Column
 	return columns
 }
 
-func (s *OpenMetadataAPIService) prepareOpenMetadataForFybrik() bool {
+func (s *OpenMetadataAPIService) addTags(ctx context.Context, c *client.APIClient, categoryName string, tags interface{}) {
+	tagsArr, ok := tags.([]interface{})
+	if !ok {
+		return
+	}
+	for i := range tagsArr {
+		func() {
+			tagMap, ok := tagsArr[i].(map[interface{}]interface{})
+			if ok {
+				name, ok1 := tagMap[Name]
+				description, ok2 := tagMap[Description]
+				if ok1 && ok2 {
+					_, r, err := c.TagsApi.CreatePrimaryTag(ctx, categoryName).
+						CreateTag(*client.NewCreateTag(description.(string), name.(string))).Execute()
+					if err != nil {
+						s.logger.Trace().Msg("Failed to create Tag. Maybe it already exists.")
+					}
+					defer r.Body.Close()
+				}
+			}
+		}()
+	}
+}
+
+func (s *OpenMetadataAPIService) prepareOpenMetadataForFybrik() bool { //nolint
 	ctx := context.Background()
 	c := s.getOpenMetadataClient()
 
-	// Create Tag Category for Fybrik
-	_, r, err := c.TagsApi.CreateTagCategory(ctx).CreateTagCategory(*client.NewCreateTagCategory("Classification",
-		"Parent Category for all Fybrik labels", Fybrik)).Execute()
-	if err != nil {
-		s.logger.Trace().Msg("Failed to create the Fybrik Tag category. Maybe it already exists.")
-	} else {
-		defer r.Body.Close()
+	if tagCategories, ok := s.taxonomy["tag-categories"]; ok {
+		tagCategoriesArr, ok := tagCategories.([]interface{})
+		if ok {
+			for i := range tagCategoriesArr {
+				func() {
+					tagCategory := tagCategoriesArr[i]
+					tagCategoryMap, ok := tagCategory.(map[interface{}]interface{})
+					if ok {
+						name, ok1 := tagCategoryMap[Name]
+						description, ok2 := tagCategoryMap[Description]
+						if ok1 && ok2 {
+							// Create Tag Category for Fybrik
+							_, r, err := c.TagsApi.CreateTagCategory(ctx).CreateTagCategory(*client.NewCreateTagCategory("Classification",
+								description.(string), name.(string))).Execute()
+							if err != nil {
+								s.logger.Trace().Msg("Failed to create the Tag category. Maybe it already exists.")
+							}
+							defer r.Body.Close()
+						}
+						if tags, ok := tagCategoryMap[Tags]; ok {
+							s.addTags(ctx, c, name.(string), tags)
+						}
+					}
+				}()
+			}
+		}
 	}
 
 	// Find the ID for the 'table' entity
@@ -139,7 +182,8 @@ func (s *OpenMetadataAPIService) prepareOpenMetadataForFybrik() bool {
 
 // NewOpenMetadataApiService creates a new api service.
 // It is initialized base on the configuration
-func NewOpenMetadataAPIService(conf map[interface{}]interface{}, logger *zerolog.Logger) OpenMetadataAPIServicer {
+func NewOpenMetadataAPIService(conf map[interface{}]interface{}, taxonomy map[interface{}]interface{},
+	logger *zerolog.Logger) OpenMetadataAPIServicer {
 	var SleepIntervalMS int
 	var NumRetries int
 
@@ -171,7 +215,8 @@ func NewOpenMetadataAPIService(conf map[interface{}]interface{}, logger *zerolog
 		NumRetries:           NumRetries,
 		NameToDatabaseStruct: nameToDatabaseStruct,
 		logger:               logger,
-		NumRenameRetries:     DefaultNumRenameRetries}
+		NumRenameRetries:     DefaultNumRenameRetries,
+		taxonomy:             taxonomy}
 
 	s.initialized = s.prepareOpenMetadataForFybrik()
 
@@ -261,7 +306,7 @@ func (s *OpenMetadataAPIService) createDatabaseService(ctx context.Context,
 }
 
 func (s *OpenMetadataAPIService) findAsset(ctx context.Context, c *client.APIClient, assetID string) (bool, *client.Table) {
-	fields := "tags"
+	fields := Tags
 	include := "all"
 	table, r, err := c.TablesApi.GetTableByFQN(ctx, assetID).Fields(fields).Include(include).Execute()
 	if err != nil {
