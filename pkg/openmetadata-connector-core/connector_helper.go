@@ -80,7 +80,7 @@ func (s *OpenMetadataAPIService) prepareOpenMetadataForFybrik() bool { //nolint
 	ctx := context.Background()
 	c := s.getOpenMetadataClient()
 
-	if tagCategories, ok := s.taxonomy["tag-categories"]; ok {
+	if tagCategories, ok := s.taxonomy[TagCategories]; ok {
 		tagCategoriesArr, ok := tagCategories.([]interface{})
 		if ok {
 			for i := range tagCategoriesArr {
@@ -151,31 +151,27 @@ func (s *OpenMetadataAPIService) prepareOpenMetadataForFybrik() bool { //nolint
 		return false
 	}
 
-	// Add custom properties for tables
-	r1, _ := c.MetadataApi.AddProperty(ctx, tableID).CustomProperty(*client.NewCustomProperty(
-		"The vault plugin path where the destination data credentials will be stored as kubernetes secrets", Credentials,
-		*client.NewEntityReference(stringID, String))).Execute()
-	defer r1.Body.Close()
-	r2, _ := c.MetadataApi.AddProperty(ctx, tableID).CustomProperty(*client.NewCustomProperty(
-		"Connection type, e.g.: s3 or mysql", ConnectionType,
-		*client.NewEntityReference(stringID, String))).Execute()
-	defer r2.Body.Close()
-	r3, _ := c.MetadataApi.AddProperty(ctx, tableID).CustomProperty(*client.NewCustomProperty(
-		"Name of the resource", Name,
-		*client.NewEntityReference(stringID, String))).Execute()
-	defer r3.Body.Close()
-	r4, _ := c.MetadataApi.AddProperty(ctx, tableID).CustomProperty(*client.NewCustomProperty(
-		"Geography of the resource", Geography,
-		*client.NewEntityReference(stringID, String))).Execute()
-	defer r4.Body.Close()
-	r5, _ := c.MetadataApi.AddProperty(ctx, tableID).CustomProperty(*client.NewCustomProperty(
-		"Owner of the resource", Owner,
-		*client.NewEntityReference(stringID, String))).Execute()
-	defer r5.Body.Close()
-	r6, _ := c.MetadataApi.AddProperty(ctx, tableID).CustomProperty(*client.NewCustomProperty(
-		"Data format", DataFormat,
-		*client.NewEntityReference(stringID, String))).Execute()
-	r6.Body.Close()
+	tableProperties, ok := s.taxonomy[TableProperties]
+	if ok {
+		tablePropertiesArr, ok := tableProperties.([]interface{})
+		if ok {
+			for i := range tablePropertiesArr {
+				func() {
+					propertyMap, ok := tablePropertiesArr[i].(map[interface{}]interface{})
+					if ok {
+						name, ok1 := propertyMap[Name]
+						description, ok2 := propertyMap[Description]
+						if ok1 && ok2 {
+							r, _ := c.MetadataApi.AddProperty(ctx, tableID).CustomProperty(*client.NewCustomProperty(
+								description.(string), name.(string),
+								*client.NewEntityReference(stringID, String))).Execute()
+							defer r.Body.Close()
+						}
+					}
+				}()
+			}
+		}
+	}
 
 	return true
 }
