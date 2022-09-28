@@ -9,9 +9,10 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/rs/zerolog"
+
 	client "fybrik.io/openmetadata-connector/datacatalog-go-client"
 	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
-	"github.com/rs/zerolog"
 )
 
 func AppendStrings(a, b string) string {
