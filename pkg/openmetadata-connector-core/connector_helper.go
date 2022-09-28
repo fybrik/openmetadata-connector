@@ -149,10 +149,16 @@ func (s *OpenMetadataAPIService) PrepareOpenMetadataForFybrik() bool { //nolint
 				func() {
 					propertyMap, ok := tablePropertiesArr[i].(map[interface{}]interface{})
 					if ok {
-						name, ok1 := propertyMap[Name]
-						description, ok2 := propertyMap[Description]
-						typeName, ok3 := propertyMap[Type]
-						if ok1 && ok2 && ok3 {
+						typeName, ok1 := propertyMap[Type]
+						// default property type is "string"
+						if !ok1 {
+							typeName = String
+						}
+
+						name, ok2 := propertyMap[Name]
+						description, ok3 := propertyMap[Description]
+
+						if ok2 && ok3 {
 							typeID, ok4 := typeNameToID[typeName.(string)]
 							if !ok4 {
 								s.logger.Warn().Msg("unrecognized property type: " + typeName.(string))
@@ -162,7 +168,11 @@ func (s *OpenMetadataAPIService) PrepareOpenMetadataForFybrik() bool { //nolint
 									*client.NewEntityReference(typeID, String))).Execute()
 								defer r.Body.Close()
 							}
+						} else {
+							s.logger.Warn().Msg("missing fields for table property")
 						}
+					} else {
+						s.logger.Warn().Msg(fmt.Sprintf("malformed table properties. cannot cast %T to map[interface{}]interface{}", tablePropertiesArr[i]))
 					}
 				}()
 			}
