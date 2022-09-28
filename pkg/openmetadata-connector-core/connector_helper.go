@@ -542,7 +542,7 @@ func (s *OpenMetadataAPIService) constructAssetResponse(ctx context.Context, //n
 	}
 
 	config := dt.TranslateOpenMetadataConfigToFybrikConfig(table.Name, ret.Credentials,
-			respService.Connection.GetConfig())
+		respService.Connection.GetConfig())
 
 	additionalProperties := make(map[string]interface{})
 	ret.Details.Connection.Name = connectionTypeStr
