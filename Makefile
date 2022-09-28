@@ -88,4 +88,7 @@ endif
 .PHONY: push-to-kind
 push-to-kind:
 	kind load docker-image ${IMG}
-  
+
+.PHONY: test
+test:
+	go test -v ./...
