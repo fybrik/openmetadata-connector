@@ -77,7 +77,11 @@ func (v *VaultClient) GetToken() (string, error) {
 
 	// request token from vault
 	requestBody := strings.NewReader(string(jsonStr))
-	resp, _ := http.Post(fullAuthPath, "encoding/json", requestBody) //nolint
+	resp, err := http.Post(fullAuthPath, "encoding/json", requestBody) //nolint
+	if err != nil {
+		v.logger.Error().Msg("vault POST request failed")
+		return "", err
+	}
 	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		v.logger.Error().Msg("Failed to get token from vault")

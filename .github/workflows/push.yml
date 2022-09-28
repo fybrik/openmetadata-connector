@@ -1,0 +1,43 @@
+name: Push
+
+on:
+  push:
+    branches:
+      - 'main'
+    tags:
+      - '*'
+
+env:
+  DOCKER_HOSTNAME: ghcr.io
+  DOCKER_NAMESPACE: fybrik 
+  DOCKER_USERNAME: ${{ github.actor }}
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    # Versions are created as follows:
+    # - Tags starting with v will be released as what comes after `v`. (e.g. refs/tags/v1.0 -> 1.0).
+    # - Main branch will be released with `main` as version tag for the docker images.
+    - id: version
+      name: Infer version
+      run: |
+        if [[ ${GITHUB_REF} == refs/tags/* ]] ;
+        then
+            version="${GITHUB_REF#refs/tags/v}"
+        elif  [[ ${GITHUB_REF} == refs/heads/main ]] ;
+        then
+            version=main
+        fi
+        echo ::set-output name=version::$version
+        echo "DOCKER_TAG=${version}" >> $GITHUB_ENV
+    - name: Build docker image 
+      run: make docker-build
+    - name: Docker push
+      run: |
+        echo "${{ secrets.GITHUB_TOKEN }}" | docker login -u "${{ env.DOCKER_USERNAME }}" --password-stdin "${{ env.DOCKER_HOSTNAME }}"
+        make docker-push
+
