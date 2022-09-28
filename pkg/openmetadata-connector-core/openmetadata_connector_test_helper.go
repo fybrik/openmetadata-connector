@@ -146,7 +146,7 @@ func createMockVaultServer() *httptest.Server {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(r.Method).To(SatisfyAny(Equal(http.MethodPost), Equal(http.MethodGet)))
 		if r.Method == http.MethodPost {
-			By("receving a Post request")
+			By("receiving a Post request")
 			Expect(r.RequestURI).To(Equal("/v1/auth/" + TestAuthPath + "/login"))
 			requestMap := make(map[string]interface{})
 			err = json.Unmarshal(requestBytes, &requestMap)
@@ -166,7 +166,7 @@ func createMockVaultServer() *httptest.Server {
 			return
 		}
 		if r.Method == http.MethodGet {
-			By("receving a Get request")
+			By("receiving a Get request")
 			Expect(r.Header.Get("X-Vault-Token")).To(Equal(TestToken))
 			logger.Trace().Msg("About to mock response secret request")
 			response := map[string]interface{}{
@@ -296,19 +296,15 @@ func patchTable(table *client.Table, patchArray []interface{}) bool { //nolint
 
 // handle mock OM server GET requests
 func handleGetMockOMServer(r *http.Request) (map[string]interface{}, int) {
-	if strings.HasPrefix(r.RequestURI, "/v1/metadata/types?category=entity") {
+	if strings.HasPrefix(r.RequestURI, "/v1/metadata/types") {
 		var types []interface{}
 		types = append(types, map[string]interface{}{FullyQualifiedName: "table", ID: "1"})
+		types = append(types, map[string]interface{}{FullyQualifiedName: "string", ID: "2"})
 		return map[string]interface{}{Data: types}, 0
 	}
 	if r.RequestURI == DatabaseServicesURI {
 		var databaseServices []interface{}
 		return map[string]interface{}{Data: databaseServices}, 0
-	}
-	if strings.HasPrefix(r.RequestURI, "/v1/metadata/types?category=field") {
-		var types []interface{}
-		types = append(types, map[string]interface{}{FullyQualifiedName: "string", ID: "2"})
-		return map[string]interface{}{Data: types}, 0
 	}
 	if strings.HasPrefix(r.RequestURI,
 		fmt.Sprintf(TablesURI+"/name/%s.%s.%s.%s", TestDatabaseService, TestDatabase,
@@ -396,7 +392,7 @@ func createMockOMServer() *httptest.Server {
 		}
 		Expect(r.Method).To(SatisfyAny(Equal(http.MethodGet), Equal(http.MethodPost), Equal(http.MethodPut), Equal(http.MethodPatch)))
 		if r.Method == http.MethodGet {
-			By("receving a Get request to the OM server")
+			By("receiving a Get request to the OM server")
 			response, statusCode = handleGetMockOMServer(r)
 			Expect(statusCode).ToNot(Equal(http.StatusInternalServerError))
 			if statusCode != 0 {
@@ -404,7 +400,7 @@ func createMockOMServer() *httptest.Server {
 				return
 			}
 		} else if r.Method == http.MethodPost {
-			By("receving a Post request to the OM server")
+			By("receiving a Post request to the OM server")
 			response, statusCode = handlePostMockOMServer(r, requestMap)
 			Expect(statusCode).ToNot(Equal(http.StatusInternalServerError))
 			if statusCode != 0 {
@@ -412,11 +408,11 @@ func createMockOMServer() *httptest.Server {
 				return
 			}
 		} else if r.Method == http.MethodPut {
-			By("receving a Put request to the OM server")
+			By("receiving a Put request to the OM server")
 			Expect(r.RequestURI).To(Equal("/v1/metadata/types/1"))
 			response = map[string]interface{}{}
 		} else if r.Method == http.MethodPatch {
-			By("receving a Patch request to the OM server")
+			By("receiving a Patch request to the OM server")
 			Expect(r.RequestURI).To(Equal(TablesURI + "/" + ZeroUUID))
 			table, ok := mockDataCatalog[ZeroUUID].(*client.Table)
 			Expect(ok).To(BeTrue())
