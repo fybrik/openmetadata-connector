@@ -77,7 +77,7 @@ func (s *OpenMetadataAPIService) addTags(ctx context.Context, c *client.APIClien
 						return
 					}
 				} else {
-					s.logger.Warn().Msg("malformed tag information")
+					s.logger.Warn().Msg(fmt.Sprintf("malformed tag information. cannot cast %T to map[interface{}]interface{}", tagsArr[i]))
 				}
 			}
 		}()
@@ -112,6 +112,8 @@ func (s *OpenMetadataAPIService) PrepareOpenMetadataForFybrik() bool { //nolint
 						if tags, ok := tagCategoryMap[Tags]; ok {
 							s.addTags(ctx, c, name.(string), tags)
 						}
+					} else {
+						s.logger.Warn().Msg(fmt.Sprintf("malformed tag category. cannot cast %T to map[interface{}]interface{}", tagCategory))
 					}
 				}()
 			}
