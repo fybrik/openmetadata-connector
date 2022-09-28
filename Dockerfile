@@ -4,7 +4,7 @@ FROM $image
 ENV HOME=/tmp
 WORKDIR /tmp
 
-COPY taxonomy.yaml /taxonomy.yaml
+COPY customization.yaml /customization.yaml
 COPY openmetadata-connector /openmetadata-connector
 
 USER 10001

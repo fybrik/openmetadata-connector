@@ -24,7 +24,7 @@ const DefaultListeningPort = 8081
 func RunCmd() *cobra.Command {
 	logger := logging.LogInit(logging.CONNECTOR, "OpenMetadata Connector")
 	configFile := "/etc/conf/conf.yaml"
-	taxonomyFile := "./taxonomy.yaml"
+	customizationFile := "./customization.yaml"
 	port := DefaultListeningPort
 	cmd := &cobra.Command{
 		Use:   "run",
@@ -37,26 +37,26 @@ func RunCmd() *cobra.Command {
 				return errors.New("failure to read config file: " + configFile)
 			}
 
-			taxonomyFileBytes, err := os.ReadFile(taxonomyFile)
+			customizationFileBytes, err := os.ReadFile(customizationFile)
 			if err != nil {
-				return errors.New("failure to read taxonomy file: " + taxonomyFile)
+				return errors.New("failure to read customization file: " + customizationFile)
 			}
 
 			conf := make(map[string]interface{})
-			taxonomy := make(map[string]interface{})
+			customization := make(map[string]interface{})
 
 			err = yaml.Unmarshal(configFileBytes, &conf)
 			if err != nil {
 				return errors.New("failure to parse config file")
 			}
-			err = yaml.Unmarshal(taxonomyFileBytes, &taxonomy)
+			err = yaml.Unmarshal(customizationFileBytes, &customization)
 			if err != nil {
-				return errors.New("failure to parse taxonomy file")
+				return errors.New("failure to parse customization file")
 			}
 
 			logger.Info().Msg("Server started")
 
-			DefaultAPIService := openapi_connector_core.NewOpenMetadataAPIService(conf, taxonomy, &logger)
+			DefaultAPIService := openapi_connector_core.NewOpenMetadataAPIService(conf, customization, &logger)
 			DefaultAPIController := openapi_connector_core.NewOpenMetadataAPIController(DefaultAPIService)
 
 			router := api.NewRouter(DefaultAPIController)
@@ -68,7 +68,7 @@ func RunCmd() *cobra.Command {
 	}
 	cmd.Flags().StringVar(&configFile, "config", configFile, "Configuration file")
 	cmd.Flags().IntVar(&port, "port", port, "Listening port")
-	cmd.Flags().StringVar(&taxonomyFile, "taxonomy", taxonomyFile,
+	cmd.Flags().StringVar(&customizationFile, "customization", customizationFile,
 		"File containing tags and custom properties needed for working with Fybrik")
 	return cmd
 }

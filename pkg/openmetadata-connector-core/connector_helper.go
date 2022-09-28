@@ -90,7 +90,7 @@ func (s *OpenMetadataAPIService) PrepareOpenMetadataForFybrik() bool { //nolint
 
 	// traverse tag categories. create categories as needed.
 	// within each tag category, create the specified tags
-	if tagCategories, ok := s.taxonomy[TagCategories]; ok {
+	if tagCategories, ok := s.customization[TagCategories]; ok {
 		tagCategoriesArr, ok := tagCategories.([]interface{})
 		if ok {
 			for i := range tagCategoriesArr {
@@ -141,7 +141,7 @@ func (s *OpenMetadataAPIService) PrepareOpenMetadataForFybrik() bool { //nolint
 	}
 
 	// traverse the table custom properties, and create each
-	tableProperties, ok := s.taxonomy[TableProperties]
+	tableProperties, ok := s.customization[TableProperties]
 	if ok {
 		tablePropertiesArr, ok := tableProperties.([]interface{})
 		if ok {
@@ -174,7 +174,7 @@ func (s *OpenMetadataAPIService) PrepareOpenMetadataForFybrik() bool { //nolint
 
 // NewOpenMetadataApiService creates a new api service.
 // It is initialized base on the configuration
-func NewOpenMetadataAPIService(conf map[string]interface{}, taxonomy map[string]interface{},
+func NewOpenMetadataAPIService(conf map[string]interface{}, customization map[string]interface{},
 	logger *zerolog.Logger) OpenMetadataAPIServicer {
 	var SleepIntervalMS int
 	var NumRetries int
@@ -208,7 +208,7 @@ func NewOpenMetadataAPIService(conf map[string]interface{}, taxonomy map[string]
 		NameToDatabaseStruct: nameToDatabaseStruct,
 		logger:               logger,
 		NumRenameRetries:     DefaultNumRenameRetries,
-		taxonomy:             taxonomy}
+		customization:        customization}
 
 	s.initialized = s.PrepareOpenMetadataForFybrik()
 
