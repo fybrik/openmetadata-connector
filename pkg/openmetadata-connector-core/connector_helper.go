@@ -184,7 +184,7 @@ func (s *OpenMetadataAPIService) PrepareOpenMetadataForFybrik() bool { //nolint
 
 // NewOpenMetadataApiService creates a new api service.
 // It is initialized base on the configuration
-func NewOpenMetadataAPIService(conf map[interface{}]interface{}, taxonomy map[interface{}]interface{},
+func NewOpenMetadataAPIService(conf map[string]interface{}, taxonomy map[string]interface{},
 	logger *zerolog.Logger) OpenMetadataAPIServicer {
 	var SleepIntervalMS int
 	var NumRetries int

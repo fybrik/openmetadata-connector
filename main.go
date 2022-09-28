@@ -39,8 +39,8 @@ func RunCmd() *cobra.Command {
 				return errors.New("failure to read config file or taxonomy file")
 			}
 
-			conf := make(map[interface{}]interface{})
-			taxonomy := make(map[interface{}]interface{})
+			conf := make(map[string]interface{})
+			taxonomy := make(map[string]interface{})
 
 			err1 = yaml.Unmarshal(configFileBytes, &conf)
 			err2 = yaml.Unmarshal(taxonomyFileBytes, &taxonomy)

@@ -80,7 +80,7 @@ var _ = Describe("Vault and OM connector", Ordered, func() {
 		var assetID string
 		var ctx context.Context
 		It("should create an asset and receive a vaild response", func() {
-			conf := make(map[interface{}]interface{})
+			conf := make(map[string]interface{})
 			conf["openmetadata_endpoint"] = mockOMServer.URL
 			conf["vault"] = vaultConf
 			servicer = NewOpenMetadataAPIService(conf, nil, &logger)
