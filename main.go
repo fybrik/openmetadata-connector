@@ -32,21 +32,26 @@ func RunCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// TODO - add logging level
 
-			configFileBytes, err1 := os.ReadFile(configFile)
-			taxonomyFileBytes, err2 := os.ReadFile(taxonomyFile)
+			configFileBytes, err := os.ReadFile(configFile)
+			if err != nil {
+				return errors.New("failure to read config file: " + configFile)
+			}
 
-			if err1 != nil || err2 != nil {
-				return errors.New("failure to read config file or taxonomy file")
+			taxonomyFileBytes, err := os.ReadFile(taxonomyFile)
+			if err != nil {
+				return errors.New("failure to read taxonomy file: " + taxonomyFile)
 			}
 
 			conf := make(map[string]interface{})
 			taxonomy := make(map[string]interface{})
 
-			err1 = yaml.Unmarshal(configFileBytes, &conf)
-			err2 = yaml.Unmarshal(taxonomyFileBytes, &taxonomy)
-
-			if err1 != nil || err2 != nil {
-				return errors.New("failure to parse config file or taxonomy file")
+			err = yaml.Unmarshal(configFileBytes, &conf)
+			if err != nil {
+				return errors.New("failure to parse config file")
+			}
+			err = yaml.Unmarshal(taxonomyFileBytes, &taxonomy)
+			if err != nil {
+				return errors.New("failure to parse taxonomy file")
 			}
 
 			logger.Info().Msg("Server started")
