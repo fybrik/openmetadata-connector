@@ -96,12 +96,12 @@ func (s *s3) TranslateOpenMetadataConfigToFybrikConfig(tableName string, credent
 	ret := make(map[string]interface{})
 	ret[ObjectKey] = tableName
 
-	configSource, ok := utils.InterfaceToMap(config[ConfigSource])
+	configSource, ok := utils.InterfaceToMap(s.logger, config[ConfigSource])
 	if !ok {
 		s.logger.Warn().Msg(fmt.Sprintf(FailedToConvert, ConfigSource))
 		return nil
 	}
-	securityConfig, ok := utils.InterfaceToMap(configSource[SecurityConfig])
+	securityConfig, ok := utils.InterfaceToMap(s.logger, configSource[SecurityConfig])
 	if !ok {
 		s.logger.Warn().Msg(fmt.Sprintf(FailedToConvert, SecurityConfig))
 		return nil
@@ -132,12 +132,12 @@ func (s *s3) TranslateOpenMetadataConfigToFybrikConfig(tableName string, credent
 // also appear in the OM configuration, and that the values be identical
 func (s *s3) equivalentConfigSource(fromService, fromRequest map[string]interface{}) bool {
 	// ignore some fields, such as 'aws_token' which would appear only serviceSecurityConfig
-	serviceSecurityConfig, ok := utils.InterfaceToMap(fromService[SecurityConfig])
+	serviceSecurityConfig, ok := utils.InterfaceToMap(s.logger, fromService[SecurityConfig])
 	if !ok {
 		s.logger.Warn().Msg(fmt.Sprintf(FailedToConvert, "OM "+SecurityConfig))
 		return false
 	}
-	requestSecurityConfig, ok := utils.InterfaceToMap(fromRequest[SecurityConfig])
+	requestSecurityConfig, ok := utils.InterfaceToMap(s.logger, fromRequest[SecurityConfig])
 	if !ok {
 		s.logger.Warn().Msg(fmt.Sprintf(FailedToConvert, "Request "+SecurityConfig))
 		return false
@@ -153,12 +153,12 @@ func (s *s3) equivalentConfigSource(fromService, fromRequest map[string]interfac
 func (s *s3) EquivalentServiceConfigurations(requestConfig, serviceConfig map[string]interface{}) bool {
 	for property, value := range requestConfig {
 		if property == ConfigSource {
-			servicePropertyMap, ok := utils.InterfaceToMap(serviceConfig[property])
+			servicePropertyMap, ok := utils.InterfaceToMap(s.logger, serviceConfig[property])
 			if !ok {
 				s.logger.Warn().Msg(fmt.Sprintf(FailedToConvert, property))
 				return false
 			}
-			valueMap, ok := utils.InterfaceToMap(value)
+			valueMap, ok := utils.InterfaceToMap(s.logger, value)
 			if !ok {
 				s.logger.Warn().Msg(fmt.Sprintf(FailedToConvert, Value))
 				return false
@@ -181,7 +181,7 @@ func (s *s3) DatabaseFQN(serviceName string, createAssetRequest *models.CreateAs
 }
 
 func (s *s3) DatabaseSchemaName(createAssetRequest *models.CreateAssetRequest) string {
-	connectionProperties, ok := utils.InterfaceToMap(createAssetRequest.Details.GetConnection().
+	connectionProperties, ok := utils.InterfaceToMap(s.logger, createAssetRequest.Details.GetConnection().
 		AdditionalProperties[S3])
 	if !ok {
 		s.logger.Warn().Msg(fmt.Sprintf(FailedToConvert, AdditionalProperties))
@@ -208,7 +208,7 @@ func (s *s3) DatabaseSchemaFQN(serviceName string, createAssetRequest *models.Cr
 }
 
 func (s *s3) TableName(createAssetRequest *models.CreateAssetRequest) string {
-	connectionProperties, ok := utils.InterfaceToMap(createAssetRequest.Details.GetConnection().AdditionalProperties[S3])
+	connectionProperties, ok := utils.InterfaceToMap(s.logger, createAssetRequest.Details.GetConnection().AdditionalProperties[S3])
 	if !ok {
 		s.logger.Warn().Msg(fmt.Sprintf(FailedToConvert, AdditionalProperties))
 		return ""

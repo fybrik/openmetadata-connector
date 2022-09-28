@@ -56,7 +56,7 @@ func tagColumn(ctx context.Context, c *client.APIClient, columns []client.Column
 // traverse `tags` and create OM tags in the `categoryName` category
 func (s *OpenMetadataAPIService) addTags(ctx context.Context, c *client.APIClient,
 	categoryName string, tags interface{}) {
-	tagsArr, ok := utils.InterfaceToArray(tags)
+	tagsArr, ok := utils.InterfaceToArray(s.logger, tags)
 	if !ok {
 		s.logger.Warn().Msg("Malformed tag information")
 		return

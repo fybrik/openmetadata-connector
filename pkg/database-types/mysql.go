@@ -50,7 +50,7 @@ func (m *mysql) TranslateOpenMetadataConfigToFybrikConfig(tableName string, cred
 }
 
 func (m *mysql) TableFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) string {
-	connectionProperties, ok := utils.InterfaceToMap(createAssetRequest.Details.GetConnection().AdditionalProperties["mysql"])
+	connectionProperties, ok := utils.InterfaceToMap(m.logger, createAssetRequest.Details.GetConnection().AdditionalProperties["mysql"])
 	if !ok {
 		m.logger.Warn().Msg(fmt.Sprintf(FailedToConvert, AdditionalProperties))
 		return ""
