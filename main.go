@@ -4,7 +4,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -34,12 +33,14 @@ func RunCmd() *cobra.Command {
 
 			configFileBytes, err := os.ReadFile(configFile)
 			if err != nil {
-				return errors.New("failure to read config file: " + configFile)
+				logger.Error().Msg(fmt.Sprintf("failure to read config file: %v", err))
+				return err
 			}
 
 			customizationFileBytes, err := os.ReadFile(customizationFile)
 			if err != nil {
-				return errors.New("failure to read customization file: " + customizationFile)
+				logger.Error().Msg(fmt.Sprintf("failure to read customization file: %v", err))
+				return err
 			}
 
 			conf := make(map[string]interface{})
@@ -47,11 +48,13 @@ func RunCmd() *cobra.Command {
 
 			err = yaml.Unmarshal(configFileBytes, &conf)
 			if err != nil {
-				return errors.New("failure to parse config file")
+				logger.Error().Msg(fmt.Sprintf("failure to parse config file: %v", err))
+				return err
 			}
 			err = yaml.Unmarshal(customizationFileBytes, &customization)
 			if err != nil {
-				return errors.New("failure to parse customization file")
+				logger.Error().Msg(fmt.Sprintf("failure to parse customization file: %v", err))
+				return err
 			}
 
 			logger.Info().Msg("Server started")
