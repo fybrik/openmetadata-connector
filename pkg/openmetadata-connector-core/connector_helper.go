@@ -118,10 +118,9 @@ func (s *OpenMetadataAPIService) PrepareOpenMetadataForFybrik() bool { //nolint
 		}
 	}
 
-	// Find the ID for the 'table' entity
-	var tableID string
+	typeNameToID := make(map[string]string)
 
-	typeList, r, err := c.MetadataApi.ListTypes(ctx).Category("entity").Limit(TypeListLengthLimit).Execute()
+	typeList, r, err := c.MetadataApi.ListTypes(ctx).Limit(TypeListLengthLimit).Execute()
 	if err != nil {
 		s.logger.Warn().Msg(ErrorInPrepareOpenMetadataForFybrik + "Most likely OpenMetadata is not up yet")
 		return false
@@ -129,35 +128,13 @@ func (s *OpenMetadataAPIService) PrepareOpenMetadataForFybrik() bool { //nolint
 	defer r.Body.Close()
 
 	for i := range typeList.Data {
-		if *typeList.Data[i].FullyQualifiedName == "table" {
-			tableID = *typeList.Data[i].Id
-			break
-		}
+		typeNameToID[*typeList.Data[i].FullyQualifiedName] = *typeList.Data[i].Id
 	}
 
-	if tableID == "" {
+	var tableID string
+	tableID, ok := typeNameToID[Table]
+	if !ok {
 		s.logger.Error().Msg(ErrorInPrepareOpenMetadataForFybrik + "Failed to find the ID for entity 'table'")
-		return false
-	}
-
-	// Find the ID for the 'string' type
-	var stringID string
-	typeList, r, err = c.MetadataApi.ListTypes(ctx).Category("field").Limit(TypeListLengthLimit).Execute()
-	if err != nil {
-		s.logger.Error().Msg(fmt.Sprintf("Error when calling `MetadataApi.ListTypes``: %v\n", err))
-		return false
-	}
-	defer r.Body.Close()
-
-	for i := range typeList.Data {
-		if *typeList.Data[i].FullyQualifiedName == "string" {
-			stringID = *typeList.Data[i].Id
-			break
-		}
-	}
-
-	if stringID == "" {
-		s.logger.Error().Msg(ErrorInPrepareOpenMetadataForFybrik + "Failed to find the ID for entity 'string'")
 		return false
 	}
 
@@ -172,11 +149,17 @@ func (s *OpenMetadataAPIService) PrepareOpenMetadataForFybrik() bool { //nolint
 					if ok {
 						name, ok1 := propertyMap[Name]
 						description, ok2 := propertyMap[Description]
-						if ok1 && ok2 {
-							r, _ := c.MetadataApi.AddProperty(ctx, tableID).CustomProperty(*client.NewCustomProperty(
-								description.(string), name.(string),
-								*client.NewEntityReference(stringID, String))).Execute()
-							defer r.Body.Close()
+						typeName, ok3 := propertyMap[Type]
+						if ok1 && ok2 && ok3 {
+							typeID, ok4 := typeNameToID[typeName.(string)]
+							if !ok4 {
+								s.logger.Warn().Msg("unrecognized property type: " + typeName.(string))
+							} else {
+								r, _ := c.MetadataApi.AddProperty(ctx, tableID).CustomProperty(*client.NewCustomProperty(
+									description.(string), name.(string),
+									*client.NewEntityReference(typeID, String))).Execute()
+								defer r.Body.Close()
+							}
 						}
 					}
 				}()

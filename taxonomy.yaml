@@ -9,13 +9,19 @@ tag-categories:
 table-properties:
 - name: connectionType
   description: "Connection type, e.g.: s3 or mysql"
+  type: string
 - name: credentials
   description: The vault plugin path where the destination data credentials will be stored as kubernetes secrets
+  type: string
 - name: dataFormat
   description: "Data Format, e.g.: csv"
+  type: string
 - name: geography
   description: Geography of the resource
+  type: string
 - name: name
   description: Name of the resource
+  type: string
 - name: owner
   description: Owner of the resource
+  type: string
