@@ -3,7 +3,7 @@ module fybrik.io/openmetadata-connector
 go 1.17
 
 require (
-	fybrik.io/fybrik v1.0.0
+	fybrik.io/fybrik v1.1.0
 	fybrik.io/openmetadata-connector/datacatalog-go v0.0.0
 	fybrik.io/openmetadata-connector/datacatalog-go-client v0.0.0
 	fybrik.io/openmetadata-connector/datacatalog-go-models v0.0.0
@@ -27,6 +27,7 @@ require (
 )
 
 require (
+	github.com/go-logr/logr v1.2.0 // indirect
 	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
 	golang.org/x/text v0.3.7 // indirect
 )
