@@ -44,7 +44,7 @@ type DatabaseType interface {
 	DatabaseSchemaFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) string
 
 	// TableName returns the name of the asset Table, e.g. '"fake.csv"'
-	TableName(createAssetRequest *models.CreateAssetRequest) string
+	TableName(createAssetRequest *models.CreateAssetRequest) (string, error)
 
 	// TableFQN returns the Fully Qualified Name of the asset DatabaseSchema,
 	// e.g. 'openmetadata-s3.default.fake-csv-bucket."fake.csv"'

@@ -124,7 +124,7 @@ func (s *s3) TranslateOpenMetadataConfigToFybrikConfig(tableName string, credent
 	return ret, nil
 }
 
-// Check whether the fields in the 'configSource' sectin are equivalent.
+// Check whether the fields in the 'configSource' section are equivalent.
 // They don't have to be identical. We allow additional fields (e.g. 'aws_token')
 // in the OM configuration, but we require that all fields in the request configuration
 // also appear in the OM configuration, and that the values be identical
@@ -205,21 +205,23 @@ func (s *s3) DatabaseSchemaFQN(serviceName string, createAssetRequest *models.Cr
 		s.DatabaseSchemaName(createAssetRequest))
 }
 
-func (s *s3) TableName(createAssetRequest *models.CreateAssetRequest) string {
+func (s *s3) TableName(createAssetRequest *models.CreateAssetRequest) (string, error) {
 	connectionProperties, ok := utils.InterfaceToMap(createAssetRequest.Details.GetConnection().AdditionalProperties[S3], s.logger)
 	if !ok {
-		s.logger.Warn().Msg(fmt.Sprintf(FailedToConvert, AdditionalProperties))
-		return ""
+		return "", fmt.Errorf(FailedToConvert, AdditionalProperties)
 	}
 	objectKey, found := connectionProperties[ObjectKey]
 	if found {
-		return objectKey.(string)
+		return objectKey.(string), nil
 	}
 	split := strings.Split(*createAssetRequest.DestinationAssetID, ".")
-	return split[len(split)-1]
+	return split[len(split)-1], nil
 }
 
 func (s *s3) TableFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) (string, error) {
-	return utils.AppendStrings(s.DatabaseSchemaFQN(serviceName, createAssetRequest),
-		s.TableName(createAssetRequest)), nil
+	tableName, err := s.TableName(createAssetRequest)
+	if err != nil {
+		return "", err
+	}
+	return utils.AppendStrings(s.DatabaseSchemaFQN(serviceName, createAssetRequest), tableName), nil
 }

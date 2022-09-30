@@ -87,6 +87,6 @@ func (m *mysql) DatabaseSchemaFQN(serviceName string, createAssetRequest *models
 	return ""
 }
 
-func (m *mysql) TableName(createAssetRequest *models.CreateAssetRequest) string {
-	return ""
+func (m *mysql) TableName(createAssetRequest *models.CreateAssetRequest) (string, error) {
+	return "", nil
 }

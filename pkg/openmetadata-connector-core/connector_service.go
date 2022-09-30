@@ -116,7 +116,13 @@ func (s *OpenMetadataAPIService) CreateAsset(ctx context.Context, //nolint
 		dt.DatabaseSchemaName(createAssetRequest))
 
 	columns := utils.ExtractColumns(createAssetRequest.ResourceMetadata.Columns)
-	table, err := s.createTable(ctx, c, databaseSchemaID, dt.TableName(createAssetRequest), columns)
+
+	tableName, err := dt.TableName(createAssetRequest)
+	if err != nil {
+		s.logger.Error().Err(err).Msg("failed to determine table name")
+		return api.Response(http.StatusBadRequest, nil), err
+	}
+	table, err := s.createTable(ctx, c, databaseSchemaID, tableName, columns)
 	if err != nil {
 		return api.Response(http.StatusBadRequest, nil), err
 	}
