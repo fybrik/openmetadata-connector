@@ -10,13 +10,13 @@ import (
 	"net/http"
 	"strings"
 
-	zerolog "github.com/rs/zerolog"
+	"github.com/rs/zerolog"
 
 	client "fybrik.io/openmetadata-connector/datacatalog-go-client"
 	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
 	api "fybrik.io/openmetadata-connector/datacatalog-go/go"
-	database_types "fybrik.io/openmetadata-connector/pkg/database-types"
-	utils "fybrik.io/openmetadata-connector/pkg/utils"
+	dbtypes "fybrik.io/openmetadata-connector/pkg/database-types"
+	"fybrik.io/openmetadata-connector/pkg/utils"
 )
 
 func getTag(ctx context.Context, c *client.APIClient, tagFQN string) client.TagLabel {
@@ -25,7 +25,10 @@ func getTag(ctx context.Context, c *client.APIClient, tagFQN string) client.TagL
 		// we will translate it to 'Fybrik.tagFQN'. We try to create it
 		// (whether it exists or not)
 		createTag := *client.NewCreateTag(tagFQN, tagFQN)
-		_, r, _ := c.TagsApi.CreatePrimaryTag(ctx, Fybrik).CreateTag(createTag).Execute()
+		_, r, err := c.TagsApi.CreatePrimaryTag(ctx, Fybrik).CreateTag(createTag).Execute()
+		if err != nil {
+			logger.Trace().Err(err).Msg("could not create primary tag. it may already exist")
+		}
 		defer r.Body.Close()
 		tagFQN = Fybrik + "." + tagFQN
 	}
@@ -66,10 +69,14 @@ func (s *OpenMetadataAPIService) addTags(ctx context.Context, c *client.APIClien
 			tagMap, ok := tagsArr[i].(map[interface{}]interface{})
 			if ok {
 				name, ok1 := tagMap[Name]
-				description, ok2 := tagMap[Description]
-				if ok1 && ok2 {
+				descriptionStr := ""
+				description := tagMap[Description]
+				if description != nil {
+					descriptionStr = description.(string)
+				}
+				if ok1 {
 					_, r, err := c.TagsApi.CreatePrimaryTag(ctx, categoryName).
-						CreateTag(*client.NewCreateTag(description.(string), name.(string))).Execute()
+						CreateTag(*client.NewCreateTag(descriptionStr, name.(string))).Execute()
 					if err != nil {
 						s.logger.Trace().Msg("Failed to create Tag. Maybe it already exists.")
 					} else {
@@ -99,11 +106,15 @@ func (s *OpenMetadataAPIService) PrepareOpenMetadataForFybrik() bool { //nolint
 					tagCategoryMap, ok := tagCategory.(map[interface{}]interface{})
 					if ok {
 						name, ok1 := tagCategoryMap[Name]
-						description, ok2 := tagCategoryMap[Description]
-						if ok1 && ok2 {
+						descriptionStr := ""
+						description := tagCategoryMap[Description]
+						if description != nil {
+							descriptionStr = description.(string)
+						}
+						if ok1 {
 							// Create Tag Category for Fybrik
 							_, r, err := c.TagsApi.CreateTagCategory(ctx).CreateTagCategory(*client.NewCreateTagCategory("Classification",
-								description.(string), name.(string))).Execute()
+								descriptionStr, name.(string))).Execute()
 							if err != nil {
 								s.logger.Trace().Msg("Failed to create the Tag category. Maybe it already exists.")
 							}
@@ -156,15 +167,19 @@ func (s *OpenMetadataAPIService) PrepareOpenMetadataForFybrik() bool { //nolint
 						}
 
 						name, ok2 := propertyMap[Name]
-						description, ok3 := propertyMap[Description]
+						descriptionStr := ""
+						description := propertyMap[Description]
+						if description != nil {
+							descriptionStr = description.(string)
+						}
 
-						if ok2 && ok3 {
+						if ok2 {
 							typeID, ok4 := typeNameToID[typeName.(string)]
 							if !ok4 {
 								s.logger.Warn().Msg("unrecognized property type: " + typeName.(string))
 							} else {
 								r, _ := c.MetadataApi.AddProperty(ctx, tableID).CustomProperty(*client.NewCustomProperty(
-									description.(string), name.(string),
+									descriptionStr, name.(string),
 									*client.NewEntityReference(typeID, String))).Execute()
 								defer r.Body.Close()
 							}
@@ -208,9 +223,9 @@ func NewOpenMetadataAPIService(conf map[string]interface{}, customization map[st
 		NumRetries = DefaultNumRetries
 	}
 
-	nameToDatabaseStruct := make(map[string]database_types.DatabaseType)
-	nameToDatabaseStruct[MysqlLowercase] = database_types.NewMysql(logger)
-	nameToDatabaseStruct[S3] = database_types.NewS3(vaultConf, logger)
+	nameToDatabaseStruct := make(map[string]dbtypes.DatabaseType)
+	nameToDatabaseStruct[MysqlLowercase] = dbtypes.NewMysql(logger)
+	nameToDatabaseStruct[S3] = dbtypes.NewS3(vaultConf, logger)
 
 	s := &OpenMetadataAPIService{Endpoint: conf["openmetadata_endpoint"].(string),
 		SleepIntervalMS:      SleepIntervalMS,
@@ -239,7 +254,7 @@ func (s *OpenMetadataAPIService) getOpenMetadataClient() *client.APIClient {
 // traverse database services looking for a service with identical configuration
 func (s *OpenMetadataAPIService) findService(ctx context.Context,
 	c *client.APIClient,
-	dt database_types.DatabaseType,
+	dt dbtypes.DatabaseType,
 	connectionProperties map[string]interface{}) (string, string, bool) {
 	connectionType := dt.OMTypeName()
 
