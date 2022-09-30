@@ -28,8 +28,9 @@ func getTag(ctx context.Context, c *client.APIClient, tagFQN string) client.TagL
 		_, r, err := c.TagsApi.CreatePrimaryTag(ctx, Fybrik).CreateTag(createTag).Execute()
 		if err != nil {
 			logger.Trace().Err(err).Msg("could not create primary tag. it may already exist")
+		} else {
+			defer r.Body.Close()
 		}
-		defer r.Body.Close()
 		tagFQN = Fybrik + "." + tagFQN
 	}
 	return client.TagLabel{
@@ -117,8 +118,9 @@ func (s *OpenMetadataAPIService) PrepareOpenMetadataForFybrik() bool { //nolint
 								descriptionStr, name.(string))).Execute()
 							if err != nil {
 								s.logger.Trace().Msg("Failed to create the Tag category. Maybe it already exists.")
+							} else {
+								defer r.Body.Close()
 							}
-							defer r.Body.Close()
 						}
 						if tags, ok := tagCategoryMap[Tags]; ok {
 							s.addTags(ctx, c, name.(string), tags)
@@ -178,10 +180,12 @@ func (s *OpenMetadataAPIService) PrepareOpenMetadataForFybrik() bool { //nolint
 							if !ok4 {
 								s.logger.Warn().Msg("unrecognized property type: " + typeName.(string))
 							} else {
-								r, _ := c.MetadataApi.AddProperty(ctx, tableID).CustomProperty(*client.NewCustomProperty(
+								r, err := c.MetadataApi.AddProperty(ctx, tableID).CustomProperty(*client.NewCustomProperty(
 									descriptionStr, name.(string),
 									*client.NewEntityReference(typeID, String))).Execute()
-								defer r.Body.Close()
+								if err != nil {
+									defer r.Body.Close()
+								}
 							}
 						} else {
 							s.logger.Warn().Msg("missing fields for table property")
