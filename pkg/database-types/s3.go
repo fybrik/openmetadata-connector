@@ -9,7 +9,7 @@ import (
 	"reflect"
 	"strings"
 
-	zerolog "github.com/rs/zerolog"
+	"github.com/rs/zerolog"
 
 	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
 	"fybrik.io/openmetadata-connector/pkg/utils"
@@ -70,7 +70,7 @@ func (s *s3) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interfa
 	}
 
 	securityMap := make(map[string]interface{})
-	securityMap[AwsRegion] = "eu-de" // awsRegion field is mandatory, although it is persumably ignored if endpoint is provided
+	securityMap[AwsRegion] = "eu-de" // awsRegion field is mandatory, although it is presumably ignored if endpoint is provided
 	for key, value := range config {
 		translation, found := translate[key]
 		if found {
