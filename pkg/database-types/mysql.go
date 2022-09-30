@@ -4,6 +4,7 @@
 package databasetypes
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 
@@ -49,18 +50,17 @@ func (m *mysql) TranslateOpenMetadataConfigToFybrikConfig(tableName string, cred
 	return ret
 }
 
-func (m *mysql) TableFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) string {
+func (m *mysql) TableFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) (string, error) {
 	connectionProperties, ok := utils.InterfaceToMap(createAssetRequest.Details.GetConnection().AdditionalProperties["mysql"], m.logger)
 	if !ok {
-		m.logger.Warn().Msg(fmt.Sprintf(FailedToConvert, AdditionalProperties))
-		return ""
+		return "", errors.New(fmt.Sprintf(FailedToConvert, AdditionalProperties))
 	}
 	assetName := *createAssetRequest.DestinationAssetID
 	databaseSchema, found := connectionProperties[DatabaseSchema]
 	if found {
-		return fmt.Sprintf("%s.%s.%s.%s", serviceName, Default, databaseSchema.(string), assetName)
+		return fmt.Sprintf("%s.%s.%s.%s", serviceName, Default, databaseSchema.(string), assetName), nil
 	}
-	return fmt.Sprintf("%s.%s.%s", serviceName, Default, assetName)
+	return fmt.Sprintf("%s.%s.%s", serviceName, Default, assetName), nil
 }
 
 func (m *mysql) EquivalentServiceConfigurations(requestConfig, serviceConfig map[string]interface{}) bool {

@@ -76,7 +76,11 @@ func (s *OpenMetadataAPIService) CreateAsset(ctx context.Context, //nolint
 	}
 
 	// now that we know the of the database service, we can determine the asset name in OpenMetadata
-	assetID := dt.TableFQN(databaseServiceName, createAssetRequest)
+	assetID, err := dt.TableFQN(databaseServiceName, createAssetRequest)
+	if err != nil {
+		s.logger.Error().Err(err).Msg("cannot determine table FQN")
+		return api.Response(http.StatusBadRequest, nil), err
+	}
 
 	// Let's check whether OM already has this asset
 	found, _ = s.findAsset(ctx, c, assetID)

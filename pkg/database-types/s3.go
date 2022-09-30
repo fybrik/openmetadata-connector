@@ -221,7 +221,7 @@ func (s *s3) TableName(createAssetRequest *models.CreateAssetRequest) string {
 	return split[len(split)-1]
 }
 
-func (s *s3) TableFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) string {
+func (s *s3) TableFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) (string, error) {
 	return utils.AppendStrings(s.DatabaseSchemaFQN(serviceName, createAssetRequest),
-		s.TableName(createAssetRequest))
+		s.TableName(createAssetRequest)), nil
 }

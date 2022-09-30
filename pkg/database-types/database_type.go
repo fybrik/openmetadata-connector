@@ -48,7 +48,7 @@ type DatabaseType interface {
 
 	// TableFQN returns the Fully Qualified Name of the asset DatabaseSchema,
 	// e.g. 'openmetadata-s3.default.fake-csv-bucket."fake.csv"'
-	TableFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) string
+	TableFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) (string, error)
 }
 
 type dataBase struct {
