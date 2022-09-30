@@ -92,19 +92,17 @@ func (s *s3) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interfa
 }
 
 func (s *s3) TranslateOpenMetadataConfigToFybrikConfig(tableName string, credentials string,
-	config map[string]interface{}) map[string]interface{} {
+	config map[string]interface{}) (map[string]interface{}, error) {
 	ret := make(map[string]interface{})
 	ret[ObjectKey] = tableName
 
 	configSource, ok := utils.InterfaceToMap(config[ConfigSource], s.logger)
 	if !ok {
-		s.logger.Warn().Msg(fmt.Sprintf(FailedToConvert, ConfigSource))
-		return nil
+		return nil, fmt.Errorf(FailedToConvert, ConfigSource)
 	}
 	securityConfig, ok := utils.InterfaceToMap(configSource[SecurityConfig], s.logger)
 	if !ok {
-		s.logger.Warn().Msg(fmt.Sprintf(FailedToConvert, SecurityConfig))
-		return nil
+		return nil, fmt.Errorf(FailedToConvert, SecurityConfig)
 	}
 
 	for key, value := range securityConfig {
@@ -123,7 +121,7 @@ func (s *s3) TranslateOpenMetadataConfigToFybrikConfig(tableName string, credent
 		delete(ret, SecretAccessID)
 	}
 
-	return ret
+	return ret, nil
 }
 
 // Check whether the fields in the 'configSource' sectin are equivalent.

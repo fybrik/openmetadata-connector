@@ -4,7 +4,6 @@
 package databasetypes
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 
@@ -35,7 +34,7 @@ func (m *mysql) TranslateFybrikConfigToOpenMetadataConfig(config map[string]inte
 }
 
 func (m *mysql) TranslateOpenMetadataConfigToFybrikConfig(tableName string, credentials string,
-	config map[string]interface{}) map[string]interface{} {
+	config map[string]interface{}) (map[string]interface{}, error) {
 	other := make(map[string]interface{})
 	ret := make(map[string]interface{})
 	for key, value := range config {
@@ -47,13 +46,13 @@ func (m *mysql) TranslateOpenMetadataConfigToFybrikConfig(tableName string, cred
 	}
 
 	ret[Other] = other
-	return ret
+	return ret, nil
 }
 
 func (m *mysql) TableFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) (string, error) {
 	connectionProperties, ok := utils.InterfaceToMap(createAssetRequest.Details.GetConnection().AdditionalProperties["mysql"], m.logger)
 	if !ok {
-		return "", errors.New(fmt.Sprintf(FailedToConvert, AdditionalProperties))
+		return "", fmt.Errorf(FailedToConvert, AdditionalProperties)
 	}
 	assetName := *createAssetRequest.DestinationAssetID
 	databaseSchema, found := connectionProperties[DatabaseSchema]
