@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"reflect"
 
-	zerolog "github.com/rs/zerolog"
+	"github.com/rs/zerolog"
 
 	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
-	utils "fybrik.io/openmetadata-connector/pkg/utils"
+	"fybrik.io/openmetadata-connector/pkg/utils"
 )
 
 type mysql struct {
