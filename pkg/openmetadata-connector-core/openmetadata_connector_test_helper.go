@@ -191,11 +191,11 @@ func createMockVaultServer() *httptest.Server {
 // creates a client.DatabaseConnection structure, based on a request sent to the mock
 // OM server
 func constructDataBaseServiceStruct(serviceInfo map[string]interface{}) *client.DatabaseService {
-	connectionInfo, ok := utils.InterfaceToMap(&logger, serviceInfo["connection"])
+	connectionInfo, ok := utils.InterfaceToMap(serviceInfo["connection"], &logger)
 	if !ok {
 		return nil
 	}
-	connectionConfig, ok := utils.InterfaceToMap(&logger, connectionInfo["config"])
+	connectionConfig, ok := utils.InterfaceToMap(connectionInfo["config"], &logger)
 	if !ok {
 		return nil
 	}
@@ -212,13 +212,13 @@ func constructDataBaseServiceStruct(serviceInfo map[string]interface{}) *client.
 // mock OM server. This table is later enriched using the patchTable() method
 func constructTableStruct(assetInfo map[string]interface{}) (*client.Table, bool) {
 	version := TestVersion
-	requestColumns, ok := utils.InterfaceToArray(&logger, assetInfo[Columns])
+	requestColumns, ok := utils.InterfaceToArray(assetInfo[Columns], &logger)
 	if !ok {
 		return nil, false
 	}
 	var columns []client.Column
 	for i := range requestColumns {
-		c, ok := utils.InterfaceToMap(&logger, requestColumns[i])
+		c, ok := utils.InterfaceToMap(requestColumns[i], &logger)
 		if !ok {
 			return nil, false
 		}
@@ -237,7 +237,7 @@ func constructTableStruct(assetInfo map[string]interface{}) (*client.Table, bool
 // enrich table structure using tags, custom properties, and column tags
 func patchTable(table *client.Table, patchArray []interface{}) bool { //nolint
 	for i := range patchArray {
-		patchMap, ok := utils.InterfaceToMap(&logger, patchArray[i])
+		patchMap, ok := utils.InterfaceToMap(patchArray[i], &logger)
 		if !ok {
 			return false
 		}
@@ -245,12 +245,12 @@ func patchTable(table *client.Table, patchArray []interface{}) bool { //nolint
 		switch {
 		case patchName == TagsPath:
 			var assetTags []client.TagLabel
-			tagsArr, ok := utils.InterfaceToArray(&logger, patchMap[Value])
+			tagsArr, ok := utils.InterfaceToArray(patchMap[Value], &logger)
 			if !ok {
 				return false
 			}
 			for j := range tagsArr {
-				columnTagMap, ok2 := utils.InterfaceToMap(&logger, tagsArr[j])
+				columnTagMap, ok2 := utils.InterfaceToMap(tagsArr[j], &logger)
 				if !ok2 {
 					return false
 				}
@@ -258,29 +258,29 @@ func patchTable(table *client.Table, patchArray []interface{}) bool { //nolint
 			}
 			table.Tags = assetTags
 		case patchName == ExtensionPath:
-			extensionValueMap, ok1 := utils.InterfaceToMap(&logger, patchMap[Value])
+			extensionValueMap, ok1 := utils.InterfaceToMap(patchMap[Value], &logger)
 			if !ok1 {
 				return false
 			}
 			table.Extension = extensionValueMap
 		case patchName == ColumnsPath:
 			var columnsWithTags []client.Column
-			columnValueArr, ok := utils.InterfaceToArray(&logger, patchMap[Value])
+			columnValueArr, ok := utils.InterfaceToArray(patchMap[Value], &logger)
 			if !ok {
 				return false
 			}
 			for i := range columnValueArr {
-				c, ok := utils.InterfaceToMap(&logger, columnValueArr[i])
+				c, ok := utils.InterfaceToMap(columnValueArr[i], &logger)
 				if !ok {
 					return false
 				}
 				var tags []client.TagLabel
-				tagsArr, ok := utils.InterfaceToArray(&logger, c["tags"])
+				tagsArr, ok := utils.InterfaceToArray(c["tags"], &logger)
 				if !ok {
 					return false
 				}
 				for j := range tagsArr {
-					columnTagMap, ok := utils.InterfaceToMap(&logger, tagsArr[j])
+					columnTagMap, ok := utils.InterfaceToMap(tagsArr[j], &logger)
 					if !ok {
 						return false
 					}

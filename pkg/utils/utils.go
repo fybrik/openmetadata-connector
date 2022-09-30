@@ -63,7 +63,7 @@ func ExtractColumns(resourceColumns []models.ResourceColumn) []client.Column {
 	return ret
 }
 
-func InterfaceToMap(logger *zerolog.Logger, i interface{}) (map[string]interface{}, bool) {
+func InterfaceToMap(i interface{}, logger *zerolog.Logger) (map[string]interface{}, bool) {
 	m, ok := i.(map[string]interface{})
 	if !ok {
 		logger.Warn().Msg(fmt.Sprintf("Cannot cast %T to map[string]interface{}", i))
@@ -71,7 +71,7 @@ func InterfaceToMap(logger *zerolog.Logger, i interface{}) (map[string]interface
 	return m, ok
 }
 
-func InterfaceToArray(logger *zerolog.Logger, i interface{}) ([]interface{}, bool) {
+func InterfaceToArray(i interface{}, logger *zerolog.Logger) ([]interface{}, bool) {
 	m, ok := i.([]interface{})
 	if !ok {
 		logger.Warn().Msg(fmt.Sprintf("Cannot cast %T to []interface{}", i))

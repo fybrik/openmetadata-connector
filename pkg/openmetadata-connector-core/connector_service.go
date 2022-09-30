@@ -56,7 +56,7 @@ func (s *OpenMetadataAPIService) CreateAsset(ctx context.Context, //nolint
 	// step 1: Translate the fybrik connection information to the OM connection information.
 	//         This configuration information will later be used to create an OM connection
 	//         (if it does not already exist)
-	config, ok := utils.InterfaceToMap(s.logger, createAssetRequest.Details.GetConnection().AdditionalProperties[connectionType])
+	config, ok := utils.InterfaceToMap(createAssetRequest.Details.GetConnection().AdditionalProperties[connectionType], s.logger)
 	if !ok {
 		s.logger.Error().Msg(FailedToCovert)
 		return api.Response(http.StatusBadRequest, nil), errors.New(FailedToCovert)
