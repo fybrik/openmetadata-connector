@@ -57,13 +57,13 @@ func RunCmd() *cobra.Command {
 				return
 			}
 
-			DefaultAPIService, port := occ.NewOpenMetadataAPIService(conf, customization, &logger)
+			DefaultAPIService := occ.NewOpenMetadataAPIService(conf, customization, &logger)
 			DefaultAPIController := occ.NewOpenMetadataAPIController(DefaultAPIService)
 
 			router := api.NewRouter(DefaultAPIController)
 
 			logger.Info().Msg("Server is starting")
-			http.ListenAndServe(":"+strconv.Itoa(port), router) //nolint
+			http.ListenAndServe(":"+strconv.Itoa(DefaultAPIService.Port), router) //nolint
 		},
 	}
 

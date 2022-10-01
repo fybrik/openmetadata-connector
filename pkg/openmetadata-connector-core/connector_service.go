@@ -26,6 +26,7 @@ type OpenMetadataAPIService struct {
 	NumRenameRetries     int
 	initialized          bool
 	customization        map[string]interface{}
+	Port                 int
 }
 
 // CreateAsset - This REST API writes data asset information to the data catalog configured in fybrik
