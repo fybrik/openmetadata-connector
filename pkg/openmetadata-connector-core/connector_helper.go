@@ -204,9 +204,10 @@ func (s *OpenMetadataAPIService) PrepareOpenMetadataForFybrik() bool { //nolint
 // NewOpenMetadataAPIService creates a new api service.
 // It is initialized base on the configuration
 func NewOpenMetadataAPIService(conf map[string]interface{}, customization map[string]interface{},
-	logger *zerolog.Logger) OpenMetadataAPIServicer {
+	logger *zerolog.Logger) (OpenMetadataAPIServicer, int) {
 	var SleepIntervalMS int
 	var NumRetries int
+	var port int
 
 	var vaultConf map[interface{}]interface{} = nil
 	if vaultConfMap, ok := conf["vault"]; ok {
@@ -227,6 +228,13 @@ func NewOpenMetadataAPIService(conf map[string]interface{}, customization map[st
 		NumRetries = DefaultNumRetries
 	}
 
+	value, ok = conf["openmetadata_connector_port"]
+	if ok {
+		port = value.(int)
+	} else {
+		port = DefaultListeningPort
+	}
+
 	nameToDatabaseStruct := make(map[string]dbtypes.DatabaseType)
 	nameToDatabaseStruct[MysqlLowercase] = dbtypes.NewMysql(logger)
 	nameToDatabaseStruct[S3] = dbtypes.NewS3(vaultConf, logger)
@@ -241,7 +249,7 @@ func NewOpenMetadataAPIService(conf map[string]interface{}, customization map[st
 
 	s.initialized = s.PrepareOpenMetadataForFybrik()
 
-	return s
+	return s, port
 }
 
 func (s *OpenMetadataAPIService) getOpenMetadataClient() *client.APIClient {

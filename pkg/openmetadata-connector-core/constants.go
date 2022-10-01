@@ -11,6 +11,7 @@ const ConnectionTypeNotSupported = "currently, %s connection type not supported"
 const Credentials = "credentials"
 const DatabaseService = "databaseService"
 const DataFormat = "dataFormat"
+const DefaultListeningPort = 8081
 const DefaultNumRenameRetries = 10
 const DefaultNumRetries = 500
 const DefaultSleepIntervalMS = 500
