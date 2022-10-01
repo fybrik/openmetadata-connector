@@ -201,7 +201,7 @@ func (s *OpenMetadataAPIService) PrepareOpenMetadataForFybrik() bool { //nolint
 	return true
 }
 
-// NewOpenMetadataApiService creates a new api service.
+// NewOpenMetadataAPIService creates a new api service.
 // It is initialized base on the configuration
 func NewOpenMetadataAPIService(conf map[string]interface{}, customization map[string]interface{},
 	logger *zerolog.Logger) OpenMetadataAPIServicer {
@@ -550,7 +550,7 @@ func (s *OpenMetadataAPIService) deleteAsset(ctx context.Context, c *client.APIC
 }
 
 // populate the values in a GetAssetResponse structure to include everything:
-// credentials, name, owner, geography, dataFormat, connection informations,
+// credentials, name, owner, geography, dataFormat, connection information,
 // tags, and columns
 func (s *OpenMetadataAPIService) constructAssetResponse(ctx context.Context, //nolint
 	c *client.APIClient,
@@ -639,6 +639,6 @@ func (s *OpenMetadataAPIService) constructAssetResponse(ctx context.Context, //n
 		ret.ResourceMetadata.Tags = tags
 	}
 
-	s.logger.Info().Msg("Succesfully constructed asset response")
+	s.logger.Info().Msg("Successfully constructed asset response")
 	return ret, nil
 }

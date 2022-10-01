@@ -13,15 +13,15 @@ import (
 
 	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
 	api "fybrik.io/openmetadata-connector/datacatalog-go/go"
-	database_types "fybrik.io/openmetadata-connector/pkg/database-types"
-	utils "fybrik.io/openmetadata-connector/pkg/utils"
+	dbtypes "fybrik.io/openmetadata-connector/pkg/database-types"
+	"fybrik.io/openmetadata-connector/pkg/utils"
 )
 
 type OpenMetadataAPIService struct {
 	Endpoint             string
 	SleepIntervalMS      int
 	NumRetries           int
-	NameToDatabaseStruct map[string]database_types.DatabaseType
+	NameToDatabaseStruct map[string]dbtypes.DatabaseType
 	logger               *zerolog.Logger
 	NumRenameRetries     int
 	initialized          bool
