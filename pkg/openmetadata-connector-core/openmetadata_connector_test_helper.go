@@ -298,8 +298,8 @@ func patchTable(table *client.Table, patchArray []interface{}) bool { //nolint
 func handleGetMockOMServer(r *http.Request) (map[string]interface{}, int) {
 	if strings.HasPrefix(r.RequestURI, "/v1/metadata/types") {
 		var types []interface{}
-		types = append(types, map[string]interface{}{FullyQualifiedName: "table", ID: "1"},
-			map[string]interface{}{FullyQualifiedName: "string", ID: "2"})
+		types = append(types, map[string]interface{}{FullyQualifiedName: Table, ID: "1"},
+			map[string]interface{}{FullyQualifiedName: String, ID: "2"})
 		return map[string]interface{}{Data: types}, 0
 	}
 	if r.RequestURI == DatabaseServicesURI {
