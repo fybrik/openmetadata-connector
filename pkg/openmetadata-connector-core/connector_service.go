@@ -186,7 +186,7 @@ func (s *OpenMetadataAPIService) GetAssetInfo(ctx context.Context, xRequestDatac
 
 	assetResponse, err := s.constructAssetResponse(ctx, c, table)
 	if err != nil {
-		s.logger.Error().Msg("Construction of Asset Reponse failed")
+		s.logger.Error().Msg("Construction of Asset Response failed")
 		return api.Response(http.StatusBadRequest, nil), err
 	}
 

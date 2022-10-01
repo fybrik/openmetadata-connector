@@ -7,15 +7,15 @@ import (
 	"os"
 	"testing"
 
-	logging "fybrik.io/fybrik/pkg/logging"
-	structs "github.com/fatih/structs"
+	"fybrik.io/fybrik/pkg/logging"
+	"github.com/fatih/structs"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	zerolog "github.com/rs/zerolog"
+	"github.com/rs/zerolog"
 
 	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
 	api "fybrik.io/openmetadata-connector/datacatalog-go/go"
-	vault "fybrik.io/openmetadata-connector/pkg/vault"
+	"fybrik.io/openmetadata-connector/pkg/vault"
 )
 
 func TestOpenApiConnectorCore(t *testing.T) {
@@ -55,37 +55,37 @@ var _ = Describe("Vault and OM connector", Ordered, func() {
 		var vaultClient vault.VaultClient
 		var accessKey string
 		var secretKey string
-		It("should receive a vaild token", func() {
+		It("should receive a valid token", func() {
 			vaultClient = vault.NewVaultClient(vaultConf, &logger)
 			token, err = vaultClient.GetToken()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(token).To(Equal(TestToken))
 		})
-		It("should receive a vaild secret", func() {
+		It("should receive a valid secret", func() {
 			secret, err = vaultClient.GetSecret(token, TestPathInVault)
 			Expect(err).ToNot(HaveOccurred())
 		})
-		It("should receive vaild access and secret keys", func() {
+		It("should receive valid access and secret keys", func() {
 			accessKey, secretKey, err = vaultClient.ExtractS3CredentialsFromSecret(secret)
 			Expect(accessKey).To(Equal(TestAccessKey))
 			Expect(secretKey).To(Equal(TestSecretKey))
 			Expect(err).ToNot(HaveOccurred())
 		})
 	})
-	Describe("Connector creating assesets and getting their info", Ordered, func() {
+	Describe("Connector creating assets and getting their info", Ordered, func() {
 		var getAssetResponse *models.GetAssetResponse
 		var createAssetRequest *models.CreateAssetRequest
 		var response api.ImplResponse
 		var servicer OpenMetadataAPIServicer
 		var assetID string
 		var ctx context.Context
-		It("should create an asset and receive a vaild response", func() {
+		It("should create an asset and receive a valid response", func() {
 			conf := make(map[string]interface{})
 			conf["openmetadata_endpoint"] = mockOMServer.URL
 			conf["vault"] = vaultConf
 			servicer = NewOpenMetadataAPIService(conf, nil, &logger)
 			ctx = context.Background()
-			createAssetRequest, getAssetResponse = getCreateAssetRequestAndReponse()
+			createAssetRequest, getAssetResponse = getCreateAssetRequestAndResponse()
 			response, err = servicer.CreateAsset(ctx, TestConnectorCredentials, createAssetRequest)
 			Expect(err).ToNot(HaveOccurred())
 			assetID = fmt.Sprintf("%s.%s.%s.%s", TestDatabaseService, TestDatabase, TestBucket, TestObjectName)

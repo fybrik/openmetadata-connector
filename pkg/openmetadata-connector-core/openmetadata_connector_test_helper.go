@@ -9,14 +9,14 @@ import (
 	"os"
 	"strings"
 
-	structs "github.com/fatih/structs"
+	"github.com/fatih/structs"
 	. "github.com/onsi/ginkgo/v2" //nolint
 	. "github.com/onsi/gomega"    //nolint
-	zerolog "github.com/rs/zerolog"
+	"github.com/rs/zerolog"
 
 	client "fybrik.io/openmetadata-connector/datacatalog-go-client"
 	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
-	utils "fybrik.io/openmetadata-connector/pkg/utils"
+	"fybrik.io/openmetadata-connector/pkg/utils"
 )
 
 const TestAccessKey = "myAccessKey"
@@ -70,7 +70,7 @@ var vaultConf map[interface{}]interface{}
 // returns two similar structures: The structure used for requesting an asset creation,
 // and a structure representing the response to a getAssetInfo request regarding the
 // same asset
-func getCreateAssetRequestAndReponse() (*models.CreateAssetRequest, *models.GetAssetResponse) {
+func getCreateAssetRequestAndResponse() (*models.CreateAssetRequest, *models.GetAssetResponse) {
 	var destinationAssetID = TestDestinationAssetID
 	var name = TestAssetName
 	var geography = TestGeography
