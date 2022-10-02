@@ -18,7 +18,7 @@ type DatabaseType interface {
 	TranslateFybrikConfigToOpenMetadataConfig(map[string]interface{}, *string) map[string]interface{}
 
 	// translate the connection information from the OM format to the Fybrik format
-	TranslateOpenMetadataConfigToFybrikConfig(string, string, map[string]interface{}) map[string]interface{}
+	TranslateOpenMetadataConfigToFybrikConfig(string, string, map[string]interface{}) (map[string]interface{}, error)
 
 	// In checking whether a certain databaseService already exists, compare whether two
 	// OM configuration informations are equivalent.Return 'true' if they are
@@ -44,11 +44,11 @@ type DatabaseType interface {
 	DatabaseSchemaFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) string
 
 	// TableName returns the name of the asset Table, e.g. '"fake.csv"'
-	TableName(createAssetRequest *models.CreateAssetRequest) string
+	TableName(createAssetRequest *models.CreateAssetRequest) (string, error)
 
 	// TableFQN returns the Fully Qualified Name of the asset DatabaseSchema,
 	// e.g. 'openmetadata-s3.default.fake-csv-bucket."fake.csv"'
-	TableFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) string
+	TableFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) (string, error)
 }
 
 type dataBase struct {

@@ -10,13 +10,13 @@ import (
 	"net/http"
 	"strings"
 
-	zerolog "github.com/rs/zerolog"
+	"github.com/rs/zerolog"
 
 	client "fybrik.io/openmetadata-connector/datacatalog-go-client"
 	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
 	api "fybrik.io/openmetadata-connector/datacatalog-go/go"
-	database_types "fybrik.io/openmetadata-connector/pkg/database-types"
-	utils "fybrik.io/openmetadata-connector/pkg/utils"
+	dbtypes "fybrik.io/openmetadata-connector/pkg/database-types"
+	"fybrik.io/openmetadata-connector/pkg/utils"
 )
 
 func getTag(ctx context.Context, c *client.APIClient, tagFQN string) client.TagLabel {
@@ -25,8 +25,12 @@ func getTag(ctx context.Context, c *client.APIClient, tagFQN string) client.TagL
 		// we will translate it to 'Fybrik.tagFQN'. We try to create it
 		// (whether it exists or not)
 		createTag := *client.NewCreateTag(tagFQN, tagFQN)
-		_, r, _ := c.TagsApi.CreatePrimaryTag(ctx, Fybrik).CreateTag(createTag).Execute()
-		defer r.Body.Close()
+		_, r, err := c.TagsApi.CreatePrimaryTag(ctx, Fybrik).CreateTag(createTag).Execute()
+		if err != nil {
+			logger.Trace().Err(err).Msg("could not create primary tag. it may already exist")
+		} else {
+			r.Body.Close()
+		}
 		tagFQN = Fybrik + "." + tagFQN
 	}
 	return client.TagLabel{
@@ -52,128 +56,194 @@ func tagColumn(ctx context.Context, c *client.APIClient, columns []client.Column
 	return columns
 }
 
-func (s *OpenMetadataAPIService) prepareOpenMetadataForFybrik() bool {
+// transform variable `tags` into an array.
+// traverse `tags` and create OM tags in the `categoryName` category
+func (s *OpenMetadataAPIService) addTags(ctx context.Context, c *client.APIClient,
+	categoryName string, tags interface{}) {
+	tagsArr, ok := utils.InterfaceToArray(tags, s.logger)
+	if !ok {
+		s.logger.Warn().Msg("Malformed tag information")
+		return
+	}
+	for i := range tagsArr {
+		if tagMap, ok := tagsArr[i].(map[interface{}]interface{}); ok {
+			descriptionStr := ""
+			description := tagMap[Description]
+			if description != nil {
+				descriptionStr = description.(string)
+			}
+			if name, ok1 := tagMap[Name]; ok1 {
+				_, r, err := c.TagsApi.CreatePrimaryTag(ctx, categoryName).
+					CreateTag(*client.NewCreateTag(descriptionStr, name.(string))).Execute()
+				if err != nil {
+					s.logger.Trace().Msg("Failed to create Tag. Maybe it already exists.")
+				} else {
+					r.Body.Close()
+				}
+			} else {
+				s.logger.Warn().Msg(fmt.Sprintf("malformed tag information. cannot cast %T to map[interface{}]interface{}", tagsArr[i]))
+			}
+		}
+	}
+}
+
+func (s *OpenMetadataAPIService) PrepareOpenMetadataForFybrik() bool { //nolint
 	ctx := context.Background()
 	c := s.getOpenMetadataClient()
 
-	// Create Tag Category for Fybrik
-	_, r, err := c.TagsApi.CreateTagCategory(ctx).CreateTagCategory(*client.NewCreateTagCategory("Classification",
-		"Parent Category for all Fybrik labels", Fybrik)).Execute()
-	if err != nil {
-		s.logger.Trace().Msg("Failed to create the Fybrik Tag category. Maybe it already exists.")
-	} else {
-		defer r.Body.Close()
+	// traverse tag categories. create categories as needed.
+	// within each tag category, create the specified tags
+	if tagCategories, ok := s.customization[TagCategories]; ok {
+		if tagCategoriesArr, ok := tagCategories.([]interface{}); ok {
+			for i := range tagCategoriesArr {
+				tagCategory := tagCategoriesArr[i]
+				if tagCategoryMap, ok := tagCategory.(map[interface{}]interface{}); ok {
+					descriptionStr := ""
+					description := tagCategoryMap[Description]
+					if description != nil {
+						descriptionStr = description.(string)
+					}
+
+					if name, ok := tagCategoryMap[Name]; ok {
+						// Create Tag Category for Fybrik
+						_, r, err := c.TagsApi.CreateTagCategory(ctx).CreateTagCategory(*client.NewCreateTagCategory("Classification",
+							descriptionStr, name.(string))).Execute()
+						if err != nil {
+							s.logger.Trace().Msg("Failed to create the Tag category. Maybe it already exists.")
+						} else {
+							r.Body.Close()
+							if tags, ok := tagCategoryMap[Tags]; ok {
+								s.addTags(ctx, c, name.(string), tags)
+							}
+						}
+					}
+				} else {
+					s.logger.Warn().Msg(fmt.Sprintf("malformed tag category. cannot cast %T to map[interface{}]interface{}", tagCategory))
+				}
+			}
+		}
 	}
 
-	// Find the ID for the 'table' entity
-	var tableID string
+	typeNameToID := make(map[string]string)
 
-	typeList, r, err := c.MetadataApi.ListTypes(ctx).Category("entity").Limit(TypeListLengthLimit).Execute()
+	typeList, r, err := c.MetadataApi.ListTypes(ctx).Limit(TypeListLengthLimit).Execute()
 	if err != nil {
 		s.logger.Warn().Msg(ErrorInPrepareOpenMetadataForFybrik + "Most likely OpenMetadata is not up yet")
 		return false
 	}
-	defer r.Body.Close()
+	r.Body.Close()
 
 	for i := range typeList.Data {
-		if *typeList.Data[i].FullyQualifiedName == "table" {
-			tableID = *typeList.Data[i].Id
-			break
-		}
+		typeNameToID[*typeList.Data[i].FullyQualifiedName] = *typeList.Data[i].Id
 	}
 
-	if tableID == "" {
+	tableID, ok := typeNameToID[Table]
+	if !ok {
 		s.logger.Error().Msg(ErrorInPrepareOpenMetadataForFybrik + "Failed to find the ID for entity 'table'")
 		return false
 	}
 
-	// Find the ID for the 'string' type
-	var stringID string
-	typeList, r, err = c.MetadataApi.ListTypes(ctx).Category("field").Limit(TypeListLengthLimit).Execute()
-	if err != nil {
-		s.logger.Error().Msg(fmt.Sprintf("Error when calling `MetadataApi.ListTypes``: %v\n", err))
-		return false
-	}
-	defer r.Body.Close()
-
-	for i := range typeList.Data {
-		if *typeList.Data[i].FullyQualifiedName == "string" {
-			stringID = *typeList.Data[i].Id
-			break
+	// traverse the table custom properties, and create each
+	if tableProperties, ok := s.customization[TableProperties]; ok {
+		if tablePropertiesArr, ok := tableProperties.([]interface{}); ok {
+			for i := range tablePropertiesArr {
+				if propertyMap, ok := tablePropertiesArr[i].(map[interface{}]interface{}); ok {
+					// default property type is "string"
+					typeName := String
+					if v, ok1 := propertyMap[Type]; ok1 && v != "" {
+						if typeName, ok1 = v.(string); !ok1 {
+							s.logger.Warn().Msg(fmt.Sprintf("cannot convert typeName (%#v) to string", v))
+							continue
+						}
+					}
+					if v, ok2 := propertyMap[Name]; ok2 {
+						propertyName := ""
+						if propertyName, ok2 = v.(string); !ok2 {
+							s.logger.Warn().Msg(fmt.Sprintf("cannot convert property name (%#v) to string", v))
+							continue
+						}
+						if propertyName == "" {
+							s.logger.Warn().Msg("empty property name")
+							continue
+						}
+						descriptionStr := ""
+						description := propertyMap[Description]
+						if description != nil {
+							if descriptionStr, ok2 = description.(string); !ok2 {
+								s.logger.Warn().Msg(fmt.Sprintf("cannot convert property description (%#v) to string", description))
+							}
+						}
+						if typeID, ok4 := typeNameToID[typeName]; ok4 {
+							r, err := c.MetadataApi.AddProperty(ctx, tableID).CustomProperty(*client.NewCustomProperty(
+								descriptionStr, propertyName, *client.NewEntityReference(typeID, String))).Execute()
+							if err != nil {
+								r.Body.Close()
+							}
+						} else {
+							s.logger.Warn().Msg("unrecognized property type: " + typeName)
+						}
+					} else {
+						s.logger.Warn().Msg("missing fields for table property")
+					}
+				} else {
+					s.logger.Warn().Msg(fmt.Sprintf("malformed table properties. cannot cast %T to map[interface{}]interface{}", tablePropertiesArr[i]))
+				}
+			} // end of the for loop
+		} else {
+			s.logger.Warn().Msg(fmt.Sprintf("cannot convert tableProperties (type %T) to []interface{}", tableProperties))
 		}
+	} else {
+		s.logger.Warn().Msg("customization file doesn't contain properties")
 	}
-
-	if stringID == "" {
-		s.logger.Error().Msg(ErrorInPrepareOpenMetadataForFybrik + "Failed to find the ID for entity 'string'")
-		return false
-	}
-
-	// Add custom properties for tables
-	r1, _ := c.MetadataApi.AddProperty(ctx, tableID).CustomProperty(*client.NewCustomProperty(
-		"The vault plugin path where the destination data credentials will be stored as kubernetes secrets", Credentials,
-		*client.NewEntityReference(stringID, String))).Execute()
-	defer r1.Body.Close()
-	r2, _ := c.MetadataApi.AddProperty(ctx, tableID).CustomProperty(*client.NewCustomProperty(
-		"Connection type, e.g.: s3 or mysql", ConnectionType,
-		*client.NewEntityReference(stringID, String))).Execute()
-	defer r2.Body.Close()
-	r3, _ := c.MetadataApi.AddProperty(ctx, tableID).CustomProperty(*client.NewCustomProperty(
-		"Name of the resource", Name,
-		*client.NewEntityReference(stringID, String))).Execute()
-	defer r3.Body.Close()
-	r4, _ := c.MetadataApi.AddProperty(ctx, tableID).CustomProperty(*client.NewCustomProperty(
-		"Geography of the resource", Geography,
-		*client.NewEntityReference(stringID, String))).Execute()
-	defer r4.Body.Close()
-	r5, _ := c.MetadataApi.AddProperty(ctx, tableID).CustomProperty(*client.NewCustomProperty(
-		"Owner of the resource", Owner,
-		*client.NewEntityReference(stringID, String))).Execute()
-	defer r5.Body.Close()
-	r6, _ := c.MetadataApi.AddProperty(ctx, tableID).CustomProperty(*client.NewCustomProperty(
-		"Data format", DataFormat,
-		*client.NewEntityReference(stringID, String))).Execute()
-	r6.Body.Close()
 
 	return true
 }
 
-// NewOpenMetadataApiService creates a new api service.
+// NewOpenMetadataAPIService creates a new api service.
 // It is initialized base on the configuration
-func NewOpenMetadataAPIService(conf map[interface{}]interface{}, logger *zerolog.Logger) OpenMetadataAPIServicer {
+func NewOpenMetadataAPIService(conf map[string]interface{}, customization map[string]interface{},
+	logger *zerolog.Logger) *OpenMetadataAPIService {
 	var SleepIntervalMS int
 	var NumRetries int
+	var port int
 
 	var vaultConf map[interface{}]interface{} = nil
 	if vaultConfMap, ok := conf["vault"]; ok {
 		vaultConf = vaultConfMap.(map[interface{}]interface{})
 	}
 
-	value, ok := conf["openmetadata_sleep_interval"]
-	if ok {
+	if value, ok := conf["openmetadata_sleep_interval"]; ok {
 		SleepIntervalMS = value.(int)
 	} else {
 		SleepIntervalMS = DefaultSleepIntervalMS
 	}
 
-	value, ok = conf["openmetadata_num_retries"]
-	if ok {
+	if value, ok := conf["openmetadata_num_retries"]; ok {
 		NumRetries = value.(int)
 	} else {
 		NumRetries = DefaultNumRetries
 	}
 
-	nameToDatabaseStruct := make(map[string]database_types.DatabaseType)
-	nameToDatabaseStruct[MysqlLowercase] = database_types.NewMysql(logger)
-	nameToDatabaseStruct[S3] = database_types.NewS3(vaultConf, logger)
+	if value, ok := conf["openmetadata_connector_port"]; ok {
+		port = value.(int)
+	} else {
+		port = DefaultListeningPort
+	}
+
+	nameToDatabaseStruct := make(map[string]dbtypes.DatabaseType)
+	nameToDatabaseStruct[MysqlLowercase] = dbtypes.NewMysql(logger)
+	nameToDatabaseStruct[S3] = dbtypes.NewS3(vaultConf, logger)
 
 	s := &OpenMetadataAPIService{Endpoint: conf["openmetadata_endpoint"].(string),
 		SleepIntervalMS:      SleepIntervalMS,
 		NumRetries:           NumRetries,
 		NameToDatabaseStruct: nameToDatabaseStruct,
 		logger:               logger,
-		NumRenameRetries:     DefaultNumRenameRetries}
+		NumRenameRetries:     DefaultNumRenameRetries,
+		customization:        customization,
+		Port:                 port}
 
-	s.initialized = s.prepareOpenMetadataForFybrik()
+	s.initialized = s.PrepareOpenMetadataForFybrik()
 
 	return s
 }
@@ -192,7 +262,7 @@ func (s *OpenMetadataAPIService) getOpenMetadataClient() *client.APIClient {
 // traverse database services looking for a service with identical configuration
 func (s *OpenMetadataAPIService) findService(ctx context.Context,
 	c *client.APIClient,
-	dt database_types.DatabaseType,
+	dt dbtypes.DatabaseType,
 	connectionProperties map[string]interface{}) (string, string, bool) {
 	connectionType := dt.OMTypeName()
 
@@ -201,7 +271,7 @@ func (s *OpenMetadataAPIService) findService(ctx context.Context,
 		s.logger.Warn().Msg("Could not list database services. Let us assume that we need to create a new service")
 		return "", "", false
 	}
-	defer r.Body.Close()
+	r.Body.Close()
 
 	// traverse existing services
 	for i := range serviceList.Data {
@@ -254,20 +324,20 @@ func (s *OpenMetadataAPIService) createDatabaseService(ctx context.Context,
 		s.logger.Error().Msg("Failed to create Database Service. Giving up.")
 		return "", "", err
 	}
-	defer r.Body.Close()
+	r.Body.Close()
 
 	s.logger.Info().Msg(SucceededInCreatingDatabaseService + databaseServiceName)
 	return databaseService.Id, *databaseService.FullyQualifiedName, nil
 }
 
 func (s *OpenMetadataAPIService) findAsset(ctx context.Context, c *client.APIClient, assetID string) (bool, *client.Table) {
-	fields := "tags"
+	fields := Tags
 	include := "all"
 	table, r, err := c.TablesApi.GetTableByFQN(ctx, assetID).Fields(fields).Include(include).Execute()
 	if err != nil {
 		s.logger.Warn().Msg("Could not find asset: " + assetID)
 	} else {
-		defer r.Body.Close()
+		r.Body.Close()
 		s.logger.Info().Msg("Asset found: " + assetID)
 	}
 	return err == nil, table
@@ -286,7 +356,7 @@ func (s *OpenMetadataAPIService) findLatestAsset(ctx context.Context, c *client.
 		s.logger.Error().Msg("Could not retrieve latest version of the asset")
 		return false, nil
 	}
-	defer r.Body.Close()
+	r.Body.Close()
 
 	s.logger.Info().Msg("Succeeded in retrieving latest version of the asset")
 	return true, table
@@ -299,7 +369,7 @@ func (s *OpenMetadataAPIService) findIngestionPipeline(ctx context.Context, c *c
 		s.logger.Info().Msg("Ingestion Pipeline not found: " + ingestionPipelineName)
 		return "", false
 	}
-	defer r.Body.Close()
+	r.Body.Close()
 	s.logger.Info().Msg("Ingestion Pipeline found: " + ingestionPipelineName)
 	return *pipeline.Id, true
 }
@@ -321,7 +391,7 @@ func (s *OpenMetadataAPIService) createIngestionPipeline(ctx context.Context,
 		s.logger.Error().Msg("Failed to create Ingestion Pipeline: " + ingestionPipelineName + ForDatabaseServiceID + databaseServiceID)
 		return "", err
 	}
-	defer r.Body.Close()
+	r.Body.Close()
 	s.logger.Info().Msg("Succeeded in creating Ingestion Pipeline: " + ingestionPipelineName +
 		ForDatabaseServiceID + databaseServiceID)
 	return *ingestionPipeline.Id, nil
@@ -335,7 +405,7 @@ func (s *OpenMetadataAPIService) findOrCreateDatabase(ctx context.Context,
 	// we begin by checking whether the database exists
 	database, r, err := c.DatabasesApi.GetDatabaseByFQN(ctx, databaseFQN).Execute()
 	if err == nil {
-		defer r.Body.Close()
+		r.Body.Close()
 		s.logger.Trace().Msg("Database already exists: " + databaseFQN)
 		return *database.Id, nil
 	}
@@ -347,7 +417,7 @@ func (s *OpenMetadataAPIService) findOrCreateDatabase(ctx context.Context,
 		s.logger.Trace().Msg(fmt.Sprintf("Error when calling `DatabasesApi.CreateDatabase``: %v\n", err))
 		return "", err
 	}
-	defer r1.Body.Close()
+	r1.Body.Close()
 	return *database.Id, nil
 }
 
@@ -359,7 +429,7 @@ func (s *OpenMetadataAPIService) findOrCreateDatabaseSchema(ctx context.Context,
 	// first let us check whether this Database Schema already exists
 	databaseSchema, r, err := c.DatabaseSchemasApi.GetDBSchemaByFQN(ctx, databaseSchemaFQN).Execute()
 	if err == nil {
-		defer r.Body.Close()
+		r.Body.Close()
 		s.logger.Trace().Msg("Database Schema already exists: " + databaseSchemaName)
 		return *databaseSchema.Id, nil
 	}
@@ -370,7 +440,7 @@ func (s *OpenMetadataAPIService) findOrCreateDatabaseSchema(ctx context.Context,
 		s.logger.Trace().Msg(fmt.Sprintf("Error when calling `DatabaseSchemasApi.CreateDBSchema``: %v\n", err))
 		return "", err
 	}
-	defer r.Body.Close()
+	r.Body.Close()
 	return *databaseSchema.Id, nil
 }
 
@@ -387,7 +457,7 @@ func (s *OpenMetadataAPIService) createTable(ctx context.Context,
 		s.logger.Error().Msg("createTable failed: " + tableName)
 		return nil, err
 	}
-	defer r.Body.Close()
+	r.Body.Close()
 	return table, nil
 }
 
@@ -457,7 +527,7 @@ func (s *OpenMetadataAPIService) enrichAsset(ctx context.Context, table *client.
 		s.logger.Error().Msg("Asset Enrichment failed (using PatchTable)")
 		return err
 	}
-	defer resp.Body.Close()
+	resp.Body.Close()
 
 	s.logger.Info().Msg("Asset Enrichment succeeded")
 	return nil
@@ -469,7 +539,7 @@ func (s *OpenMetadataAPIService) deleteAsset(ctx context.Context, c *client.APIC
 		s.logger.Error().Msg("Asset deletion failed -- asset not found")
 		return http.StatusNotFound, err
 	}
-	defer r.Body.Close()
+	r.Body.Close()
 
 	s.logger.Trace().Msg("deleteAsset -- asset found")
 	r, err = c.TablesApi.DeleteTable(ctx, table.Id).Execute()
@@ -477,14 +547,14 @@ func (s *OpenMetadataAPIService) deleteAsset(ctx context.Context, c *client.APIC
 		s.logger.Error().Msg("Asset deletion failed")
 		return http.StatusBadRequest, err
 	}
-	defer r.Body.Close()
+	r.Body.Close()
 
 	s.logger.Error().Msg("Asset deletion successful")
 	return http.StatusOK, nil
 }
 
 // populate the values in a GetAssetResponse structure to include everything:
-// credentials, name, owner, geography, dataFormat, connection informations,
+// credentials, name, owner, geography, dataFormat, connection information,
 // tags, and columns
 func (s *OpenMetadataAPIService) constructAssetResponse(ctx context.Context, //nolint
 	c *client.APIClient,
@@ -497,7 +567,7 @@ func (s *OpenMetadataAPIService) constructAssetResponse(ctx context.Context, //n
 			". Therefore, unable to get connection information for asset: " + *table.FullyQualifiedName)
 		return nil, err
 	}
-	defer r.Body.Close()
+	r.Body.Close()
 
 	ret := &models.GetAssetResponse{}
 	customProperties := table.GetExtension()
@@ -541,8 +611,12 @@ func (s *OpenMetadataAPIService) constructAssetResponse(ctx context.Context, //n
 		return nil, errors.New("Unrecognized connection type: " + connectionTypeStr)
 	}
 
-	config := dt.TranslateOpenMetadataConfigToFybrikConfig(table.Name, ret.Credentials,
+	config, err := dt.TranslateOpenMetadataConfigToFybrikConfig(table.Name, ret.Credentials,
 		respService.Connection.GetConfig())
+	if err != nil {
+		s.logger.Error().Err(err).Msg("error in translating openmetadata config to fybrik format")
+		return nil, err
+	}
 
 	additionalProperties := make(map[string]interface{})
 	ret.Details.Connection.Name = connectionTypeStr
@@ -569,6 +643,6 @@ func (s *OpenMetadataAPIService) constructAssetResponse(ctx context.Context, //n
 		ret.ResourceMetadata.Tags = tags
 	}
 
-	s.logger.Info().Msg("Succesfully constructed asset response")
+	s.logger.Info().Msg("Successfully constructed asset response")
 	return ret, nil
 }

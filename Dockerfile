@@ -4,6 +4,7 @@ FROM $image
 ENV HOME=/tmp
 WORKDIR /tmp
 
+COPY customization.yaml /customization.yaml
 COPY openmetadata-connector /openmetadata-connector
 
 USER 10001

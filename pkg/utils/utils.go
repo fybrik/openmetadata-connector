@@ -5,8 +5,11 @@ package utils
 
 import (
 	"crypto/rand"
+	"fmt"
 	"math/big"
 	"strings"
+
+	"github.com/rs/zerolog"
 
 	client "fybrik.io/openmetadata-connector/datacatalog-go-client"
 	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
@@ -60,12 +63,18 @@ func ExtractColumns(resourceColumns []models.ResourceColumn) []client.Column {
 	return ret
 }
 
-func InterfaceToMap(i interface{}) (map[string]interface{}, bool) {
+func InterfaceToMap(i interface{}, logger *zerolog.Logger) (map[string]interface{}, bool) {
 	m, ok := i.(map[string]interface{})
+	if !ok {
+		logger.Warn().Msg(fmt.Sprintf("Cannot cast %T to map[string]interface{}", i))
+	}
 	return m, ok
 }
 
-func InterfaceToArray(i interface{}) ([]interface{}, bool) {
+func InterfaceToArray(i interface{}, logger *zerolog.Logger) ([]interface{}, bool) {
 	m, ok := i.([]interface{})
+	if !ok {
+		logger.Warn().Msg(fmt.Sprintf("Cannot cast %T to []interface{}", i))
+	}
 	return m, ok
 }

@@ -13,18 +13,20 @@ import (
 
 	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
 	api "fybrik.io/openmetadata-connector/datacatalog-go/go"
-	database_types "fybrik.io/openmetadata-connector/pkg/database-types"
-	utils "fybrik.io/openmetadata-connector/pkg/utils"
+	dbtypes "fybrik.io/openmetadata-connector/pkg/database-types"
+	"fybrik.io/openmetadata-connector/pkg/utils"
 )
 
 type OpenMetadataAPIService struct {
 	Endpoint             string
 	SleepIntervalMS      int
 	NumRetries           int
-	NameToDatabaseStruct map[string]database_types.DatabaseType
+	NameToDatabaseStruct map[string]dbtypes.DatabaseType
 	logger               *zerolog.Logger
 	NumRenameRetries     int
 	initialized          bool
+	customization        map[string]interface{}
+	Port                 int
 }
 
 // CreateAsset - This REST API writes data asset information to the data catalog configured in fybrik
@@ -32,7 +34,7 @@ func (s *OpenMetadataAPIService) CreateAsset(ctx context.Context, //nolint
 	xRequestDatacatalogWriteCred string,
 	createAssetRequest *models.CreateAssetRequest) (api.ImplResponse, error) {
 	if !s.initialized {
-		s.initialized = s.prepareOpenMetadataForFybrik()
+		s.initialized = s.PrepareOpenMetadataForFybrik()
 	}
 
 	connectionType := createAssetRequest.Details.Connection.Name
@@ -55,7 +57,7 @@ func (s *OpenMetadataAPIService) CreateAsset(ctx context.Context, //nolint
 	// step 1: Translate the fybrik connection information to the OM connection information.
 	//         This configuration information will later be used to create an OM connection
 	//         (if it does not already exist)
-	config, ok := utils.InterfaceToMap(createAssetRequest.Details.GetConnection().AdditionalProperties[connectionType])
+	config, ok := utils.InterfaceToMap(createAssetRequest.Details.GetConnection().AdditionalProperties[connectionType], s.logger)
 	if !ok {
 		s.logger.Error().Msg(FailedToCovert)
 		return api.Response(http.StatusBadRequest, nil), errors.New(FailedToCovert)
@@ -75,7 +77,11 @@ func (s *OpenMetadataAPIService) CreateAsset(ctx context.Context, //nolint
 	}
 
 	// now that we know the of the database service, we can determine the asset name in OpenMetadata
-	assetID := dt.TableFQN(databaseServiceName, createAssetRequest)
+	assetID, err := dt.TableFQN(databaseServiceName, createAssetRequest)
+	if err != nil {
+		s.logger.Error().Err(err).Msg("cannot determine table FQN")
+		return api.Response(http.StatusBadRequest, nil), err
+	}
 
 	// Let's check whether OM already has this asset
 	found, _ = s.findAsset(ctx, c, assetID)
@@ -111,7 +117,13 @@ func (s *OpenMetadataAPIService) CreateAsset(ctx context.Context, //nolint
 		dt.DatabaseSchemaName(createAssetRequest))
 
 	columns := utils.ExtractColumns(createAssetRequest.ResourceMetadata.Columns)
-	table, err := s.createTable(ctx, c, databaseSchemaID, dt.TableName(createAssetRequest), columns)
+
+	tableName, err := dt.TableName(createAssetRequest)
+	if err != nil {
+		s.logger.Error().Err(err).Msg("failed to determine table name")
+		return api.Response(http.StatusBadRequest, nil), err
+	}
+	table, err := s.createTable(ctx, c, databaseSchemaID, tableName, columns)
 	if err != nil {
 		return api.Response(http.StatusBadRequest, nil), err
 	}
@@ -140,7 +152,7 @@ func (s *OpenMetadataAPIService) CreateAsset(ctx context.Context, //nolint
 func (s *OpenMetadataAPIService) DeleteAsset(ctx context.Context, xRequestDatacatalogCred string,
 	deleteAssetRequest *api.DeleteAssetRequest) (api.ImplResponse, error) {
 	if !s.initialized {
-		s.initialized = s.prepareOpenMetadataForFybrik()
+		s.initialized = s.PrepareOpenMetadataForFybrik()
 	}
 
 	c := s.getOpenMetadataClient()
@@ -160,7 +172,7 @@ func (s *OpenMetadataAPIService) DeleteAsset(ctx context.Context, xRequestDataca
 func (s *OpenMetadataAPIService) GetAssetInfo(ctx context.Context, xRequestDatacatalogCred string,
 	getAssetRequest *api.GetAssetRequest) (api.ImplResponse, error) {
 	if !s.initialized {
-		s.initialized = s.prepareOpenMetadataForFybrik()
+		s.initialized = s.PrepareOpenMetadataForFybrik()
 	}
 
 	c := s.getOpenMetadataClient()
@@ -175,7 +187,7 @@ func (s *OpenMetadataAPIService) GetAssetInfo(ctx context.Context, xRequestDatac
 
 	assetResponse, err := s.constructAssetResponse(ctx, c, table)
 	if err != nil {
-		s.logger.Error().Msg("Construction of Asset Reponse failed")
+		s.logger.Error().Msg("Construction of Asset Response failed")
 		return api.Response(http.StatusBadRequest, nil), err
 	}
 
@@ -187,7 +199,7 @@ func (s *OpenMetadataAPIService) GetAssetInfo(ctx context.Context, xRequestDatac
 func (s *OpenMetadataAPIService) UpdateAsset(ctx context.Context, xRequestDatacatalogUpdateCred string,
 	updateAssetRequest *api.UpdateAssetRequest) (api.ImplResponse, error) {
 	if !s.initialized {
-		s.initialized = s.prepareOpenMetadataForFybrik()
+		s.initialized = s.PrepareOpenMetadataForFybrik()
 	}
 
 	c := s.getOpenMetadataClient()

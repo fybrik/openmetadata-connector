@@ -9,14 +9,14 @@ import (
 	"os"
 	"strings"
 
-	structs "github.com/fatih/structs"
+	"github.com/fatih/structs"
 	. "github.com/onsi/ginkgo/v2" //nolint
 	. "github.com/onsi/gomega"    //nolint
-	zerolog "github.com/rs/zerolog"
+	"github.com/rs/zerolog"
 
 	client "fybrik.io/openmetadata-connector/datacatalog-go-client"
 	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
-	utils "fybrik.io/openmetadata-connector/pkg/utils"
+	"fybrik.io/openmetadata-connector/pkg/utils"
 )
 
 const TestAccessKey = "myAccessKey"
@@ -70,7 +70,7 @@ var vaultConf map[interface{}]interface{}
 // returns two similar structures: The structure used for requesting an asset creation,
 // and a structure representing the response to a getAssetInfo request regarding the
 // same asset
-func getCreateAssetRequestAndReponse() (*models.CreateAssetRequest, *models.GetAssetResponse) {
+func getCreateAssetRequestAndResponse() (*models.CreateAssetRequest, *models.GetAssetResponse) {
 	var destinationAssetID = TestDestinationAssetID
 	var name = TestAssetName
 	var geography = TestGeography
@@ -146,7 +146,7 @@ func createMockVaultServer() *httptest.Server {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(r.Method).To(SatisfyAny(Equal(http.MethodPost), Equal(http.MethodGet)))
 		if r.Method == http.MethodPost {
-			By("receving a Post request")
+			By("receiving a Post request")
 			Expect(r.RequestURI).To(Equal("/v1/auth/" + TestAuthPath + "/login"))
 			requestMap := make(map[string]interface{})
 			err = json.Unmarshal(requestBytes, &requestMap)
@@ -166,7 +166,7 @@ func createMockVaultServer() *httptest.Server {
 			return
 		}
 		if r.Method == http.MethodGet {
-			By("receving a Get request")
+			By("receiving a Get request")
 			Expect(r.Header.Get("X-Vault-Token")).To(Equal(TestToken))
 			logger.Trace().Msg("About to mock response secret request")
 			response := map[string]interface{}{
@@ -191,11 +191,11 @@ func createMockVaultServer() *httptest.Server {
 // creates a client.DatabaseConnection structure, based on a request sent to the mock
 // OM server
 func constructDataBaseServiceStruct(serviceInfo map[string]interface{}) *client.DatabaseService {
-	connectionInfo, ok := utils.InterfaceToMap(serviceInfo["connection"])
+	connectionInfo, ok := utils.InterfaceToMap(serviceInfo["connection"], &logger)
 	if !ok {
 		return nil
 	}
-	connectionConfig, ok := utils.InterfaceToMap(connectionInfo["config"])
+	connectionConfig, ok := utils.InterfaceToMap(connectionInfo["config"], &logger)
 	if !ok {
 		return nil
 	}
@@ -212,13 +212,13 @@ func constructDataBaseServiceStruct(serviceInfo map[string]interface{}) *client.
 // mock OM server. This table is later enriched using the patchTable() method
 func constructTableStruct(assetInfo map[string]interface{}) (*client.Table, bool) {
 	version := TestVersion
-	requestColumns, ok := utils.InterfaceToArray(assetInfo[Columns])
+	requestColumns, ok := utils.InterfaceToArray(assetInfo[Columns], &logger)
 	if !ok {
 		return nil, false
 	}
 	var columns []client.Column
 	for i := range requestColumns {
-		c, ok := utils.InterfaceToMap(requestColumns[i])
+		c, ok := utils.InterfaceToMap(requestColumns[i], &logger)
 		if !ok {
 			return nil, false
 		}
@@ -237,7 +237,7 @@ func constructTableStruct(assetInfo map[string]interface{}) (*client.Table, bool
 // enrich table structure using tags, custom properties, and column tags
 func patchTable(table *client.Table, patchArray []interface{}) bool { //nolint
 	for i := range patchArray {
-		patchMap, ok := utils.InterfaceToMap(patchArray[i])
+		patchMap, ok := utils.InterfaceToMap(patchArray[i], &logger)
 		if !ok {
 			return false
 		}
@@ -245,12 +245,12 @@ func patchTable(table *client.Table, patchArray []interface{}) bool { //nolint
 		switch {
 		case patchName == TagsPath:
 			var assetTags []client.TagLabel
-			tagsArr, ok := utils.InterfaceToArray(patchMap[Value])
+			tagsArr, ok := utils.InterfaceToArray(patchMap[Value], &logger)
 			if !ok {
 				return false
 			}
 			for j := range tagsArr {
-				columnTagMap, ok2 := utils.InterfaceToMap(tagsArr[j])
+				columnTagMap, ok2 := utils.InterfaceToMap(tagsArr[j], &logger)
 				if !ok2 {
 					return false
 				}
@@ -258,29 +258,29 @@ func patchTable(table *client.Table, patchArray []interface{}) bool { //nolint
 			}
 			table.Tags = assetTags
 		case patchName == ExtensionPath:
-			extensionValueMap, ok1 := utils.InterfaceToMap(patchMap[Value])
+			extensionValueMap, ok1 := utils.InterfaceToMap(patchMap[Value], &logger)
 			if !ok1 {
 				return false
 			}
 			table.Extension = extensionValueMap
 		case patchName == ColumnsPath:
 			var columnsWithTags []client.Column
-			columnValueArr, ok := utils.InterfaceToArray(patchMap[Value])
+			columnValueArr, ok := utils.InterfaceToArray(patchMap[Value], &logger)
 			if !ok {
 				return false
 			}
 			for i := range columnValueArr {
-				c, ok := utils.InterfaceToMap(columnValueArr[i])
+				c, ok := utils.InterfaceToMap(columnValueArr[i], &logger)
 				if !ok {
 					return false
 				}
 				var tags []client.TagLabel
-				tagsArr, ok := utils.InterfaceToArray(c["tags"])
+				tagsArr, ok := utils.InterfaceToArray(c["tags"], &logger)
 				if !ok {
 					return false
 				}
 				for j := range tagsArr {
-					columnTagMap, ok := utils.InterfaceToMap(tagsArr[j])
+					columnTagMap, ok := utils.InterfaceToMap(tagsArr[j], &logger)
 					if !ok {
 						return false
 					}
@@ -296,19 +296,15 @@ func patchTable(table *client.Table, patchArray []interface{}) bool { //nolint
 
 // handle mock OM server GET requests
 func handleGetMockOMServer(r *http.Request) (map[string]interface{}, int) {
-	if strings.HasPrefix(r.RequestURI, "/v1/metadata/types?category=entity") {
+	if strings.HasPrefix(r.RequestURI, "/v1/metadata/types") {
 		var types []interface{}
-		types = append(types, map[string]interface{}{FullyQualifiedName: "table", ID: "1"})
+		types = append(types, map[string]interface{}{FullyQualifiedName: Table, ID: "1"},
+			map[string]interface{}{FullyQualifiedName: String, ID: "2"})
 		return map[string]interface{}{Data: types}, 0
 	}
 	if r.RequestURI == DatabaseServicesURI {
 		var databaseServices []interface{}
 		return map[string]interface{}{Data: databaseServices}, 0
-	}
-	if strings.HasPrefix(r.RequestURI, "/v1/metadata/types?category=field") {
-		var types []interface{}
-		types = append(types, map[string]interface{}{FullyQualifiedName: "string", ID: "2"})
-		return map[string]interface{}{Data: types}, 0
 	}
 	if strings.HasPrefix(r.RequestURI,
 		fmt.Sprintf(TablesURI+"/name/%s.%s.%s.%s", TestDatabaseService, TestDatabase,
@@ -396,7 +392,7 @@ func createMockOMServer() *httptest.Server {
 		}
 		Expect(r.Method).To(SatisfyAny(Equal(http.MethodGet), Equal(http.MethodPost), Equal(http.MethodPut), Equal(http.MethodPatch)))
 		if r.Method == http.MethodGet {
-			By("receving a Get request to the OM server")
+			By("receiving a Get request to the OM server")
 			response, statusCode = handleGetMockOMServer(r)
 			Expect(statusCode).ToNot(Equal(http.StatusInternalServerError))
 			if statusCode != 0 {
@@ -404,7 +400,7 @@ func createMockOMServer() *httptest.Server {
 				return
 			}
 		} else if r.Method == http.MethodPost {
-			By("receving a Post request to the OM server")
+			By("receiving a Post request to the OM server")
 			response, statusCode = handlePostMockOMServer(r, requestMap)
 			Expect(statusCode).ToNot(Equal(http.StatusInternalServerError))
 			if statusCode != 0 {
@@ -412,11 +408,11 @@ func createMockOMServer() *httptest.Server {
 				return
 			}
 		} else if r.Method == http.MethodPut {
-			By("receving a Put request to the OM server")
+			By("receiving a Put request to the OM server")
 			Expect(r.RequestURI).To(Equal("/v1/metadata/types/1"))
 			response = map[string]interface{}{}
 		} else if r.Method == http.MethodPatch {
-			By("receving a Patch request to the OM server")
+			By("receiving a Patch request to the OM server")
 			Expect(r.RequestURI).To(Equal(TablesURI + "/" + ZeroUUID))
 			table, ok := mockDataCatalog[ZeroUUID].(*client.Table)
 			Expect(ok).To(BeTrue())

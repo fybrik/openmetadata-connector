@@ -9,54 +9,68 @@ import (
 	"os"
 	"strconv"
 
-	logging "fybrik.io/fybrik/pkg/logging"
+	"fybrik.io/fybrik/pkg/logging"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 
 	api "fybrik.io/openmetadata-connector/datacatalog-go/go"
-	openapi_connector_core "fybrik.io/openmetadata-connector/pkg/openmetadata-connector-core"
+	occ "fybrik.io/openmetadata-connector/pkg/openmetadata-connector-core"
 )
 
-const DefaultListeningPort = 8081
+const DefaultConfigFile = "/etc/conf/conf.yaml"
+const DefaultCustomizationFile = "./customization.yaml"
 
 // RunCmd defines the command for running the connector
 func RunCmd() *cobra.Command {
 	logger := logging.LogInit(logging.CONNECTOR, "OpenMetadata Connector")
-	configFile := "/etc/conf/conf.yaml"
-	port := DefaultListeningPort
+	configFile := DefaultConfigFile
+	customizationFile := DefaultCustomizationFile
 	cmd := &cobra.Command{
 		Use:   "run",
 		Short: "Run the connector",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			// TODO - add logging level
+		Run: func(cmd *cobra.Command, args []string) {
+			// TODO - add logging level and pretty logging
 
-			yamlFile, err := os.ReadFile(configFile)
-
+			configFileBytes, err := os.ReadFile(configFile)
 			if err != nil {
-				return err
+				logger.Error().Err(err).Msg("failure to read config file")
+				return
 			}
 
-			conf := make(map[interface{}]interface{})
-
-			err = yaml.Unmarshal(yamlFile, &conf)
+			customizationFileBytes, err := os.ReadFile(customizationFile)
 			if err != nil {
-				return err
+				logger.Error().Err(err).Msg("failure to read customization file")
+				return
 			}
 
-			logger.Info().Msg("Server started")
+			conf := make(map[string]interface{})
+			customization := make(map[string]interface{})
 
-			DefaultAPIService := openapi_connector_core.NewOpenMetadataAPIService(conf, &logger)
-			DefaultAPIController := openapi_connector_core.NewOpenMetadataAPIController(DefaultAPIService)
+			err = yaml.Unmarshal(configFileBytes, &conf)
+			if err != nil {
+				logger.Error().Err(err).Msg("failure to parse config file")
+				return
+			}
+			err = yaml.Unmarshal(customizationFileBytes, &customization)
+			if err != nil {
+				logger.Error().Err(err).Msg("failure to parse customization file")
+				return
+			}
+
+			DefaultAPIService := occ.NewOpenMetadataAPIService(conf, customization, &logger)
+			DefaultAPIController := occ.NewOpenMetadataAPIController(DefaultAPIService)
 
 			router := api.NewRouter(DefaultAPIController)
 
-			http.ListenAndServe(":"+strconv.Itoa(port), router) //nolint
-
-			return nil
+			logger.Info().Msg("Server is starting")
+			http.ListenAndServe(":"+strconv.Itoa(DefaultAPIService.Port), router) //nolint
 		},
 	}
+
 	cmd.Flags().StringVar(&configFile, "config", configFile, "Configuration file")
-	cmd.Flags().IntVar(&port, "port", port, "Listening port")
+	cmd.Flags().StringVar(&customizationFile, "customization", customizationFile,
+		"File containing tags and custom properties needed for working with Fybrik")
+	cmd.CompletionOptions.DisableDefaultCmd = true
 	return cmd
 }
 

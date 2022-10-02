@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"reflect"
 
-	zerolog "github.com/rs/zerolog"
+	"github.com/rs/zerolog"
 
 	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
-	utils "fybrik.io/openmetadata-connector/pkg/utils"
+	"fybrik.io/openmetadata-connector/pkg/utils"
 )
 
 type mysql struct {
@@ -34,7 +34,7 @@ func (m *mysql) TranslateFybrikConfigToOpenMetadataConfig(config map[string]inte
 }
 
 func (m *mysql) TranslateOpenMetadataConfigToFybrikConfig(tableName string, credentials string,
-	config map[string]interface{}) map[string]interface{} {
+	config map[string]interface{}) (map[string]interface{}, error) {
 	other := make(map[string]interface{})
 	ret := make(map[string]interface{})
 	for key, value := range config {
@@ -46,21 +46,20 @@ func (m *mysql) TranslateOpenMetadataConfigToFybrikConfig(tableName string, cred
 	}
 
 	ret[Other] = other
-	return ret
+	return ret, nil
 }
 
-func (m *mysql) TableFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) string {
-	connectionProperties, ok := utils.InterfaceToMap(createAssetRequest.Details.GetConnection().AdditionalProperties["mysql"])
+func (m *mysql) TableFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) (string, error) {
+	connectionProperties, ok := utils.InterfaceToMap(createAssetRequest.Details.GetConnection().AdditionalProperties["mysql"], m.logger)
 	if !ok {
-		m.logger.Warn().Msg(fmt.Sprintf(FailedToConvert, AdditionalProperties))
-		return ""
+		return "", fmt.Errorf(FailedToConvert, AdditionalProperties)
 	}
 	assetName := *createAssetRequest.DestinationAssetID
 	databaseSchema, found := connectionProperties[DatabaseSchema]
 	if found {
-		return fmt.Sprintf("%s.%s.%s.%s", serviceName, Default, databaseSchema.(string), assetName)
+		return fmt.Sprintf("%s.%s.%s.%s", serviceName, Default, databaseSchema.(string), assetName), nil
 	}
-	return fmt.Sprintf("%s.%s.%s", serviceName, Default, assetName)
+	return fmt.Sprintf("%s.%s.%s", serviceName, Default, assetName), nil
 }
 
 func (m *mysql) EquivalentServiceConfigurations(requestConfig, serviceConfig map[string]interface{}) bool {
@@ -88,6 +87,6 @@ func (m *mysql) DatabaseSchemaFQN(serviceName string, createAssetRequest *models
 	return ""
 }
 
-func (m *mysql) TableName(createAssetRequest *models.CreateAssetRequest) string {
-	return ""
+func (m *mysql) TableName(createAssetRequest *models.CreateAssetRequest) (string, error) {
+	return "", nil
 }
