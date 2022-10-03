@@ -11,4 +11,4 @@ USER 10001
 EXPOSE 8080
 
 ENTRYPOINT ["/openmetadata-connector"]
-CMD [ "run", "--config", "/customization.yaml" ]
+CMD [ "run", "--customization", "/customization.yaml" ]
