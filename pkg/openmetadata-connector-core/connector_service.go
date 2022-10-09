@@ -47,7 +47,7 @@ func (s *OpenMetadataAPIService) CreateAsset(ctx context.Context, //nolint
 			fmt.Errorf(ConnectionTypeNotSupported, connectionType)
 	}
 
-	c := s.getOpenMetadataClient()
+	c := s.getOpenMetadataClient(ctx)
 
 	var databaseServiceID string
 	var databaseServiceName string
@@ -155,7 +155,7 @@ func (s *OpenMetadataAPIService) DeleteAsset(ctx context.Context, xRequestDataca
 		s.initialized = s.PrepareOpenMetadataForFybrik()
 	}
 
-	c := s.getOpenMetadataClient()
+	c := s.getOpenMetadataClient(ctx)
 	errorCode, err := s.deleteAsset(ctx, c, deleteAssetRequest.AssetID)
 
 	if err != nil {
@@ -175,7 +175,7 @@ func (s *OpenMetadataAPIService) GetAssetInfo(ctx context.Context, xRequestDatac
 		s.initialized = s.PrepareOpenMetadataForFybrik()
 	}
 
-	c := s.getOpenMetadataClient()
+	c := s.getOpenMetadataClient(ctx)
 
 	assetID := getAssetRequest.AssetID
 
@@ -202,7 +202,7 @@ func (s *OpenMetadataAPIService) UpdateAsset(ctx context.Context, xRequestDataca
 		s.initialized = s.PrepareOpenMetadataForFybrik()
 	}
 
-	c := s.getOpenMetadataClient()
+	c := s.getOpenMetadataClient(ctx)
 	assetID := updateAssetRequest.AssetID
 
 	found, table := s.findLatestAsset(ctx, c, assetID)

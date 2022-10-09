@@ -15,6 +15,7 @@ Method | HTTP request | Description
 [**GetUserByID**](UsersApi.md#GetUserByID) | **Get** /v1/users/{id} | Get a user
 [**ListAllUserVersion**](UsersApi.md#ListAllUserVersion) | **Get** /v1/users/{id}/versions | List user versions
 [**ListUsers**](UsersApi.md#ListUsers) | **Get** /v1/users | List users
+[**LoginUserWithPwd**](UsersApi.md#LoginUserWithPwd) | **Post** /v1/users/login | Login User by Password
 [**PatchUser**](UsersApi.md#PatchUser) | **Patch** /v1/users/{id} | Update a user
 [**RevokeJWTTokenForBotUser**](UsersApi.md#RevokeJWTTokenForBotUser) | **Put** /v1/users/revokeToken/{id} | Revoke JWT Token for a Bot User
 
@@ -790,6 +791,72 @@ No authorization required
 ### HTTP request headers
 
 - **Content-Type**: Not defined
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
+[[Back to Model list]](../README.md#documentation-for-models)
+[[Back to README]](../README.md)
+
+
+## LoginUserWithPwd
+
+> LoginToken LoginUserWithPwd(ctx).LoginRequest(loginRequest).Execute()
+
+Login User by Password
+
+
+
+### Example
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "os"
+    openapiclient "./openapi"
+)
+
+func main() {
+    loginRequest := *openapiclient.NewLoginRequest("Email_example", "Password_example") // LoginRequest |  (optional)
+
+    configuration := openapiclient.NewConfiguration()
+    apiClient := openapiclient.NewAPIClient(configuration)
+    resp, r, err := apiClient.UsersApi.LoginUserWithPwd(context.Background()).LoginRequest(loginRequest).Execute()
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Error when calling `UsersApi.LoginUserWithPwd``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
+    }
+    // response from `LoginUserWithPwd`: LoginToken
+    fmt.Fprintf(os.Stdout, "Response from `UsersApi.LoginUserWithPwd`: %v\n", resp)
+}
+```
+
+### Path Parameters
+
+
+
+### Other Parameters
+
+Other parameters are passed through a pointer to a apiLoginUserWithPwdRequest struct via the builder pattern
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **loginRequest** | [**LoginRequest**](LoginRequest.md) |  | 
+
+### Return type
+
+[**LoginToken**](LoginToken.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
 - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)

@@ -89,7 +89,7 @@ func (s *OpenMetadataAPIService) addTags(ctx context.Context, c *client.APIClien
 
 func (s *OpenMetadataAPIService) PrepareOpenMetadataForFybrik() bool { //nolint
 	ctx := context.Background()
-	c := s.getOpenMetadataClient()
+	c := s.getOpenMetadataClient(ctx)
 
 	// traverse tag categories. create categories as needed.
 	// within each tag category, create the specified tags
@@ -248,7 +248,7 @@ func NewOpenMetadataAPIService(conf map[string]interface{}, customization map[st
 	return s
 }
 
-func (s *OpenMetadataAPIService) getOpenMetadataClient() *client.APIClient {
+func (s *OpenMetadataAPIService) getOpenMetadataClient(ctx context.Context) *client.APIClient {
 	conf := client.Configuration{Servers: client.ServerConfigurations{
 		client.ServerConfiguration{
 			URL:         s.Endpoint,
@@ -256,6 +256,10 @@ func (s *OpenMetadataAPIService) getOpenMetadataClient() *client.APIClient {
 		},
 	},
 	}
+	c := client.NewAPIClient(&conf)
+	tokenStruct, _, _ := c.UsersApi.LoginUserWithPwd(ctx).LoginRequest(*client.NewLoginRequest("admin", "admin")).Execute()
+	token := fmt.Sprintf("%s %s", tokenStruct.TokenType, tokenStruct.AccessToken)
+	conf.DefaultHeader = map[string]string{"Authorization": token}
 	return client.NewAPIClient(&conf)
 }
 

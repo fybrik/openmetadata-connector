@@ -10355,6 +10355,27 @@ paths:
       summary: Get current logged in user
       tags:
       - users
+  /v1/users/login:
+    post:
+      description: Login a user with Password
+      operationId: loginUserWithPwd
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginToken'
+          description: User Token
+        "400":
+          description: Bad request
+      summary: Login User by Password
+      tags:
+      - users
   /v1/users/name/{name}:
     get:
       description: Get a user by `name`.
@@ -20350,6 +20371,39 @@ components:
           $ref: '#/components/schemas/Paging'
       required:
       - data
+      type: object
+    LoginRequest:
+      example:
+        password: password
+        email: email
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+      required:
+      - email
+      - password
+      type: object
+    LoginToken:
+      example:
+        expiryDuration: 0
+        accessToken: accessToken
+        tokenType: tokenType
+        refreshToken: refreshToken
+      properties:
+        accessToken:
+          type: string
+        tokenType:
+          type: string
+        refreshToken:
+          type: string
+        expiryDuration:
+          format: int64
+          type: integer
+      required:
+      - accessToken
+      - tokenType
       type: object
     MessagingConnection:
       example:
