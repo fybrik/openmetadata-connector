@@ -27,6 +27,8 @@ type OpenMetadataAPIService struct {
 	initialized          bool
 	customization        map[string]interface{}
 	Port                 int
+	user                 string
+	password             string
 }
 
 // CreateAsset - This REST API writes data asset information to the data catalog configured in fybrik
@@ -47,7 +49,11 @@ func (s *OpenMetadataAPIService) CreateAsset(ctx context.Context, //nolint
 			fmt.Errorf(ConnectionTypeNotSupported, connectionType)
 	}
 
-	c := s.getOpenMetadataClient(ctx)
+	c, err1 := s.getOpenMetadataClient(ctx)
+	if err1 != nil {
+		s.logger.Error().Err(err1).Msg(CannotLoginToOM)
+		return api.Response(http.StatusUnauthorized, nil), errors.New(CannotLoginToOM)
+	}
 
 	var databaseServiceID string
 	var databaseServiceName string
@@ -155,7 +161,12 @@ func (s *OpenMetadataAPIService) DeleteAsset(ctx context.Context, xRequestDataca
 		s.initialized = s.PrepareOpenMetadataForFybrik()
 	}
 
-	c := s.getOpenMetadataClient(ctx)
+	c, err := s.getOpenMetadataClient(ctx)
+	if err != nil {
+		s.logger.Error().Err(err).Msg(CannotLoginToOM)
+		return api.Response(http.StatusUnauthorized, nil), errors.New(CannotLoginToOM)
+	}
+
 	errorCode, err := s.deleteAsset(ctx, c, deleteAssetRequest.AssetID)
 
 	if err != nil {
@@ -175,7 +186,11 @@ func (s *OpenMetadataAPIService) GetAssetInfo(ctx context.Context, xRequestDatac
 		s.initialized = s.PrepareOpenMetadataForFybrik()
 	}
 
-	c := s.getOpenMetadataClient(ctx)
+	c, err := s.getOpenMetadataClient(ctx)
+	if err != nil {
+		s.logger.Error().Err(err).Msg(CannotLoginToOM)
+		return api.Response(http.StatusUnauthorized, nil), errors.New(CannotLoginToOM)
+	}
 
 	assetID := getAssetRequest.AssetID
 
@@ -202,7 +217,11 @@ func (s *OpenMetadataAPIService) UpdateAsset(ctx context.Context, xRequestDataca
 		s.initialized = s.PrepareOpenMetadataForFybrik()
 	}
 
-	c := s.getOpenMetadataClient(ctx)
+	c, err := s.getOpenMetadataClient(ctx)
+	if err != nil {
+		s.logger.Error().Err(err).Msg(CannotLoginToOM)
+		return api.Response(http.StatusUnauthorized, nil), errors.New(CannotLoginToOM)
+	}
 	assetID := updateAssetRequest.AssetID
 
 	found, table := s.findLatestAsset(ctx, c, assetID)
@@ -211,7 +230,7 @@ func (s *OpenMetadataAPIService) UpdateAsset(ctx context.Context, xRequestDataca
 		return api.Response(http.StatusNotFound, nil), errors.New(AssetNotFound)
 	}
 
-	err := s.enrichAsset(ctx, table, c, nil, nil, &updateAssetRequest.Name, &updateAssetRequest.Owner, nil,
+	err = s.enrichAsset(ctx, table, c, nil, nil, &updateAssetRequest.Name, &updateAssetRequest.Owner, nil,
 		updateAssetRequest.Tags, nil, updateAssetRequest.Columns, "")
 	if err != nil {
 		s.logger.Error().Msg("asset enrichment failed")

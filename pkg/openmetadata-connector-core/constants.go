@@ -5,6 +5,7 @@ package openapiconnectorcore
 
 const Add = "add"
 const AssetNotFound = "asset not found"
+const CannotLoginToOM = "cannot login to OpenMetadata"
 const ColumnsPath = "/columns"
 const ConnectionType = "connectionType"
 const ConnectionTypeNotSupported = "currently, %s connection type not supported"
@@ -14,7 +15,9 @@ const DataFormat = "dataFormat"
 const DefaultListeningPort = 8081
 const DefaultNumRenameRetries = 10
 const DefaultNumRetries = 500
+const DefaultOpenMetadataPassword = "admin"
 const DefaultSleepIntervalMS = 500
+const DefaultOpenMetadataUser = "admin"
 const Description = "description"
 const ErrorCallingCreateDatabaseService = "Error when calling `ServicesApi.CreateDatabaseService``: %v\n"
 const ErrorInPrepareOpenMetadataForFybrik = "Error in prepareOpenMetadataForFybrik: "

@@ -89,7 +89,11 @@ func (s *OpenMetadataAPIService) addTags(ctx context.Context, c *client.APIClien
 
 func (s *OpenMetadataAPIService) PrepareOpenMetadataForFybrik() bool { //nolint
 	ctx := context.Background()
-	c := s.getOpenMetadataClient(ctx)
+	c, err := s.getOpenMetadataClient(ctx)
+	if err != nil {
+		s.logger.Warn().Err(err).Msg(CannotLoginToOM)
+		return false
+	}
 
 	// traverse tag categories. create categories as needed.
 	// within each tag category, create the specified tags
@@ -106,9 +110,9 @@ func (s *OpenMetadataAPIService) PrepareOpenMetadataForFybrik() bool { //nolint
 
 					if name, ok := tagCategoryMap[Name]; ok {
 						// Create Tag Category for Fybrik
-						_, r, err := c.TagsApi.CreateTagCategory(ctx).CreateTagCategory(*client.NewCreateTagCategory("Classification",
+						_, r, err2 := c.TagsApi.CreateTagCategory(ctx).CreateTagCategory(*client.NewCreateTagCategory("Classification",
 							descriptionStr, name.(string))).Execute()
-						if err != nil {
+						if err2 != nil {
 							s.logger.Trace().Msg("Failed to create the Tag category. Maybe it already exists.")
 						} else {
 							r.Body.Close()
@@ -206,6 +210,8 @@ func NewOpenMetadataAPIService(conf map[string]interface{}, customization map[st
 	var SleepIntervalMS int
 	var NumRetries int
 	var port int
+	var user string
+	var password string
 
 	var vaultConf map[interface{}]interface{} = nil
 	if vaultConfMap, ok := conf["vault"]; ok {
@@ -230,6 +236,18 @@ func NewOpenMetadataAPIService(conf map[string]interface{}, customization map[st
 		port = DefaultListeningPort
 	}
 
+	if value, ok := conf["openmetadata_user"]; ok {
+		user = value.(string)
+	} else {
+		user = DefaultOpenMetadataUser
+	}
+
+	if value, ok := conf["openmetadata_password"]; ok {
+		password = value.(string)
+	} else {
+		password = DefaultOpenMetadataPassword
+	}
+
 	nameToDatabaseStruct := make(map[string]dbtypes.DatabaseType)
 	nameToDatabaseStruct[MysqlLowercase] = dbtypes.NewMysql(logger)
 	nameToDatabaseStruct[S3] = dbtypes.NewS3(vaultConf, logger)
@@ -241,14 +259,17 @@ func NewOpenMetadataAPIService(conf map[string]interface{}, customization map[st
 		logger:               logger,
 		NumRenameRetries:     DefaultNumRenameRetries,
 		customization:        customization,
-		Port:                 port}
+		Port:                 port,
+		user:                 user,
+		password:             password,
+	}
 
 	s.initialized = s.PrepareOpenMetadataForFybrik()
 
 	return s
 }
 
-func (s *OpenMetadataAPIService) getOpenMetadataClient(ctx context.Context) *client.APIClient {
+func (s *OpenMetadataAPIService) getOpenMetadataClient(ctx context.Context) (*client.APIClient, error) {
 	conf := client.Configuration{Servers: client.ServerConfigurations{
 		client.ServerConfiguration{
 			URL:         s.Endpoint,
@@ -257,10 +278,17 @@ func (s *OpenMetadataAPIService) getOpenMetadataClient(ctx context.Context) *cli
 	},
 	}
 	c := client.NewAPIClient(&conf)
-	tokenStruct, _, _ := c.UsersApi.LoginUserWithPwd(ctx).LoginRequest(*client.NewLoginRequest("admin", "admin")).Execute()
+	tokenStruct, r, err := c.UsersApi.LoginUserWithPwd(ctx).
+		LoginRequest(*client.NewLoginRequest(s.user, s.password)).Execute()
+	if err != nil {
+		s.logger.Warn().Err(err).Msg("could not login to OpenMetadata")
+		return nil, err
+	}
+
+	r.Body.Close()
 	token := fmt.Sprintf("%s %s", tokenStruct.TokenType, tokenStruct.AccessToken)
 	conf.DefaultHeader = map[string]string{"Authorization": token}
-	return client.NewAPIClient(&conf)
+	return client.NewAPIClient(&conf), nil
 }
 
 // traverse database services looking for a service with identical configuration

@@ -68,7 +68,7 @@ linters:
   disable-all: true
   enable:
     - bodyclose
-    - deadcode
+#    - deadcode
     - dogsled
     - dupl
     - errcheck
@@ -91,13 +91,13 @@ linters:
     - noctx
     - nolintlint
     - staticcheck
-    - structcheck
+#    - structcheck
     - stylecheck
     - typecheck
     - unconvert
     - unparam
     - unused
-    - varcheck
+#    - varcheck
     - whitespace
     - revive
 
