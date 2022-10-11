@@ -41,6 +41,7 @@ const TableProperties = "table-properties"
 const TagCategories = "tag-categories"
 const Tags = "tags"
 const TagsPath = "/tags"
+const True = "true"
 const Type = "type"
 const TypeListLengthLimit = 100
 const Value = "value"

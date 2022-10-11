@@ -19,8 +19,10 @@ import (
 	"fybrik.io/openmetadata-connector/pkg/utils"
 )
 
+const EmptyString = ""
+
 func getTag(ctx context.Context, c *client.APIClient, tagFQN string) client.TagLabel {
-	if strings.Count(tagFQN, ".") == 0 {
+	if strings.Count(tagFQN, ".") == 0 { //nolint:revive
 		// Since this is not a 'category.primary' or 'category.primary.secondary' format,
 		// we will translate it to 'Fybrik.tagFQN'. We try to create it
 		// (whether it exists or not)
@@ -67,7 +69,7 @@ func (s *OpenMetadataAPIService) addTags(ctx context.Context, c *client.APIClien
 	}
 	for i := range tagsArr {
 		if tagMap, ok := tagsArr[i].(map[interface{}]interface{}); ok {
-			descriptionStr := ""
+			descriptionStr := EmptyString
 			description := tagMap[Description]
 			if description != nil {
 				descriptionStr = description.(string)
@@ -102,7 +104,7 @@ func (s *OpenMetadataAPIService) PrepareOpenMetadataForFybrik() bool { //nolint
 			for i := range tagCategoriesArr {
 				tagCategory := tagCategoriesArr[i]
 				if tagCategoryMap, ok := tagCategory.(map[interface{}]interface{}); ok {
-					descriptionStr := ""
+					descriptionStr := EmptyString
 					description := tagCategoryMap[Description]
 					if description != nil {
 						descriptionStr = description.(string)
@@ -154,23 +156,23 @@ func (s *OpenMetadataAPIService) PrepareOpenMetadataForFybrik() bool { //nolint
 				if propertyMap, ok := tablePropertiesArr[i].(map[interface{}]interface{}); ok {
 					// default property type is "string"
 					typeName := String
-					if v, ok1 := propertyMap[Type]; ok1 && v != "" {
+					if v, ok1 := propertyMap[Type]; ok1 && v != EmptyString {
 						if typeName, ok1 = v.(string); !ok1 {
 							s.logger.Warn().Msg(fmt.Sprintf("cannot convert typeName (%#v) to string", v))
 							continue
 						}
 					}
 					if v, ok2 := propertyMap[Name]; ok2 {
-						propertyName := ""
+						var propertyName string
 						if propertyName, ok2 = v.(string); !ok2 {
 							s.logger.Warn().Msg(fmt.Sprintf("cannot convert property name (%#v) to string", v))
 							continue
 						}
-						if propertyName == "" {
+						if propertyName == EmptyString {
 							s.logger.Warn().Msg("empty property name")
 							continue
 						}
-						descriptionStr := ""
+						descriptionStr := EmptyString
 						description := propertyMap[Description]
 						if description != nil {
 							if descriptionStr, ok2 = description.(string); !ok2 {
@@ -301,7 +303,7 @@ func (s *OpenMetadataAPIService) findService(ctx context.Context,
 	serviceList, r, err := c.DatabaseServiceApi.ListDatabaseServices(ctx).Execute()
 	if err != nil {
 		s.logger.Warn().Msg("Could not list database services. Let us assume that we need to create a new service")
-		return "", "", false
+		return EmptyString, EmptyString, false
 	}
 	r.Body.Close()
 
@@ -321,7 +323,7 @@ func (s *OpenMetadataAPIService) findService(ctx context.Context,
 		}
 	}
 	s.logger.Trace().Msg("Identical database service not found")
-	return "", "", false
+	return EmptyString, EmptyString, false
 }
 
 func (s *OpenMetadataAPIService) createDatabaseService(ctx context.Context,
@@ -340,7 +342,7 @@ func (s *OpenMetadataAPIService) createDatabaseService(ctx context.Context,
 		s.logger.Warn().Msg(FailedToCreateDatabaseService + databaseServiceName + ". Let us try again with a different name")
 
 		// let's try creating the service with different names
-		for i := 0; i < s.NumRenameRetries; i++ {
+		for i := 0; i < s.NumRenameRetries; i++ { //nolint:revive
 			newName := databaseServiceName + "-" + utils.RandSeq(RandomStringLength)
 			createDatabaseService.SetName(newName)
 			s.logger.Info().Msg("Trying to create a Database Service: " + newName)
@@ -354,7 +356,7 @@ func (s *OpenMetadataAPIService) createDatabaseService(ctx context.Context,
 		}
 
 		s.logger.Error().Msg("Failed to create Database Service. Giving up.")
-		return "", "", err
+		return EmptyString, EmptyString, err
 	}
 	r.Body.Close()
 
@@ -399,7 +401,7 @@ func (s *OpenMetadataAPIService) findIngestionPipeline(ctx context.Context, c *c
 	pipeline, r, err := c.IngestionPipelinesApi.GetSpecificIngestionPipelineByFQN(ctx, ingestionPipelineName).Execute()
 	if err != nil {
 		s.logger.Info().Msg("Ingestion Pipeline not found: " + ingestionPipelineName)
-		return "", false
+		return EmptyString, false
 	}
 	r.Body.Close()
 	s.logger.Info().Msg("Ingestion Pipeline found: " + ingestionPipelineName)
@@ -421,7 +423,7 @@ func (s *OpenMetadataAPIService) createIngestionPipeline(ctx context.Context,
 			CreateIngestionPipeline(newCreateIngestionPipeline).Execute()
 	if err != nil {
 		s.logger.Error().Msg("Failed to create Ingestion Pipeline: " + ingestionPipelineName + ForDatabaseServiceID + databaseServiceID)
-		return "", err
+		return EmptyString, err
 	}
 	r.Body.Close()
 	s.logger.Info().Msg("Succeeded in creating Ingestion Pipeline: " + ingestionPipelineName +
@@ -447,7 +449,7 @@ func (s *OpenMetadataAPIService) findOrCreateDatabase(ctx context.Context,
 		*client.NewEntityReference(databaseServiceID, DatabaseService))).Execute()
 	if err != nil {
 		s.logger.Trace().Msg(fmt.Sprintf("Error when calling `DatabasesApi.CreateDatabase``: %v\n", err))
-		return "", err
+		return EmptyString, err
 	}
 	r1.Body.Close()
 	return *database.Id, nil
@@ -470,7 +472,7 @@ func (s *OpenMetadataAPIService) findOrCreateDatabaseSchema(ctx context.Context,
 		*client.NewCreateDatabaseSchema(*client.NewEntityReference(databaseID, "database"), databaseSchemaName)).Execute()
 	if err != nil {
 		s.logger.Trace().Msg(fmt.Sprintf("Error when calling `DatabaseSchemasApi.CreateDBSchema``: %v\n", err))
-		return "", err
+		return EmptyString, err
 	}
 	r.Body.Close()
 	return *databaseSchema.Id, nil
@@ -536,13 +538,13 @@ func (s *OpenMetadataAPIService) enrichAsset(ctx context.Context, table *client.
 		columns := table.Columns
 
 		for _, col := range requestColumnsModels {
-			if len(col.Tags) > 0 {
+			if len(col.Tags) > 0 { //nolint:revive
 				columns = tagColumn(ctx, c, columns, col.Name, col.Tags)
 			}
 		}
 
 		for _, col := range requestColumnsAPI {
-			if len(col.Tags) > 0 {
+			if len(col.Tags) > 0 { //nolint:revive
 				columns = tagColumn(ctx, c, columns, col.Name, col.Tags)
 			}
 		}
@@ -656,7 +658,7 @@ func (s *OpenMetadataAPIService) constructAssetResponse(ctx context.Context, //n
 	ret.Details.Connection.AdditionalProperties = additionalProperties
 
 	for i := range table.Columns {
-		if len(table.Columns[i].Tags) > 0 {
+		if len(table.Columns[i].Tags) > 0 { //nolint:revive
 			tags := make(map[string]interface{})
 			for _, t := range table.Columns[i].Tags {
 				tags[utils.StripTag(t.TagFQN)] = "true"
@@ -667,7 +669,7 @@ func (s *OpenMetadataAPIService) constructAssetResponse(ctx context.Context, //n
 		}
 	}
 
-	if len(table.Tags) > 0 {
+	if len(table.Tags) > 0 { //nolint:revive
 		tags := make(map[string]interface{})
 		for _, s := range table.Tags {
 			tags[utils.StripTag(s.TagFQN)] = "true"
