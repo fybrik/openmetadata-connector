@@ -380,7 +380,7 @@ func handlePostMockOMServer(r *http.Request,
 
 // returns a mock OM server, which handles select GET, POST, PUT, and PATCH requests
 func createMockOMServer() *httptest.Server {
-	By("opreating a mock OM server")
+	By("operating a mock OM server")
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var response map[string]interface{}
 		var statusCode int

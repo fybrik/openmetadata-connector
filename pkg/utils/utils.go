@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"math/big"
+	"os"
 	"strings"
 
 	"github.com/rs/zerolog"
@@ -14,6 +15,8 @@ import (
 	client "fybrik.io/openmetadata-connector/datacatalog-go-client"
 	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
 )
+
+const EmptyString = ""
 
 func AppendStrings(a, b string) string {
 	if strings.Contains(b, ".") {
@@ -30,13 +33,13 @@ func StripTag(tag string) string {
 
 func UpdateCustomProperty(customProperties, orig map[string]interface{}, key string, value *string) {
 	// update customProperties only if there is a new value
-	if value != nil && *value != "" {
+	if value != nil && *value != EmptyString {
 		customProperties[key] = *value
 		return
 	}
 
 	// if there is no new value, revert to original value
-	if v, ok := orig[key]; ok && v != "" {
+	if v, ok := orig[key]; ok && v != EmptyString {
 		customProperties[key] = v
 	}
 }
@@ -77,4 +80,15 @@ func InterfaceToArray(i interface{}, logger *zerolog.Logger) ([]interface{}, boo
 		logger.Warn().Msg(fmt.Sprintf("Cannot cast %T to []interface{}", i))
 	}
 	return m, ok
+}
+
+func GetEnvironmentVariables() (bool, string, string, string) {
+	endpoint := os.Getenv("OPENMETADATA_ENDPOINT")
+	user := os.Getenv("OPENMETADATA_USER")
+	password := os.Getenv("OPENMETADATA_PASSWORD")
+
+	if endpoint == EmptyString || user == EmptyString || password == EmptyString {
+		return false, EmptyString, EmptyString, EmptyString
+	}
+	return true, endpoint, user, password
 }

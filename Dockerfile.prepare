@@ -6,9 +6,8 @@ WORKDIR /tmp
 
 COPY customization.yaml /customization.yaml
 COPY openmetadata-connector /openmetadata-connector
-COPY conf/prepare.yaml /prepare.yaml
 
 USER 10001
 
 ENTRYPOINT ["/openmetadata-connector"]
-CMD [ "prepare", "--customization", "/customization.yaml", "--config", "/prepare.yaml" ]
+CMD [ "prepare", "--customization", "/customization.yaml" ]
