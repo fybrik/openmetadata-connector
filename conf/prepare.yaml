@@ -1,0 +1,3 @@
+openmetadata_endpoint: "http://openmetadata.open-metadata:8585/api"
+openmetadata_user: admin
+openmetadata_password: admin
