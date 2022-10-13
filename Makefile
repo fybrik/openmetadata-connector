@@ -14,10 +14,8 @@ DOCKER_HOSTNAME ?= ghcr.io
 DOCKER_NAMESPACE ?= fybrik
 DOCKER_TAG ?= 0.0.0
 DOCKER_NAME ?= openmetadata-connector
-PREPARE_DOCKER_NAME ?= prepare-openmetadata
 
 IMG := ${DOCKER_HOSTNAME}/${DOCKER_NAMESPACE}/${DOCKER_NAME}:${DOCKER_TAG}
-PREPARE_IMG := ${DOCKER_HOSTNAME}/${DOCKER_NAMESPACE}/${PREPARE_DOCKER_NAME}:${DOCKER_TAG}
 
 TMP_FILE = tmpfile.tmp
 
@@ -77,7 +75,6 @@ patch: generate-code
 .PHONY: docker-build
 docker-build: source-build
 	docker build . -t ${IMG}
-	docker build . -f Dockerfile.prepare -t ${PREPARE_IMG}
 
 .PHONY: docker-push
 docker-push:
@@ -87,12 +84,10 @@ ifneq (${DOCKER_PASSWORD},)
 		--password ${DOCKER_PASSWORD} ${DOCKER_HOSTNAME}
 endif
 	docker push ${IMG}
-	docker push ${PREPARE_IMG}
 
 .PHONY: push-to-kind
 push-to-kind:
 	kind load docker-image ${IMG}
-	kind load docker-image ${PREPARE_IMG}
 
 .PHONY: test
 test:
