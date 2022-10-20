@@ -57,7 +57,7 @@ func ExtractColumns(resourceColumns []models.ResourceColumn) []client.Column {
 	var ret []client.Column
 	for _, rc := range resourceColumns {
 		column := *client.NewColumn("STRING", rc.Name)
-		column.SetDataLength(0)
+		column.SetDataLength(0) //nolint:revive
 		ret = append(ret, column)
 	}
 	return ret

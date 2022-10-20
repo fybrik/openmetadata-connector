@@ -169,6 +169,8 @@ docs/LineageDetails.md
 docs/Location.md
 docs/LocationList.md
 docs/LocationsApi.md
+docs/LoginRequest.md
+docs/LoginToken.md
 docs/MessagingConnection.md
 docs/MessagingService.md
 docs/MessagingServiceApi.md
@@ -426,6 +428,8 @@ model_jwt_auth_mechanism.go
 model_lineage_details.go
 model_location.go
 model_location_list.go
+model_login_request.go
+model_login_token.go
 model_messaging_connection.go
 model_messaging_service.go
 model_messaging_service_list.go

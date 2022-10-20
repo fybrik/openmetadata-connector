@@ -105,14 +105,14 @@ func getCreateAssetRequestAndResponse() (*models.CreateAssetRequest, *models.Get
 		Name:      &name,
 		Geography: &geography,
 		Columns: []models.ResourceColumn{
-			{Name: Name, Tags: map[string]interface{}{PII: "true"}},
-			{Name: Age, Tags: map[string]interface{}{PII: "true"}},
-			{Name: BuildingNumber, Tags: map[string]interface{}{PII: "true"}},
+			{Name: Name, Tags: map[string]interface{}{PII: True}},
+			{Name: Age, Tags: map[string]interface{}{PII: True}},
+			{Name: BuildingNumber, Tags: map[string]interface{}{PII: True}},
 			{Name: Street},
 			{Name: City},
 			{Name: Postcode},
 		},
-		Tags: map[string]interface{}{Financial: "true"},
+		Tags: map[string]interface{}{Financial: True},
 	}
 
 	createAssetRequest := &models.CreateAssetRequest{
@@ -300,11 +300,11 @@ func handleGetMockOMServer(r *http.Request) (map[string]interface{}, int) {
 		var types []interface{}
 		types = append(types, map[string]interface{}{FullyQualifiedName: Table, ID: "1"},
 			map[string]interface{}{FullyQualifiedName: String, ID: "2"})
-		return map[string]interface{}{Data: types}, 0
+		return map[string]interface{}{Data: types}, 0 //nolint:revive
 	}
 	if r.RequestURI == DatabaseServicesURI {
 		var databaseServices []interface{}
-		return map[string]interface{}{Data: databaseServices}, 0
+		return map[string]interface{}{Data: databaseServices}, 0 //nolint:revive
 	}
 	if strings.HasPrefix(r.RequestURI,
 		fmt.Sprintf(TablesURI+"/name/%s.%s.%s.%s", TestDatabaseService, TestDatabase,
@@ -314,7 +314,7 @@ func handleGetMockOMServer(r *http.Request) (map[string]interface{}, int) {
 		if !ok {
 			return nil, http.StatusNotFound
 		}
-		return structs.Map(table), 0
+		return structs.Map(table), 0 //nolint:revive
 	}
 	if r.RequestURI ==
 		fmt.Sprintf("/v1/services/ingestionPipelines/name/%s.%%22pipeline-%s.%s%%22",
@@ -333,7 +333,7 @@ func handleGetMockOMServer(r *http.Request) (map[string]interface{}, int) {
 		if !ok {
 			return nil, http.StatusNotFound
 		}
-		return structs.Map(service), 0
+		return structs.Map(service), 0 //nolint:revive
 	}
 
 	return nil, http.StatusInternalServerError
@@ -342,8 +342,13 @@ func handleGetMockOMServer(r *http.Request) (map[string]interface{}, int) {
 // handle mock OM server POST requests
 func handlePostMockOMServer(r *http.Request,
 	requestMap map[string]interface{}) (map[string]interface{}, int) {
+	if r.RequestURI == "/v1/users/login" {
+		return map[string]interface{}{
+			"tokenType":   "Bearer",
+			"accessToken": "abc"}, 0 //nolint:revive
+	}
 	if r.RequestURI == "/v1/tags" {
-		return map[string]interface{}{}, 0
+		return map[string]interface{}{}, 0 //nolint:revive
 	}
 	if r.RequestURI == DatabaseServicesURI {
 		// keep the connection information in the mock data catalog
@@ -359,7 +364,7 @@ func handlePostMockOMServer(r *http.Request,
 			return nil, http.StatusInternalServerError
 		}
 		mockDataCatalog[ZeroUUID] = table
-		return structs.Map(table), 0
+		return structs.Map(table), 0 //nolint:revive
 	}
 	if r.RequestURI == DatabaseServicesURI ||
 		r.RequestURI == "/v1/services/ingestionPipelines" ||
@@ -368,7 +373,7 @@ func handlePostMockOMServer(r *http.Request,
 		r.RequestURI == "/v1/tags/Fybrik" {
 		return map[string]interface{}{
 			ID:                 ZeroUUID,
-			FullyQualifiedName: TestDatabaseService}, 0
+			FullyQualifiedName: TestDatabaseService}, 0 //nolint:revive
 	}
 	return nil, http.StatusInternalServerError
 }
@@ -383,7 +388,7 @@ func createMockOMServer() *httptest.Server {
 		Expect(err).ToNot(HaveOccurred())
 		requestMap := make(map[string]interface{})
 		var requestArr []interface{}
-		if len(requestBytes) > 0 {
+		if len(requestBytes) > 0 { //nolint:revive
 			err = json.Unmarshal(requestBytes, &requestMap)
 			if err != nil {
 				err = json.Unmarshal(requestBytes, &requestArr)
@@ -395,7 +400,7 @@ func createMockOMServer() *httptest.Server {
 			By("receiving a Get request to the OM server")
 			response, statusCode = handleGetMockOMServer(r)
 			Expect(statusCode).ToNot(Equal(http.StatusInternalServerError))
-			if statusCode != 0 {
+			if statusCode != 0 { //nolint:revive
 				w.WriteHeader(statusCode)
 				return
 			}
@@ -403,7 +408,7 @@ func createMockOMServer() *httptest.Server {
 			By("receiving a Post request to the OM server")
 			response, statusCode = handlePostMockOMServer(r, requestMap)
 			Expect(statusCode).ToNot(Equal(http.StatusInternalServerError))
-			if statusCode != 0 {
+			if statusCode != 0 { //nolint:revive
 				w.WriteHeader(statusCode)
 				return
 			}

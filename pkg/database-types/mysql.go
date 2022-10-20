@@ -52,7 +52,7 @@ func (m *mysql) TranslateOpenMetadataConfigToFybrikConfig(tableName string, cred
 func (m *mysql) TableFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) (string, error) {
 	connectionProperties, ok := utils.InterfaceToMap(createAssetRequest.Details.GetConnection().AdditionalProperties["mysql"], m.logger)
 	if !ok {
-		return "", fmt.Errorf(FailedToConvert, AdditionalProperties)
+		return EmptyString, fmt.Errorf(FailedToConvert, AdditionalProperties)
 	}
 	assetName := *createAssetRequest.DestinationAssetID
 	databaseSchema, found := connectionProperties[DatabaseSchema]
@@ -76,17 +76,17 @@ func (m *mysql) DatabaseName(createAssetRequest *models.CreateAssetRequest) stri
 }
 
 func (m *mysql) DatabaseFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) string {
-	return ""
+	return EmptyString
 }
 
 func (m *mysql) DatabaseSchemaName(createAssetRequest *models.CreateAssetRequest) string {
-	return ""
+	return EmptyString
 }
 
 func (m *mysql) DatabaseSchemaFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) string {
-	return ""
+	return EmptyString
 }
 
 func (m *mysql) TableName(createAssetRequest *models.CreateAssetRequest) (string, error) {
-	return "", nil
+	return EmptyString, nil
 }

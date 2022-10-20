@@ -388,6 +388,7 @@ Class | Method | HTTP request | Description
 *UsersApi* | [**GetUserByID**](docs/UsersApi.md#getuserbyid) | **Get** /v1/users/{id} | Get a user
 *UsersApi* | [**ListAllUserVersion**](docs/UsersApi.md#listalluserversion) | **Get** /v1/users/{id}/versions | List user versions
 *UsersApi* | [**ListUsers**](docs/UsersApi.md#listusers) | **Get** /v1/users | List users
+*UsersApi* | [**LoginUserWithPwd**](docs/UsersApi.md#loginuserwithpwd) | **Post** /v1/users/login | Login User by Password
 *UsersApi* | [**PatchUser**](docs/UsersApi.md#patchuser) | **Patch** /v1/users/{id} | Update a user
 *UsersApi* | [**RevokeJWTTokenForBotUser**](docs/UsersApi.md#revokejwttokenforbotuser) | **Put** /v1/users/revokeToken/{id} | Revoke JWT Token for a Bot User
 *WebhookApi* | [**CreateOrUpdateWebhook**](docs/WebhookApi.md#createorupdatewebhook) | **Put** /v1/webhook | Updated an existing or create a new webhook
@@ -514,6 +515,8 @@ Class | Method | HTTP request | Description
  - [LineageDetails](docs/LineageDetails.md)
  - [Location](docs/Location.md)
  - [LocationList](docs/LocationList.md)
+ - [LoginRequest](docs/LoginRequest.md)
+ - [LoginToken](docs/LoginToken.md)
  - [MessagingConnection](docs/MessagingConnection.md)
  - [MessagingService](docs/MessagingService.md)
  - [MessagingServiceList](docs/MessagingServiceList.md)

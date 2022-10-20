@@ -45,17 +45,17 @@ func (s *s3) getS3Credentials(vaultClientConfiguration map[interface{}]interface
 	token, err := client.GetToken()
 	if err != nil {
 		s.logger.Warn().Msg(GetTokenFailed)
-		return "", "", errors.New(GetTokenFailed)
+		return EmptyString, EmptyString, errors.New(GetTokenFailed)
 	}
 	secret, err := client.GetSecret(token, *credentialsPath)
 	if err != nil {
 		s.logger.Warn().Msg(GetSecretFailed)
-		return "", "", errors.New(GetSecretFailed)
+		return EmptyString, EmptyString, errors.New(GetSecretFailed)
 	}
 	accessKey, secretKey, err := client.ExtractS3CredentialsFromSecret(secret)
 	if err != nil {
 		s.logger.Warn().Msg("S3 credentials extraction failed")
-		return "", "", err
+		return EmptyString, EmptyString, err
 	}
 	return accessKey, secretKey, nil
 }
@@ -80,7 +80,7 @@ func (s *s3) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interfa
 
 	if s.vaultClientConfiguration != nil && credentialsPath != nil {
 		awsAccessKeyID, awsSecretAccessKey, err := s.getS3Credentials(s.vaultClientConfiguration, credentialsPath)
-		if err == nil && awsAccessKeyID != "" && awsSecretAccessKey != "" {
+		if err == nil && awsAccessKeyID != EmptyString && awsSecretAccessKey != EmptyString {
 			securityMap[AwsAccessKeyID] = awsAccessKeyID
 			securityMap[AwsSecretAccessKey] = awsSecretAccessKey
 		}
@@ -116,7 +116,7 @@ func (s *s3) TranslateOpenMetadataConfigToFybrikConfig(tableName string, credent
 
 	// if credentials were extracted from vault, we don't want to return
 	// the actual access key and secret key
-	if credentials != "" {
+	if credentials != EmptyString {
 		delete(ret, AccessKeyID)
 		delete(ret, SecretAccessID)
 	}
@@ -183,7 +183,7 @@ func (s *s3) DatabaseSchemaName(createAssetRequest *models.CreateAssetRequest) s
 		AdditionalProperties[S3], s.logger)
 	if !ok {
 		s.logger.Warn().Msg(fmt.Sprintf(FailedToConvert, AdditionalProperties))
-		return ""
+		return EmptyString
 	}
 	bucket, found := connectionProperties[Bucket]
 	if found {
@@ -192,12 +192,12 @@ func (s *s3) DatabaseSchemaName(createAssetRequest *models.CreateAssetRequest) s
 
 	assetID := *createAssetRequest.DestinationAssetID
 	split := strings.Split(assetID, ".")
-	if len(split) > 1 {
-		return split[len(split)-2]
+	if len(split) > 1 { //nolint:revive
+		return split[len(split)-2] //nolint:revive
 	}
 
 	s.logger.Warn().Msg("Could not determine the name of the DatabaseSchema (bucket)")
-	return ""
+	return EmptyString
 }
 
 func (s *s3) DatabaseSchemaFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) string {
@@ -208,20 +208,20 @@ func (s *s3) DatabaseSchemaFQN(serviceName string, createAssetRequest *models.Cr
 func (s *s3) TableName(createAssetRequest *models.CreateAssetRequest) (string, error) {
 	connectionProperties, ok := utils.InterfaceToMap(createAssetRequest.Details.GetConnection().AdditionalProperties[S3], s.logger)
 	if !ok {
-		return "", fmt.Errorf(FailedToConvert, AdditionalProperties)
+		return EmptyString, fmt.Errorf(FailedToConvert, AdditionalProperties)
 	}
 	objectKey, found := connectionProperties[ObjectKey]
 	if found {
 		return objectKey.(string), nil
 	}
 	split := strings.Split(*createAssetRequest.DestinationAssetID, ".")
-	return split[len(split)-1], nil
+	return split[len(split)-1], nil //nolint:revive
 }
 
 func (s *s3) TableFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) (string, error) {
 	tableName, err := s.TableName(createAssetRequest)
 	if err != nil {
-		return "", err
+		return EmptyString, err
 	}
 	return utils.AppendStrings(s.DatabaseSchemaFQN(serviceName, createAssetRequest), tableName), nil
 }

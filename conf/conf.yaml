@@ -2,6 +2,8 @@ openmetadata_endpoint: "http://localhost:8585/api"
 openmetadata_sleep_interval: 100
 openmetadata_num_retries: 1000
 openmetadata_connector_port: 8081
+openmetadata_user: admin
+openmetadata_password: admin
 
 vault:
   address: http://localhost:8200

@@ -92,3 +92,10 @@ push-to-kind:
 .PHONY: test
 test:
 	go test -v ./...
+
+.PHONY: check
+check:
+	go fmt ./...
+	go vet ./...
+	go mod tidy -compat=1.17
+	docker run --rm -v ${PWD}:/app -w /app golangci/golangci-lint:v1.50.0 golangci-lint run
