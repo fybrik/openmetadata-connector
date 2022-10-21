@@ -60,11 +60,11 @@ func tagColumn(ctx context.Context, c *client.APIClient, columns []client.Column
 
 // transform variable `tags` into an array.
 // traverse `tags` and create OM tags in the `categoryName` category
-func (s *OpenMetadataAPIService) addTags(ctx context.Context, c *client.APIClient,
-	categoryName string, tags interface{}) {
-	tagsArr, ok := utils.InterfaceToArray(tags, s.logger)
+func addTags(ctx context.Context, c *client.APIClient,
+	categoryName string, tags interface{}, logger *zerolog.Logger) {
+	tagsArr, ok := utils.InterfaceToArray(tags, logger)
 	if !ok {
-		s.logger.Warn().Msg("Malformed tag information")
+		logger.Warn().Msg("Malformed tag information")
 		return
 	}
 	for i := range tagsArr {
@@ -78,28 +78,29 @@ func (s *OpenMetadataAPIService) addTags(ctx context.Context, c *client.APIClien
 				_, r, err := c.TagsApi.CreatePrimaryTag(ctx, categoryName).
 					CreateTag(*client.NewCreateTag(descriptionStr, name.(string))).Execute()
 				if err != nil {
-					s.logger.Trace().Msg("Failed to create Tag. Maybe it already exists.")
+					logger.Trace().Err(err).Msg("Failed to create Tag. Maybe it already exists.")
 				} else {
 					r.Body.Close()
 				}
 			} else {
-				s.logger.Warn().Msg(fmt.Sprintf("malformed tag information. cannot cast %T to map[interface{}]interface{}", tagsArr[i]))
+				logger.Warn().Msg(fmt.Sprintf("malformed tag information. cannot cast %T to map[interface{}]interface{}", tagsArr[i]))
 			}
 		}
 	}
 }
 
-func (s *OpenMetadataAPIService) PrepareOpenMetadataForFybrik() bool { //nolint
+func PrepareOpenMetadataForFybrik(endpoint string, user string, password string, //nolint:funlen,gocyclo
+	customization map[string]interface{}, logger *zerolog.Logger) bool {
 	ctx := context.Background()
-	c, err := s.getOpenMetadataClient(ctx)
+	c, err := getOpenMetadataClient(ctx, endpoint, user, password, logger)
 	if err != nil {
-		s.logger.Warn().Err(err).Msg(CannotLoginToOM)
+		logger.Warn().Err(err).Msg(CannotLoginToOM)
 		return false
 	}
 
 	// traverse tag categories. create categories as needed.
 	// within each tag category, create the specified tags
-	if tagCategories, ok := s.customization[TagCategories]; ok {
+	if tagCategories, ok := customization[TagCategories]; ok {
 		if tagCategoriesArr, ok := tagCategories.([]interface{}); ok {
 			for i := range tagCategoriesArr {
 				tagCategory := tagCategoriesArr[i]
@@ -115,16 +116,16 @@ func (s *OpenMetadataAPIService) PrepareOpenMetadataForFybrik() bool { //nolint
 						_, r, err2 := c.TagsApi.CreateTagCategory(ctx).CreateTagCategory(*client.NewCreateTagCategory("Classification",
 							descriptionStr, name.(string))).Execute()
 						if err2 != nil {
-							s.logger.Trace().Msg("Failed to create the Tag category. Maybe it already exists.")
+							logger.Trace().Msg("Failed to create the Tag category. Maybe it already exists.")
 						} else {
 							r.Body.Close()
 							if tags, ok := tagCategoryMap[Tags]; ok {
-								s.addTags(ctx, c, name.(string), tags)
+								addTags(ctx, c, name.(string), tags, logger)
 							}
 						}
 					}
 				} else {
-					s.logger.Warn().Msg(fmt.Sprintf("malformed tag category. cannot cast %T to map[interface{}]interface{}", tagCategory))
+					logger.Warn().Msg(fmt.Sprintf("malformed tag category. cannot cast %T to map[interface{}]interface{}", tagCategory))
 				}
 			}
 		}
@@ -134,7 +135,7 @@ func (s *OpenMetadataAPIService) PrepareOpenMetadataForFybrik() bool { //nolint
 
 	typeList, r, err := c.MetadataApi.ListTypes(ctx).Limit(TypeListLengthLimit).Execute()
 	if err != nil {
-		s.logger.Warn().Msg(ErrorInPrepareOpenMetadataForFybrik + "Most likely OpenMetadata is not up yet")
+		logger.Warn().Err(err).Msg(ErrorInPrepareOpenMetadataForFybrik + "Most likely OpenMetadata is not up yet")
 		return false
 	}
 	r.Body.Close()
@@ -145,12 +146,12 @@ func (s *OpenMetadataAPIService) PrepareOpenMetadataForFybrik() bool { //nolint
 
 	tableID, ok := typeNameToID[Table]
 	if !ok {
-		s.logger.Error().Msg(ErrorInPrepareOpenMetadataForFybrik + "Failed to find the ID for entity 'table'")
+		logger.Error().Msg(ErrorInPrepareOpenMetadataForFybrik + "Failed to find the ID for entity 'table'")
 		return false
 	}
 
 	// traverse the table custom properties, and create each
-	if tableProperties, ok := s.customization[TableProperties]; ok {
+	if tableProperties, ok := customization[TableProperties]; ok {
 		if tablePropertiesArr, ok := tableProperties.([]interface{}); ok {
 			for i := range tablePropertiesArr {
 				if propertyMap, ok := tablePropertiesArr[i].(map[interface{}]interface{}); ok {
@@ -158,25 +159,25 @@ func (s *OpenMetadataAPIService) PrepareOpenMetadataForFybrik() bool { //nolint
 					typeName := String
 					if v, ok1 := propertyMap[Type]; ok1 && v != EmptyString {
 						if typeName, ok1 = v.(string); !ok1 {
-							s.logger.Warn().Msg(fmt.Sprintf("cannot convert typeName (%#v) to string", v))
+							logger.Warn().Msg(fmt.Sprintf("cannot convert typeName (%#v) to string", v))
 							continue
 						}
 					}
 					if v, ok2 := propertyMap[Name]; ok2 {
 						var propertyName string
 						if propertyName, ok2 = v.(string); !ok2 {
-							s.logger.Warn().Msg(fmt.Sprintf("cannot convert property name (%#v) to string", v))
+							logger.Warn().Msg(fmt.Sprintf("cannot convert property name (%#v) to string", v))
 							continue
 						}
 						if propertyName == EmptyString {
-							s.logger.Warn().Msg("empty property name")
+							logger.Warn().Msg("empty property name")
 							continue
 						}
 						descriptionStr := EmptyString
 						description := propertyMap[Description]
 						if description != nil {
 							if descriptionStr, ok2 = description.(string); !ok2 {
-								s.logger.Warn().Msg(fmt.Sprintf("cannot convert property description (%#v) to string", description))
+								logger.Warn().Msg(fmt.Sprintf("cannot convert property description (%#v) to string", description))
 							}
 						}
 						if typeID, ok4 := typeNameToID[typeName]; ok4 {
@@ -186,23 +187,27 @@ func (s *OpenMetadataAPIService) PrepareOpenMetadataForFybrik() bool { //nolint
 								r.Body.Close()
 							}
 						} else {
-							s.logger.Warn().Msg("unrecognized property type: " + typeName)
+							logger.Warn().Msg("unrecognized property type: " + typeName)
 						}
 					} else {
-						s.logger.Warn().Msg("missing fields for table property")
+						logger.Warn().Msg("missing fields for table property")
 					}
 				} else {
-					s.logger.Warn().Msg(fmt.Sprintf("malformed table properties. cannot cast %T to map[interface{}]interface{}", tablePropertiesArr[i]))
+					logger.Warn().Msg(fmt.Sprintf("malformed table properties. cannot cast %T to map[interface{}]interface{}", tablePropertiesArr[i]))
 				}
 			} // end of the for loop
 		} else {
-			s.logger.Warn().Msg(fmt.Sprintf("cannot convert tableProperties (type %T) to []interface{}", tableProperties))
+			logger.Warn().Msg(fmt.Sprintf("cannot convert tableProperties (type %T) to []interface{}", tableProperties))
 		}
 	} else {
-		s.logger.Warn().Msg("customization file doesn't contain properties")
+		logger.Warn().Msg("customization file doesn't contain properties")
 	}
 
 	return true
+}
+
+func (s *OpenMetadataAPIService) PrepareOpenMetadataForFybrik() bool {
+	return PrepareOpenMetadataForFybrik(s.Endpoint, s.user, s.password, s.customization, s.logger)
 }
 
 // NewOpenMetadataAPIService creates a new api service.
@@ -271,19 +276,19 @@ func NewOpenMetadataAPIService(conf map[string]interface{}, customization map[st
 	return s
 }
 
-func (s *OpenMetadataAPIService) getOpenMetadataClient(ctx context.Context) (*client.APIClient, error) {
+func getOpenMetadataClient(ctx context.Context, endpoint, user, password string, logger *zerolog.Logger) (*client.APIClient, error) {
 	conf := client.Configuration{Servers: client.ServerConfigurations{
 		client.ServerConfiguration{
-			URL:         s.Endpoint,
+			URL:         endpoint,
 			Description: "Endpoint URL",
 		},
 	},
 	}
 	c := client.NewAPIClient(&conf)
 	tokenStruct, r, err := c.UsersApi.LoginUserWithPwd(ctx).
-		LoginRequest(*client.NewLoginRequest(s.user, s.password)).Execute()
+		LoginRequest(*client.NewLoginRequest(user, password)).Execute()
 	if err != nil {
-		s.logger.Warn().Err(err).Msg("could not login to OpenMetadata")
+		logger.Warn().Err(err).Msg("could not login to OpenMetadata")
 		return nil, err
 	}
 
@@ -291,6 +296,10 @@ func (s *OpenMetadataAPIService) getOpenMetadataClient(ctx context.Context) (*cl
 	token := fmt.Sprintf("%s %s", tokenStruct.TokenType, tokenStruct.AccessToken)
 	conf.DefaultHeader = map[string]string{"Authorization": token}
 	return client.NewAPIClient(&conf), nil
+}
+
+func (s *OpenMetadataAPIService) getOpenMetadataClient(ctx context.Context) (*client.APIClient, error) {
+	return getOpenMetadataClient(ctx, s.Endpoint, s.user, s.password, s.logger)
 }
 
 // traverse database services looking for a service with identical configuration
