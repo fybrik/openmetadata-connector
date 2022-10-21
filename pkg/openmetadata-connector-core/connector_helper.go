@@ -78,7 +78,7 @@ func addTags(ctx context.Context, c *client.APIClient,
 				_, r, err := c.TagsApi.CreatePrimaryTag(ctx, categoryName).
 					CreateTag(*client.NewCreateTag(descriptionStr, name.(string))).Execute()
 				if err != nil {
-					logger.Trace().Msg("Failed to create Tag. Maybe it already exists.")
+					logger.Trace().Err(err).Msg("Failed to create Tag. Maybe it already exists.")
 				} else {
 					r.Body.Close()
 				}
@@ -135,7 +135,7 @@ func PrepareOpenMetadataForFybrik(endpoint string, user string, password string,
 
 	typeList, r, err := c.MetadataApi.ListTypes(ctx).Limit(TypeListLengthLimit).Execute()
 	if err != nil {
-		logger.Warn().Msg(ErrorInPrepareOpenMetadataForFybrik + "Most likely OpenMetadata is not up yet")
+		logger.Warn().Err(err).Msg(ErrorInPrepareOpenMetadataForFybrik + "Most likely OpenMetadata is not up yet")
 		return false
 	}
 	r.Body.Close()
