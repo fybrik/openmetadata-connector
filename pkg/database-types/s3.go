@@ -91,7 +91,7 @@ func (s *s3) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interfa
 	return ret
 }
 
-func (s *s3) TranslateOpenMetadataConfigToFybrikConfig(tableName string, credentials string,
+func (s *s3) TranslateOpenMetadataConfigToFybrikConfig(tableName string,
 	config map[string]interface{}) (map[string]interface{}, error) {
 	ret := make(map[string]interface{})
 	ret[ObjectKey] = tableName
@@ -114,12 +114,8 @@ func (s *s3) TranslateOpenMetadataConfigToFybrikConfig(tableName string, credent
 		ret[Bucket] = value
 	}
 
-	// if credentials were extracted from vault, we don't want to return
-	// the actual access key and secret key
-	if credentials != EmptyString {
-		delete(ret, AccessKeyID)
-		delete(ret, SecretAccessID)
-	}
+	delete(ret, AccessKeyID)
+	delete(ret, SecretAccessID)
 
 	return ret, nil
 }

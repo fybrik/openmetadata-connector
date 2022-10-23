@@ -17,11 +17,12 @@ import (
 )
 
 type VaultClient struct {
-	address     string
-	authPath    string
-	role        string
-	jwtFilePath string
-	logger      *zerolog.Logger
+	address      string
+	authPath     string
+	pluginPrefix string
+	role         string
+	jwtFilePath  string
+	logger       *zerolog.Logger
 }
 
 const ROLE = "role"
@@ -37,14 +38,17 @@ func getFullAuthPath(authPath string) string {
 }
 
 // return structure for Vault Client, based on configuration
-func NewVaultClient(conf map[interface{}]interface{}, logger *zerolog.Logger) VaultClient {
-	var address, authPath, role, jwtFilePath string
+func NewVaultClient(conf map[interface{}]interface{}, logger *zerolog.Logger) *VaultClient {
+	var address, authPath, pluginPrefix, role, jwtFilePath string
 	if conf != nil {
 		if addressConf, ok := conf["address"]; ok {
 			address = addressConf.(string)
 		}
 		if authPathConf, ok := conf["authPath"]; ok {
 			authPath = authPathConf.(string)
+		}
+		if pluginPrefixConf, ok := conf["pluginPrefix"]; ok {
+			pluginPrefix = pluginPrefixConf.(string)
 		}
 		if roleConf, ok := conf["role"]; ok {
 			role = roleConf.(string)
@@ -53,8 +57,12 @@ func NewVaultClient(conf map[interface{}]interface{}, logger *zerolog.Logger) Va
 			jwtFilePath = jwtFilePathConf.(string)
 		}
 	}
-	return VaultClient{address: address, authPath: getFullAuthPath(authPath),
-		role: role, jwtFilePath: jwtFilePath, logger: logger}
+	return &VaultClient{address: address, authPath: getFullAuthPath(authPath),
+		pluginPrefix: pluginPrefix, role: role, jwtFilePath: jwtFilePath, logger: logger}
+}
+
+func GetFullSecretPath(pluginPrefix, secret string) string {
+	return fmt.Sprintf("/v1/%s/%s", pluginPrefix, secret)
 }
 
 func (v *VaultClient) GetToken() (string, error) {

@@ -17,6 +17,7 @@ import (
 	api "fybrik.io/openmetadata-connector/datacatalog-go/go"
 	dbtypes "fybrik.io/openmetadata-connector/pkg/database-types"
 	"fybrik.io/openmetadata-connector/pkg/utils"
+	"fybrik.io/openmetadata-connector/pkg/vault"
 )
 
 const EmptyString = ""
@@ -219,6 +220,7 @@ func NewOpenMetadataAPIService(conf map[string]interface{}, customization map[st
 	var port int
 	var user string
 	var password string
+	var vaultPluginPrefix string
 
 	var vaultConf map[interface{}]interface{} = nil
 	if vaultConfMap, ok := conf["vault"]; ok {
@@ -255,6 +257,16 @@ func NewOpenMetadataAPIService(conf map[string]interface{}, customization map[st
 		password = DefaultOpenMetadataPassword
 	}
 
+	if vaultConf != nil {
+		if value, ok := vaultConf["pluginPrefix"]; ok {
+			vaultPluginPrefix = value.(string)
+		} else {
+			vaultPluginPrefix = DefaultVaultPluginPrefix
+		}
+	} else {
+		vaultPluginPrefix = EmptyString
+	}
+
 	nameToDatabaseStruct := make(map[string]dbtypes.DatabaseType)
 	nameToDatabaseStruct[MysqlLowercase] = dbtypes.NewMysql(logger)
 	nameToDatabaseStruct[S3] = dbtypes.NewS3(vaultConf, logger)
@@ -269,6 +281,7 @@ func NewOpenMetadataAPIService(conf map[string]interface{}, customization map[st
 		Port:                 port,
 		user:                 user,
 		password:             password,
+		vaultPluginPrefix:    vaultPluginPrefix,
 	}
 
 	s.initialized = s.PrepareOpenMetadataForFybrik()
@@ -654,11 +667,15 @@ func (s *OpenMetadataAPIService) constructAssetResponse(ctx context.Context, //n
 		return nil, errors.New("Unrecognized connection type: " + connectionTypeStr)
 	}
 
-	config, err := dt.TranslateOpenMetadataConfigToFybrikConfig(table.Name, ret.Credentials,
+	config, err := dt.TranslateOpenMetadataConfigToFybrikConfig(table.Name,
 		respService.Connection.GetConfig())
 	if err != nil {
 		s.logger.Error().Err(err).Msg("error in translating openmetadata config to fybrik format")
 		return nil, err
+	}
+
+	if s.vaultPluginPrefix != EmptyString {
+		ret.Credentials = vault.GetFullSecretPath(s.vaultPluginPrefix, *respService.FullyQualifiedName)
 	}
 
 	additionalProperties := make(map[string]interface{})

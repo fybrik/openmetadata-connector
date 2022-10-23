@@ -52,7 +52,7 @@ var _ = Describe("Vault and OM connector", Ordered, func() {
 	Describe("Vault credentials retrieval flow", Ordered, func() {
 		var token string
 		var secret []byte
-		var vaultClient vault.VaultClient
+		var vaultClient *vault.VaultClient
 		var accessKey string
 		var secretKey string
 		It("should receive a valid token", func() {

@@ -29,6 +29,7 @@ type OpenMetadataAPIService struct {
 	Port                 int
 	user                 string
 	password             string
+	vaultPluginPrefix    string
 }
 
 // CreateAsset - This REST API writes data asset information to the data catalog configured in fybrik
