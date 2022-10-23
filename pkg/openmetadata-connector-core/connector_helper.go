@@ -23,7 +23,7 @@ import (
 const EmptyString = ""
 
 func getTag(ctx context.Context, c *client.APIClient, tagFQN string) client.TagLabel {
-	if strings.Count(tagFQN, ".") == 0 { //nolint:revive
+	if strings.Count(tagFQN, ".") == 0 {
 		// Since this is not a 'category.primary' or 'category.primary.secondary' format,
 		// we will translate it to 'Fybrik.tagFQN'. We try to create it
 		// (whether it exists or not)
@@ -364,7 +364,7 @@ func (s *OpenMetadataAPIService) createDatabaseService(ctx context.Context,
 		s.logger.Warn().Msg(FailedToCreateDatabaseService + databaseServiceName + ". Let us try again with a different name")
 
 		// let's try creating the service with different names
-		for i := 0; i < s.NumRenameRetries; i++ { //nolint:revive
+		for i := 0; i < s.NumRenameRetries; i++ {
 			newName := databaseServiceName + "-" + utils.RandSeq(RandomStringLength)
 			createDatabaseService.SetName(newName)
 			s.logger.Info().Msg("Trying to create a Database Service: " + newName)
@@ -560,13 +560,13 @@ func (s *OpenMetadataAPIService) enrichAsset(ctx context.Context, table *client.
 		columns := table.Columns
 
 		for _, col := range requestColumnsModels {
-			if len(col.Tags) > 0 { //nolint:revive
+			if len(col.Tags) > 0 {
 				columns = tagColumn(ctx, c, columns, col.Name, col.Tags)
 			}
 		}
 
 		for _, col := range requestColumnsAPI {
-			if len(col.Tags) > 0 { //nolint:revive
+			if len(col.Tags) > 0 {
 				columns = tagColumn(ctx, c, columns, col.Name, col.Tags)
 			}
 		}
@@ -684,7 +684,7 @@ func (s *OpenMetadataAPIService) constructAssetResponse(ctx context.Context, //n
 	ret.Details.Connection.AdditionalProperties = additionalProperties
 
 	for i := range table.Columns {
-		if len(table.Columns[i].Tags) > 0 { //nolint:revive
+		if len(table.Columns[i].Tags) > 0 {
 			tags := make(map[string]interface{})
 			for _, t := range table.Columns[i].Tags {
 				tags[utils.StripTag(t.TagFQN)] = "true"
@@ -695,7 +695,7 @@ func (s *OpenMetadataAPIService) constructAssetResponse(ctx context.Context, //n
 		}
 	}
 
-	if len(table.Tags) > 0 { //nolint:revive
+	if len(table.Tags) > 0 {
 		tags := make(map[string]interface{})
 		for _, s := range table.Tags {
 			tags[utils.StripTag(s.TagFQN)] = "true"

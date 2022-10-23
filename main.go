@@ -18,8 +18,12 @@ import (
 	"fybrik.io/openmetadata-connector/pkg/utils"
 )
 
+const Customization = "customization"
 const DefaultConfigFile = "/etc/conf/conf.yaml"
 const DefaultCustomizationFile = "./customization.yaml"
+const FailureToParseCusromizationFile = "failure to parse customization file"
+const FailureToReadCustomizationFile = "failure to read customization file"
+const FileContainingTagsAndPropertiesNeeded = "File containing tags and custom properties needed for working with Fybrik"
 
 // RunCmd defines the command for running the connector
 func RunCmd() *cobra.Command {
@@ -34,13 +38,13 @@ func RunCmd() *cobra.Command {
 
 			configFileBytes, err := os.ReadFile(configFile)
 			if err != nil {
-				logger.Error().Err(err).Msg("failure to read config file")
+				logger.Error().Err(err).Msg(FailureToReadCustomizationFile)
 				return
 			}
 
 			customizationFileBytes, err := os.ReadFile(customizationFile)
 			if err != nil {
-				logger.Error().Err(err).Msg("failure to read customization file")
+				logger.Error().Err(err).Msg(FailureToReadCustomizationFile)
 				return
 			}
 
@@ -54,7 +58,7 @@ func RunCmd() *cobra.Command {
 			}
 			err = yaml.Unmarshal(customizationFileBytes, &customization)
 			if err != nil {
-				logger.Error().Err(err).Msg("failure to parse customization file")
+				logger.Error().Err(err).Msg(FailureToParseCusromizationFile)
 				return
 			}
 
@@ -69,8 +73,8 @@ func RunCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&configFile, "config", configFile, "Configuration file")
-	cmd.Flags().StringVar(&customizationFile, "customization", customizationFile,
-		"File containing tags and custom properties needed for working with Fybrik")
+	cmd.Flags().StringVar(&customizationFile, Customization, customizationFile,
+		FileContainingTagsAndPropertiesNeeded)
 	cmd.CompletionOptions.DisableDefaultCmd = true
 	return cmd
 }
@@ -94,7 +98,7 @@ func PrepareCmd() *cobra.Command {
 
 			err = yaml.Unmarshal(customizationFileBytes, &customization)
 			if err != nil {
-				logger.Error().Err(err).Msg("failure to parse customization file")
+				logger.Error().Err(err).Msg(FailureToParseCusromizationFile)
 				return
 			}
 
@@ -106,8 +110,7 @@ func PrepareCmd() *cobra.Command {
 			occ.PrepareOpenMetadataForFybrik(endpoint, user, password, customization, &logger)
 		},
 	}
-	cmd.Flags().StringVar(&customizationFile, "customization", customizationFile,
-		"File containing tags and custom properties needed for working with Fybrik")
+	cmd.Flags().StringVar(&customizationFile, Customization, customizationFile, FileContainingTagsAndPropertiesNeeded)
 	cmd.CompletionOptions.DisableDefaultCmd = true
 	return cmd
 }
@@ -127,6 +130,6 @@ func main() {
 	// Run the cli
 	if err := RootCmd().Execute(); err != nil {
 		fmt.Println(err)
-		os.Exit(1) //nolint:revive
+		os.Exit(1)
 	}
 }

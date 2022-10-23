@@ -188,8 +188,8 @@ func (s *s3) DatabaseSchemaName(createAssetRequest *models.CreateAssetRequest) s
 
 	assetID := *createAssetRequest.DestinationAssetID
 	split := strings.Split(assetID, ".")
-	if len(split) > 1 { //nolint:revive
-		return split[len(split)-2] //nolint:revive
+	if len(split) > 1 {
+		return split[len(split)-2]
 	}
 
 	s.logger.Warn().Msg("Could not determine the name of the DatabaseSchema (bucket)")
@@ -211,7 +211,7 @@ func (s *s3) TableName(createAssetRequest *models.CreateAssetRequest) (string, e
 		return objectKey.(string), nil
 	}
 	split := strings.Split(*createAssetRequest.DestinationAssetID, ".")
-	return split[len(split)-1], nil //nolint:revive
+	return split[len(split)-1], nil
 }
 
 func (s *s3) TableFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) (string, error) {
