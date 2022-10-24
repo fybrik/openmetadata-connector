@@ -10,6 +10,7 @@ import (
 	"strconv"
 
 	"fybrik.io/fybrik/pkg/logging"
+	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 
@@ -21,9 +22,28 @@ import (
 const Customization = "customization"
 const DefaultConfigFile = "/etc/conf/conf.yaml"
 const DefaultCustomizationFile = "./customization.yaml"
-const FailureToParseCusromizationFile = "failure to parse customization file"
+const FailureToParseCustomizationFile = "failure to parse customization file"
+const FailureToReadConfigFile = "failure to read configuration file"
 const FailureToReadCustomizationFile = "failure to read customization file"
 const FileContainingTagsAndPropertiesNeeded = "File containing tags and custom properties needed for working with Fybrik"
+
+func parseCustomizationFile(customizationFile string, logger *zerolog.Logger) (map[string]interface{}, bool) {
+	customizationFileBytes, err := os.ReadFile(customizationFile)
+	if err != nil {
+		logger.Error().Err(err).Msg(FailureToReadCustomizationFile)
+		return nil, false
+	}
+
+	customization := make(map[string]interface{})
+
+	err = yaml.Unmarshal(customizationFileBytes, &customization)
+	if err != nil {
+		logger.Error().Err(err).Msg(FailureToParseCustomizationFile)
+		return nil, false
+	}
+
+	return customization, true
+}
 
 // RunCmd defines the command for running the connector
 func RunCmd() *cobra.Command {
@@ -36,29 +56,21 @@ func RunCmd() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			// TODO - add logging level and pretty logging
 
-			configFileBytes, err := os.ReadFile(configFile)
-			if err != nil {
-				logger.Error().Err(err).Msg(FailureToReadCustomizationFile)
+			customization, ok := parseCustomizationFile(customizationFile, &logger)
+			if !ok {
 				return
 			}
 
-			customizationFileBytes, err := os.ReadFile(customizationFile)
+			configFileBytes, err := os.ReadFile(configFile)
 			if err != nil {
-				logger.Error().Err(err).Msg(FailureToReadCustomizationFile)
+				logger.Error().Err(err).Msg(FailureToReadConfigFile)
 				return
 			}
 
 			conf := make(map[string]interface{})
-			customization := make(map[string]interface{})
-
 			err = yaml.Unmarshal(configFileBytes, &conf)
 			if err != nil {
 				logger.Error().Err(err).Msg("failure to parse config file")
-				return
-			}
-			err = yaml.Unmarshal(customizationFileBytes, &customization)
-			if err != nil {
-				logger.Error().Err(err).Msg(FailureToParseCusromizationFile)
 				return
 			}
 
@@ -88,17 +100,8 @@ func PrepareCmd() *cobra.Command {
 		Use:   "prepare",
 		Short: "Prepare OpenMetadata for Fybrik",
 		Run: func(cmd *cobra.Command, args []string) {
-			customizationFileBytes, err := os.ReadFile(customizationFile)
-			if err != nil {
-				logger.Error().Err(err).Msg("failure to read customization file")
-				return
-			}
-
-			customization := make(map[string]interface{})
-
-			err = yaml.Unmarshal(customizationFileBytes, &customization)
-			if err != nil {
-				logger.Error().Err(err).Msg(FailureToParseCusromizationFile)
+			customization, ok := parseCustomizationFile(customizationFile, &logger)
+			if !ok {
 				return
 			}
 
