@@ -64,7 +64,7 @@ func RunCmd() *cobra.Command {
 
 			customization, err := parseCustomizationFile(customizationFile, &logger)
 			if err != nil {
-				logger.Error().Err(err).Msg(ParseCustomizationFileFailed)
+				logger.Error().Msg(ParseCustomizationFileFailed)
 				return
 			}
 
@@ -109,7 +109,7 @@ func PrepareCmd() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			customization, err := parseCustomizationFile(customizationFile, &logger)
 			if err != nil {
-				logger.Error().Err(err).Msg(ParseCustomizationFileFailed)
+				logger.Error().Msg(ParseCustomizationFileFailed)
 				return
 			}
 
