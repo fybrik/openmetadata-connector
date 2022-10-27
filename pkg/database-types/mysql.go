@@ -33,7 +33,7 @@ func (m *mysql) TranslateFybrikConfigToOpenMetadataConfig(config map[string]inte
 	return config
 }
 
-func (m *mysql) TranslateOpenMetadataConfigToFybrikConfig(tableName string, credentials string,
+func (m *mysql) TranslateOpenMetadataConfigToFybrikConfig(tableName string,
 	config map[string]interface{}) (map[string]interface{}, error) {
 	other := make(map[string]interface{})
 	ret := make(map[string]interface{})

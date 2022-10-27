@@ -17,12 +17,13 @@ import (
 	api "fybrik.io/openmetadata-connector/datacatalog-go/go"
 	dbtypes "fybrik.io/openmetadata-connector/pkg/database-types"
 	"fybrik.io/openmetadata-connector/pkg/utils"
+	"fybrik.io/openmetadata-connector/pkg/vault"
 )
 
 const EmptyString = ""
 
 func getTag(ctx context.Context, c *client.APIClient, tagFQN string) client.TagLabel {
-	if strings.Count(tagFQN, ".") == 0 { //nolint:revive
+	if strings.Count(tagFQN, ".") == 0 {
 		// Since this is not a 'category.primary' or 'category.primary.secondary' format,
 		// we will translate it to 'Fybrik.tagFQN'. We try to create it
 		// (whether it exists or not)
@@ -219,6 +220,7 @@ func NewOpenMetadataAPIService(conf map[string]interface{}, customization map[st
 	var port int
 	var user string
 	var password string
+	var vaultPluginPrefix string
 
 	var vaultConf map[interface{}]interface{} = nil
 	if vaultConfMap, ok := conf["vault"]; ok {
@@ -255,6 +257,16 @@ func NewOpenMetadataAPIService(conf map[string]interface{}, customization map[st
 		password = DefaultOpenMetadataPassword
 	}
 
+	if vaultConf != nil {
+		if value, ok := vaultConf["pluginPrefix"]; ok {
+			vaultPluginPrefix = value.(string)
+		} else {
+			vaultPluginPrefix = DefaultVaultPluginPrefix
+		}
+	} else {
+		vaultPluginPrefix = EmptyString
+	}
+
 	nameToDatabaseStruct := make(map[string]dbtypes.DatabaseType)
 	nameToDatabaseStruct[MysqlLowercase] = dbtypes.NewMysql(logger)
 	nameToDatabaseStruct[S3] = dbtypes.NewS3(vaultConf, logger)
@@ -269,6 +281,7 @@ func NewOpenMetadataAPIService(conf map[string]interface{}, customization map[st
 		Port:                 port,
 		user:                 user,
 		password:             password,
+		vaultPluginPrefix:    vaultPluginPrefix,
 	}
 
 	s.initialized = s.PrepareOpenMetadataForFybrik()
@@ -351,7 +364,7 @@ func (s *OpenMetadataAPIService) createDatabaseService(ctx context.Context,
 		s.logger.Warn().Msg(FailedToCreateDatabaseService + databaseServiceName + ". Let us try again with a different name")
 
 		// let's try creating the service with different names
-		for i := 0; i < s.NumRenameRetries; i++ { //nolint:revive
+		for i := 0; i < s.NumRenameRetries; i++ {
 			newName := databaseServiceName + "-" + utils.RandSeq(RandomStringLength)
 			createDatabaseService.SetName(newName)
 			s.logger.Info().Msg("Trying to create a Database Service: " + newName)
@@ -547,13 +560,13 @@ func (s *OpenMetadataAPIService) enrichAsset(ctx context.Context, table *client.
 		columns := table.Columns
 
 		for _, col := range requestColumnsModels {
-			if len(col.Tags) > 0 { //nolint:revive
+			if len(col.Tags) > 0 {
 				columns = tagColumn(ctx, c, columns, col.Name, col.Tags)
 			}
 		}
 
 		for _, col := range requestColumnsAPI {
-			if len(col.Tags) > 0 { //nolint:revive
+			if len(col.Tags) > 0 {
 				columns = tagColumn(ctx, c, columns, col.Name, col.Tags)
 			}
 		}
@@ -654,11 +667,15 @@ func (s *OpenMetadataAPIService) constructAssetResponse(ctx context.Context, //n
 		return nil, errors.New("Unrecognized connection type: " + connectionTypeStr)
 	}
 
-	config, err := dt.TranslateOpenMetadataConfigToFybrikConfig(table.Name, ret.Credentials,
+	config, err := dt.TranslateOpenMetadataConfigToFybrikConfig(table.Name,
 		respService.Connection.GetConfig())
 	if err != nil {
 		s.logger.Error().Err(err).Msg("error in translating openmetadata config to fybrik format")
 		return nil, err
+	}
+
+	if s.vaultPluginPrefix != EmptyString {
+		ret.Credentials = vault.GetFullSecretPath(s.vaultPluginPrefix, *respService.FullyQualifiedName)
 	}
 
 	additionalProperties := make(map[string]interface{})
@@ -667,7 +684,7 @@ func (s *OpenMetadataAPIService) constructAssetResponse(ctx context.Context, //n
 	ret.Details.Connection.AdditionalProperties = additionalProperties
 
 	for i := range table.Columns {
-		if len(table.Columns[i].Tags) > 0 { //nolint:revive
+		if len(table.Columns[i].Tags) > 0 {
 			tags := make(map[string]interface{})
 			for _, t := range table.Columns[i].Tags {
 				tags[utils.StripTag(t.TagFQN)] = "true"
@@ -678,7 +695,7 @@ func (s *OpenMetadataAPIService) constructAssetResponse(ctx context.Context, //n
 		}
 	}
 
-	if len(table.Tags) > 0 { //nolint:revive
+	if len(table.Tags) > 0 {
 		tags := make(map[string]interface{})
 		for _, s := range table.Tags {
 			tags[utils.StripTag(s.TagFQN)] = "true"

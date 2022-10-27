@@ -8,5 +8,6 @@ openmetadata_password: admin
 vault:
   address: http://localhost:8200
   authPath: kubernetes
+  pluginPrefix: omd-secrets
   role: fybrik
   jwt_file_path: /tmp/openmetadata-connector/jwt/jwt

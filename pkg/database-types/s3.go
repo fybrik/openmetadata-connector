@@ -91,7 +91,7 @@ func (s *s3) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interfa
 	return ret
 }
 
-func (s *s3) TranslateOpenMetadataConfigToFybrikConfig(tableName string, credentials string,
+func (s *s3) TranslateOpenMetadataConfigToFybrikConfig(tableName string,
 	config map[string]interface{}) (map[string]interface{}, error) {
 	ret := make(map[string]interface{})
 	ret[ObjectKey] = tableName
@@ -114,12 +114,8 @@ func (s *s3) TranslateOpenMetadataConfigToFybrikConfig(tableName string, credent
 		ret[Bucket] = value
 	}
 
-	// if credentials were extracted from vault, we don't want to return
-	// the actual access key and secret key
-	if credentials != EmptyString {
-		delete(ret, AccessKeyID)
-		delete(ret, SecretAccessID)
-	}
+	delete(ret, AccessKeyID)
+	delete(ret, SecretAccessID)
 
 	return ret, nil
 }
@@ -192,8 +188,8 @@ func (s *s3) DatabaseSchemaName(createAssetRequest *models.CreateAssetRequest) s
 
 	assetID := *createAssetRequest.DestinationAssetID
 	split := strings.Split(assetID, ".")
-	if len(split) > 1 { //nolint:revive
-		return split[len(split)-2] //nolint:revive
+	if len(split) > 1 {
+		return split[len(split)-2]
 	}
 
 	s.logger.Warn().Msg("Could not determine the name of the DatabaseSchema (bucket)")
@@ -215,7 +211,7 @@ func (s *s3) TableName(createAssetRequest *models.CreateAssetRequest) (string, e
 		return objectKey.(string), nil
 	}
 	split := strings.Split(*createAssetRequest.DestinationAssetID, ".")
-	return split[len(split)-1], nil //nolint:revive
+	return split[len(split)-1], nil
 }
 
 func (s *s3) TableFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) (string, error) {
