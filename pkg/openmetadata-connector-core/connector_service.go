@@ -6,7 +6,6 @@ package openapiconnectorcore
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/rs/zerolog"
@@ -45,9 +44,7 @@ func (s *OpenMetadataAPIService) CreateAsset(ctx context.Context, //nolint
 	// check whether connectionType is one of the connection types supported by the OM connector
 	dt, found := s.NameToDatabaseStruct[connectionType]
 	if !found {
-		s.logger.Error().Msg(fmt.Sprintf(ConnectionTypeNotSupported, connectionType))
-		return api.Response(http.StatusBadRequest, nil),
-			fmt.Errorf(ConnectionTypeNotSupported, connectionType)
+		dt = s.NameToDatabaseStruct[Generic]
 	}
 
 	c, err1 := s.getOpenMetadataClient(ctx)

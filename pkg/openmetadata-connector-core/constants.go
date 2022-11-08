@@ -27,6 +27,7 @@ const FailedToCovert = "failed to convert connection additional properties to ma
 const FailedToCreateDatabaseService = "Failed to create Database Service: "
 const ForDatabaseServiceID = " for Database Service Id: "
 const Fybrik = "Fybrik"
+const Generic = "generic"
 const Geography = "geography"
 const MysqlLowercase = "mysql"
 const Name = "name"
