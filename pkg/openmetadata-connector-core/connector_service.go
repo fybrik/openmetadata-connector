@@ -44,6 +44,7 @@ func (s *OpenMetadataAPIService) CreateAsset(ctx context.Context, //nolint
 	// check whether connectionType is one of the connection types supported by the OM connector
 	dt, found := s.NameToDatabaseStruct[connectionType]
 	if !found {
+		// since this connection type was not recognized, we use the generic type
 		dt = s.NameToDatabaseStruct[Generic]
 	}
 
@@ -94,6 +95,7 @@ func (s *OpenMetadataAPIService) CreateAsset(ctx context.Context, //nolint
 		return api.Response(http.StatusBadRequest, nil), errors.New("asset already exists")
 	}
 
+	// We create ingestion pipelines for all databaseServices except for 'generic' services
 	if dt.OMTypeName() != CustomDatabase {
 		// Asset not discovered yet
 		// Let's check whether there is an ingestion pipeline we can trigger

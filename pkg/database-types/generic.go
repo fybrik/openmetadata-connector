@@ -22,6 +22,8 @@ func NewGeneric(logger *zerolog.Logger) *generic {
 	return &generic{dataBase: dataBase{name: CustomDatabase, logger: logger}}
 }
 
+// OM databaseService-s of type CustomDatabase expect the configuration key-value pairs to be placed
+// within the 'connectionOptions' field. The values in the key-value pairs must be strings
 func (m *generic) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interface{}, credentials *string) map[string]interface{} {
 	ret := make(map[string]string)
 	for key, value := range config {
@@ -36,6 +38,8 @@ func (m *generic) TranslateFybrikConfigToOpenMetadataConfig(config map[string]in
 	return map[string]interface{}{ConnectionOptions: ret}
 }
 
+// take the configuration key-value pairs from the `connectionOptions` field, and convert the
+// JSON fields to maps
 func (m *generic) TranslateOpenMetadataConfigToFybrikConfig(tableName string,
 	config map[string]interface{}) (map[string]interface{}, error) {
 	configSource, ok := utils.InterfaceToMap(config[ConnectionOptions], m.logger)

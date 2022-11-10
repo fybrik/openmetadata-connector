@@ -665,6 +665,7 @@ func (s *OpenMetadataAPIService) constructAssetResponse(ctx context.Context, //n
 	connectionTypeStr := connectionType.(string)
 	dt, found := s.NameToDatabaseStruct[connectionTypeStr]
 	if !found {
+		// since this connection type was not recognized, we use the generic type
 		dt = s.NameToDatabaseStruct[Generic]
 	}
 
