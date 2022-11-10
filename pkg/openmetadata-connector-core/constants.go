@@ -10,6 +10,7 @@ const ColumnsPath = "/columns"
 const ConnectionType = "connectionType"
 const ConnectionTypeNotSupported = "currently, %s connection type not supported"
 const Credentials = "credentials"
+const CustomDatabase = "CustomDatabase"
 const DatabaseService = "databaseService"
 const DataFormat = "dataFormat"
 const DefaultListeningPort = 8081

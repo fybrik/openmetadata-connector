@@ -94,21 +94,22 @@ func (s *OpenMetadataAPIService) CreateAsset(ctx context.Context, //nolint
 		return api.Response(http.StatusBadRequest, nil), errors.New("asset already exists")
 	}
 
-	// Asset not discovered yet
-	// Let's check whether there is an ingestion pipeline we can trigger
-	ingestionPipelineName := "pipeline-" + createAssetRequest.DestinationCatalogID + "." + *createAssetRequest.DestinationAssetID
-	ingestionPipelineNameFull := utils.AppendStrings(databaseServiceName, ingestionPipelineName)
+	if dt.OMTypeName() != CustomDatabase {
+		// Asset not discovered yet
+		// Let's check whether there is an ingestion pipeline we can trigger
+		ingestionPipelineName := "pipeline-" + createAssetRequest.DestinationCatalogID + "." + *createAssetRequest.DestinationAssetID
+		ingestionPipelineNameFull := utils.AppendStrings(databaseServiceName, ingestionPipelineName)
 
-	// var ingestionPipelineID string nolint
-	// ingestionPipelineID, found = s.findIngestionPipeline(ctx, c, ingestionPipelineNameFull)
-	_, found = s.findIngestionPipeline(ctx, c, ingestionPipelineNameFull)
+		// var ingestionPipelineID string nolint
+		// ingestionPipelineID, found = s.findIngestionPipeline(ctx, c, ingestionPipelineNameFull)
+		_, found = s.findIngestionPipeline(ctx, c, ingestionPipelineNameFull)
 
-	if !found {
-		// Let us create an ingestion pipeline
-		s.logger.Info().Msg("Ingestion Pipeline not found. Creating.")
-		_, _ = s.createIngestionPipeline(ctx, c, databaseServiceID, ingestionPipelineName)
+		if !found {
+			// Let us create an ingestion pipeline
+			s.logger.Info().Msg("Ingestion Pipeline not found. Creating.")
+			_, _ = s.createIngestionPipeline(ctx, c, databaseServiceID, ingestionPipelineName)
+		}
 	}
-
 	databaseID, err := s.findOrCreateDatabase(ctx, c, databaseServiceID,
 		dt.DatabaseFQN(databaseServiceName, createAssetRequest),
 		dt.DatabaseName(createAssetRequest))

@@ -4,6 +4,7 @@
 package databasetypes
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 
@@ -22,36 +23,44 @@ func NewGeneric(logger *zerolog.Logger) *generic {
 }
 
 func (m *generic) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interface{}, credentials *string) map[string]interface{} {
-	ret := make(map[string]interface{})
-	if raw, ok := config["raw"]; ok {
-		rawArray, ok1 := utils.InterfaceToArray(raw, m.logger)
-		if !ok1 {
-			return nil
-		}
-
-		for index, line := range rawArray {
-			ret[fmt.Sprintf("line-%d", index)] = line
+	ret := make(map[string]string)
+	for key, value := range config {
+		valueStr, ok := value.(string)
+		if ok {
+			ret[key] = valueStr
+		} else {
+			jsonStr, _ := json.Marshal(value)
+			ret[key] = string(jsonStr)
 		}
 	}
-	return map[string]interface{}{"connectionOptions": ret}
+	return map[string]interface{}{ConnectionOptions: ret}
 }
 
 func (m *generic) TranslateOpenMetadataConfigToFybrikConfig(tableName string,
 	config map[string]interface{}) (map[string]interface{}, error) {
-	return config, nil
+	configSource, ok := utils.InterfaceToMap(config[ConnectionOptions], m.logger)
+	if !ok {
+		return nil, fmt.Errorf(FailedToConvert, ConnectionOptions)
+	}
+	ret := make(map[string]interface{})
+	for key, value := range configSource {
+		valueMap := make(map[string]interface{})
+		err := json.Unmarshal([]byte(fmt.Sprint(value)), &valueMap)
+		if err == nil {
+			ret[key] = valueMap
+		} else {
+			ret[key] = value.(string)
+		}
+	}
+	return ret, nil
 }
 
 func (m *generic) TableFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) (string, error) {
-	connectionProperties, ok := utils.InterfaceToMap(createAssetRequest.Details.GetConnection().AdditionalProperties["mysql"], m.logger)
-	if !ok {
-		return EmptyString, fmt.Errorf(FailedToConvert, AdditionalProperties)
+	tableName, err := m.TableName(createAssetRequest)
+	if err != nil {
+		return EmptyString, err
 	}
-	assetName := *createAssetRequest.DestinationAssetID
-	databaseSchema, found := connectionProperties[DatabaseSchema]
-	if found {
-		return fmt.Sprintf("%s.%s.%s.%s", serviceName, Default, databaseSchema.(string), assetName), nil
-	}
-	return fmt.Sprintf("%s.%s.%s", serviceName, Default, assetName), nil
+	return utils.AppendStrings(m.DatabaseSchemaFQN(serviceName, createAssetRequest), tableName), nil
 }
 
 func (m *generic) EquivalentServiceConfigurations(requestConfig, serviceConfig map[string]interface{}) bool {
@@ -68,17 +77,18 @@ func (m *generic) DatabaseName(createAssetRequest *models.CreateAssetRequest) st
 }
 
 func (m *generic) DatabaseFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) string {
-	return EmptyString
-}
-
-func (m *generic) DatabaseSchemaName(createAssetRequest *models.CreateAssetRequest) string {
-	return EmptyString
+	return utils.AppendStrings(serviceName, m.DatabaseName(createAssetRequest))
 }
 
 func (m *generic) DatabaseSchemaFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) string {
-	return EmptyString
+	return utils.AppendStrings(m.DatabaseFQN(serviceName, createAssetRequest),
+		m.DatabaseSchemaName(createAssetRequest))
+}
+
+func (m *generic) DatabaseSchemaName(createAssetRequest *models.CreateAssetRequest) string {
+	return createAssetRequest.DestinationCatalogID
 }
 
 func (m *generic) TableName(createAssetRequest *models.CreateAssetRequest) (string, error) {
-	return EmptyString, nil
+	return *createAssetRequest.DestinationAssetID, nil
 }
