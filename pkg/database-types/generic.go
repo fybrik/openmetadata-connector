@@ -64,12 +64,7 @@ func (m *generic) TableFQN(serviceName string, createAssetRequest *models.Create
 }
 
 func (m *generic) EquivalentServiceConfigurations(requestConfig, serviceConfig map[string]interface{}) bool {
-	for property, value := range requestConfig {
-		if !reflect.DeepEqual(serviceConfig[property], value) {
-			return false
-		}
-	}
-	return true
+	return reflect.DeepEqual(requestConfig, serviceConfig)
 }
 
 func (m *generic) DatabaseName(createAssetRequest *models.CreateAssetRequest) string {
