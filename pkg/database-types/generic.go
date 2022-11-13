@@ -31,8 +31,12 @@ func (m *generic) TranslateFybrikConfigToOpenMetadataConfig(config map[string]in
 		if ok {
 			ret[key] = valueStr
 		} else {
-			jsonStr, _ := json.Marshal(value)
-			ret[key] = string(jsonStr)
+			jsonStr, err := json.Marshal(value)
+			if err != nil {
+				m.logger.Warn().Err(err).Msg(fmt.Sprintf("failed to transfrom value %s for key %s", value, key))
+			} else {
+				ret[key] = string(jsonStr)
+			}
 		}
 	}
 	return map[string]interface{}{ConnectionOptions: ret}
@@ -42,7 +46,11 @@ func (m *generic) TranslateFybrikConfigToOpenMetadataConfig(config map[string]in
 // JSON fields to maps
 func (m *generic) TranslateOpenMetadataConfigToFybrikConfig(tableName string,
 	config map[string]interface{}) (map[string]interface{}, error) {
-	configSource, ok := utils.InterfaceToMap(config[ConnectionOptions], m.logger)
+	connectionOption, ok := config[ConnectionOptions]
+	if !ok {
+		return nil, fmt.Errorf("%s missing from configuration", ConnectionOptions)
+	}
+	configSource, ok := utils.InterfaceToMap(connectionOption, m.logger)
 	if !ok {
 		return nil, fmt.Errorf(FailedToConvert, ConnectionOptions)
 	}
