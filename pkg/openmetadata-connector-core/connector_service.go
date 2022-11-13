@@ -6,7 +6,6 @@ package openapiconnectorcore
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/rs/zerolog"
@@ -45,9 +44,8 @@ func (s *OpenMetadataAPIService) CreateAsset(ctx context.Context, //nolint
 	// check whether connectionType is one of the connection types supported by the OM connector
 	dt, found := s.NameToDatabaseStruct[connectionType]
 	if !found {
-		s.logger.Error().Msg(fmt.Sprintf(ConnectionTypeNotSupported, connectionType))
-		return api.Response(http.StatusBadRequest, nil),
-			fmt.Errorf(ConnectionTypeNotSupported, connectionType)
+		// since this connection type was not recognized, we use the generic type
+		dt = s.NameToDatabaseStruct[Generic]
 	}
 
 	c, err1 := s.getOpenMetadataClient(ctx)
@@ -97,21 +95,23 @@ func (s *OpenMetadataAPIService) CreateAsset(ctx context.Context, //nolint
 		return api.Response(http.StatusBadRequest, nil), errors.New("asset already exists")
 	}
 
-	// Asset not discovered yet
-	// Let's check whether there is an ingestion pipeline we can trigger
-	ingestionPipelineName := "pipeline-" + createAssetRequest.DestinationCatalogID + "." + *createAssetRequest.DestinationAssetID
-	ingestionPipelineNameFull := utils.AppendStrings(databaseServiceName, ingestionPipelineName)
+	// We create ingestion pipelines for all databaseServices except for 'generic' services
+	if dt.OMTypeName() != CustomDatabase {
+		// Asset not discovered yet
+		// Let's check whether there is an ingestion pipeline we can trigger
+		ingestionPipelineName := "pipeline-" + createAssetRequest.DestinationCatalogID + "." + *createAssetRequest.DestinationAssetID
+		ingestionPipelineNameFull := utils.AppendStrings(databaseServiceName, ingestionPipelineName)
 
-	// var ingestionPipelineID string nolint
-	// ingestionPipelineID, found = s.findIngestionPipeline(ctx, c, ingestionPipelineNameFull)
-	_, found = s.findIngestionPipeline(ctx, c, ingestionPipelineNameFull)
+		// var ingestionPipelineID string nolint
+		// ingestionPipelineID, found = s.findIngestionPipeline(ctx, c, ingestionPipelineNameFull)
+		_, found = s.findIngestionPipeline(ctx, c, ingestionPipelineNameFull)
 
-	if !found {
-		// Let us create an ingestion pipeline
-		s.logger.Info().Msg("Ingestion Pipeline not found. Creating.")
-		_, _ = s.createIngestionPipeline(ctx, c, databaseServiceID, ingestionPipelineName)
+		if !found {
+			// Let us create an ingestion pipeline
+			s.logger.Info().Msg("Ingestion Pipeline not found. Creating.")
+			_, _ = s.createIngestionPipeline(ctx, c, databaseServiceID, ingestionPipelineName)
+		}
 	}
-
 	databaseID, err := s.findOrCreateDatabase(ctx, c, databaseServiceID,
 		dt.DatabaseFQN(databaseServiceName, createAssetRequest),
 		dt.DatabaseName(createAssetRequest))

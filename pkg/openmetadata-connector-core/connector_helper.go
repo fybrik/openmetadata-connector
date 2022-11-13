@@ -270,6 +270,7 @@ func NewOpenMetadataAPIService(conf map[string]interface{}, customization map[st
 	nameToDatabaseStruct := make(map[string]dbtypes.DatabaseType)
 	nameToDatabaseStruct[MysqlLowercase] = dbtypes.NewMysql(logger)
 	nameToDatabaseStruct[S3] = dbtypes.NewS3(vaultConf, logger)
+	nameToDatabaseStruct[Generic] = dbtypes.NewGeneric(logger)
 
 	s := &OpenMetadataAPIService{Endpoint: conf["openmetadata_endpoint"].(string),
 		SleepIntervalMS:      SleepIntervalMS,
@@ -664,7 +665,8 @@ func (s *OpenMetadataAPIService) constructAssetResponse(ctx context.Context, //n
 	connectionTypeStr := connectionType.(string)
 	dt, found := s.NameToDatabaseStruct[connectionTypeStr]
 	if !found {
-		return nil, errors.New("Unrecognized connection type: " + connectionTypeStr)
+		// since this connection type was not recognized, we use the generic type
+		dt = s.NameToDatabaseStruct[Generic]
 	}
 
 	config, err := dt.TranslateOpenMetadataConfigToFybrikConfig(table.Name,
