@@ -521,7 +521,7 @@ func (s *OpenMetadataAPIService) createTable(ctx context.Context,
 // enrichAsset is called after asset is created, or during an updateAsset request
 // OM uses the JsonPatch format for updates
 func (s *OpenMetadataAPIService) enrichAsset(ctx context.Context, table *client.Table, c *client.APIClient,
-	credentials *string, geography *string, name *string, owner *string,
+	geography *string, name *string, owner *string,
 	dataFormat *string,
 	requestTags map[string]interface{},
 	requestColumnsModels []models.ResourceColumn,
@@ -529,9 +529,8 @@ func (s *OpenMetadataAPIService) enrichAsset(ctx context.Context, table *client.
 	var requestBody []map[string]interface{}
 
 	customProperties := make(map[string]interface{})
-	utils.UpdateCustomProperty(customProperties, table.Extension, Credentials, credentials)
 	utils.UpdateCustomProperty(customProperties, table.Extension, Geography, geography)
-	utils.UpdateCustomProperty(customProperties, table.Extension, Name, name)
+	utils.UpdateCustomProperty(customProperties, table.Extension, Description, name)
 	utils.UpdateCustomProperty(customProperties, table.Extension, Owner, owner)
 	utils.UpdateCustomProperty(customProperties, table.Extension, DataFormat, dataFormat)
 	utils.UpdateCustomProperty(customProperties, table.Extension, ConnectionType, &connectionType)
@@ -620,7 +619,7 @@ func (s *OpenMetadataAPIService) constructAssetResponse(ctx context.Context, //n
 	// We need it for the connection information.
 	respService, r, err := c.DatabaseServiceApi.GetDatabaseServiceByID(ctx, table.Service.Id).Execute()
 	if err != nil {
-		s.logger.Error().Msg("Could not find Database Service: " + table.Service.Id +
+		s.logger.Error().Err(err).Msg("Could not find Database Service: " + table.Service.Id +
 			". Therefore, unable to get connection information for asset: " + *table.FullyQualifiedName)
 		return nil, err
 	}
@@ -629,11 +628,7 @@ func (s *OpenMetadataAPIService) constructAssetResponse(ctx context.Context, //n
 	ret := &models.GetAssetResponse{}
 	customProperties := table.GetExtension()
 
-	credentials := customProperties[Credentials]
-	if credentials != nil {
-		ret.Credentials = credentials.(string)
-	}
-	name := customProperties[Name]
+	name := customProperties[Description]
 	if name != nil {
 		nameStr := name.(string)
 		ret.ResourceMetadata.Name = &nameStr
@@ -660,7 +655,9 @@ func (s *OpenMetadataAPIService) constructAssetResponse(ctx context.Context, //n
 	connectionType := customProperties[ConnectionType]
 
 	if connectionType == nil {
-		return nil, errors.New(ConnectionType + " value missing from table custom properties")
+		message := ConnectionType + " value missing from table custom properties"
+		s.logger.Error().Msg(message)
+		return nil, errors.New(message)
 	}
 	connectionTypeStr := connectionType.(string)
 	dt, found := s.NameToDatabaseStruct[connectionTypeStr]

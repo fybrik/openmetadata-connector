@@ -8,17 +8,21 @@ tag-categories:
     description: Personally Identifiable Information
   - name: finance
     description: Financial Information
+- name: Purpose
+  description: The purpose for which assets may be used
+  tags:
+  - name: housing
+  - name: finance
+    description: Financial Information
 # you can customize with additional table properties as needed
 table-properties:
 - name: connectionType
   description: "Connection type, e.g.: s3 or mysql"
-- name: credentials
-  description: The vault plugin path where the destination data credentials will be stored as kubernetes secrets
 - name: dataFormat
   description: "Data Format, e.g.: csv"
 - name: geography
   description: Geography of the resource
-- name: name
-  description: Name of the resource
+- name: description
+  description: Description of the resource
 - name: owner
   description: Owner of the resource
