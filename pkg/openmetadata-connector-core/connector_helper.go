@@ -23,19 +23,35 @@ import (
 const EmptyString = ""
 
 func getTag(ctx context.Context, c *client.APIClient, tagFQN string) client.TagLabel {
-	if strings.Count(tagFQN, ".") == 0 {
+	var category, primary string
+	split := strings.Split(tagFQN, ".")
+	splitLen := len(split)
+	if splitLen == 1 {
 		// Since this is not a 'category.primary' or 'category.primary.secondary' format,
 		// we will translate it to 'GenericTags.tagFQN'. We try to create it
 		// (whether it exists or not)
-		createTag := *client.NewCreateTag(tagFQN, tagFQN)
-		_, r, err := c.TagsApi.CreatePrimaryTag(ctx, GenericTags).CreateTag(createTag).Execute()
+		category = GenericTags
+		primary = tagFQN
+		tagFQN = category + "." + primary
+	} else {
+		category = split[0]
+		primary = split[1]
+		_, r, err := c.TagsApi.CreateTagCategory(ctx).
+			CreateTagCategory(*client.NewCreateTagCategory(Classification, category, category)).Execute()
 		if err != nil {
-			logger.Trace().Err(err).Msg("could not create primary tag. it may already exist")
+			logger.Trace().Err(err).Msg("could not create tag category. it may already exist")
 		} else {
 			r.Body.Close()
 		}
-		tagFQN = GenericTags + "." + tagFQN
 	}
+	createTag := *client.NewCreateTag(primary, primary)
+	_, r, err := c.TagsApi.CreatePrimaryTag(ctx, category).CreateTag(createTag).Execute()
+	if err != nil {
+		logger.Trace().Err(err).Msg("could not create primary tag. it may already exist")
+	} else {
+		r.Body.Close()
+	}
+
 	return client.TagLabel{
 		LabelType: "Manual",
 		Source:    "Tag",
@@ -114,7 +130,7 @@ func PrepareOpenMetadataForFybrik(endpoint string, user string, password string,
 
 					if name, ok := tagCategoryMap[Name]; ok {
 						// Create Tag Category for Fybrik
-						_, r, err2 := c.TagsApi.CreateTagCategory(ctx).CreateTagCategory(*client.NewCreateTagCategory("Classification",
+						_, r, err2 := c.TagsApi.CreateTagCategory(ctx).CreateTagCategory(*client.NewCreateTagCategory(Classification,
 							descriptionStr, name.(string))).Execute()
 						if err2 != nil {
 							logger.Trace().Msg("Failed to create the Tag category. Maybe it already exists.")

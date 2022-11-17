@@ -6,6 +6,7 @@ package openapiconnectorcore
 const Add = "add"
 const AssetNotFound = "asset not found"
 const CannotLoginToOM = "cannot login to OpenMetadata"
+const Classification = "Classification"
 const ColumnsPath = "/columns"
 const ConnectionType = "connectionType"
 const ConnectionTypeNotSupported = "currently, %s connection type not supported"
