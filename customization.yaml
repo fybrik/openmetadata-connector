@@ -11,7 +11,6 @@ tag-categories:
 - name: Purpose
   description: The purpose for which assets may be used
   tags:
-  - name: housing
   - name: finance
     description: Financial Information
 # you can customize with additional table properties as needed
