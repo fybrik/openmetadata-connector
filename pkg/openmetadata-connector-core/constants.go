@@ -13,6 +13,7 @@ const Credentials = "credentials"
 const CustomDatabase = "CustomDatabase"
 const DatabaseService = "databaseService"
 const DataFormat = "dataFormat"
+const DefaultDataFormat = "csv"
 const DefaultListeningPort = 8081
 const DefaultNumRenameRetries = 10
 const DefaultNumRetries = 500

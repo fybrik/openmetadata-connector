@@ -653,11 +653,15 @@ func (s *OpenMetadataAPIService) constructAssetResponse(ctx context.Context, //n
 		ret.ResourceMetadata.Geography = &geographyStr
 	}
 
+	dataFormatStr := DefaultDataFormat
 	dataFormat := customProperties[DataFormat]
 	if dataFormat != nil {
-		dataFormatStr := dataFormat.(string)
-		ret.Details.DataFormat = &dataFormatStr
+		dfStr, ok := dataFormat.(string)
+		if ok && dfStr != "" {
+			dataFormatStr = dfStr
+		}
 	}
+	ret.Details.DataFormat = &dataFormatStr
 
 	connectionType, ok := s.serviceTypeToConnectionType[respService.ServiceType]
 
