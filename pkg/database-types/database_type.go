@@ -15,10 +15,11 @@ type DatabaseType interface {
 	OMTypeName() string
 
 	// translate the connection information from the Fybrik format to the OM format
-	TranslateFybrikConfigToOpenMetadataConfig(map[string]interface{}, *string) map[string]interface{}
+	TranslateFybrikConfigToOpenMetadataConfig(map[string]interface{}, string, *string) map[string]interface{}
 
-	// translate the connection information from the OM format to the Fybrik format
-	TranslateOpenMetadataConfigToFybrikConfig(string, map[string]interface{}) (map[string]interface{}, error)
+	// translate the connection information from the OM format to the Fybrik format.
+	// also returns the connection type
+	TranslateOpenMetadataConfigToFybrikConfig(string, map[string]interface{}) (map[string]interface{}, string, error)
 
 	// In checking whether a certain databaseService already exists, compare whether two
 	// OM configuration informations are equivalent.Return 'true' if they are

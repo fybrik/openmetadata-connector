@@ -17,18 +17,19 @@ import (
 )
 
 type OpenMetadataAPIService struct {
-	Endpoint             string
-	SleepIntervalMS      int
-	NumRetries           int
-	NameToDatabaseStruct map[string]dbtypes.DatabaseType
-	logger               *zerolog.Logger
-	NumRenameRetries     int
-	initialized          bool
-	customization        map[string]interface{}
-	Port                 int
-	user                 string
-	password             string
-	vaultPluginPrefix    string
+	Endpoint                    string
+	SleepIntervalMS             int
+	NumRetries                  int
+	NameToDatabaseStruct        map[string]dbtypes.DatabaseType
+	serviceTypeToConnectionType map[string]string
+	logger                      *zerolog.Logger
+	NumRenameRetries            int
+	initialized                 bool
+	customization               map[string]interface{}
+	Port                        int
+	user                        string
+	password                    string
+	vaultPluginPrefix           string
 }
 
 // CreateAsset - This REST API writes data asset information to the data catalog configured in fybrik
@@ -67,7 +68,7 @@ func (s *OpenMetadataAPIService) CreateAsset(ctx context.Context, //nolint
 		s.logger.Error().Msg(FailedToCovert)
 		return api.Response(http.StatusBadRequest, nil), errors.New(FailedToCovert)
 	}
-	omConfig := dt.TranslateFybrikConfigToOpenMetadataConfig(config, createAssetRequest.Credentials)
+	omConfig := dt.TranslateFybrikConfigToOpenMetadataConfig(config, connectionType, createAssetRequest.Credentials)
 	// step 2: compare the transformed connection information to that of all existing services
 	databaseServiceID, databaseServiceName, found = s.findService(ctx, c, dt, omConfig)
 
@@ -143,7 +144,7 @@ func (s *OpenMetadataAPIService) CreateAsset(ctx context.Context, //nolint
 		createAssetRequest.ResourceMetadata.Name, createAssetRequest.ResourceMetadata.Owner,
 		createAssetRequest.Details.DataFormat,
 		createAssetRequest.ResourceMetadata.Tags,
-		createAssetRequest.ResourceMetadata.Columns, nil, connectionType)
+		createAssetRequest.ResourceMetadata.Columns, nil)
 
 	if err != nil {
 		s.logger.Error().Msg("Asset enrichment failed")
@@ -232,7 +233,7 @@ func (s *OpenMetadataAPIService) UpdateAsset(ctx context.Context, xRequestDataca
 	}
 
 	err = s.enrichAsset(ctx, table, c, nil, &updateAssetRequest.Name, &updateAssetRequest.Owner, nil,
-		updateAssetRequest.Tags, nil, updateAssetRequest.Columns, "")
+		updateAssetRequest.Tags, nil, updateAssetRequest.Columns)
 	if err != nil {
 		s.logger.Error().Msg("asset enrichment failed")
 		return api.Response(http.StatusBadRequest, nil), err

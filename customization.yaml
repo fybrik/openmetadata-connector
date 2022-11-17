@@ -16,8 +16,6 @@ tag-categories:
     description: Financial Information
 # you can customize with additional table properties as needed
 table-properties:
-- name: connectionType
-  description: "Connection type, e.g.: s3 or mysql"
 - name: dataFormat
   description: "Data Format, e.g.: csv"
 - name: geography

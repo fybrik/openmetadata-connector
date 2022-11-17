@@ -60,7 +60,8 @@ func (s *s3) getS3Credentials(vaultClientConfiguration map[interface{}]interface
 	return accessKey, secretKey, nil
 }
 
-func (s *s3) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interface{}, credentialsPath *string) map[string]interface{} {
+func (s *s3) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interface{},
+	connectionType string, credentialsPath *string) map[string]interface{} {
 	ret := make(map[string]interface{})
 	configSourceMap := make(map[string]interface{})
 	ret[Type] = s.OMTypeName()
@@ -92,17 +93,17 @@ func (s *s3) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interfa
 }
 
 func (s *s3) TranslateOpenMetadataConfigToFybrikConfig(tableName string,
-	config map[string]interface{}) (map[string]interface{}, error) {
+	config map[string]interface{}) (map[string]interface{}, string, error) {
 	ret := make(map[string]interface{})
 	ret[ObjectKey] = tableName
 
 	configSource, ok := utils.InterfaceToMap(config[ConfigSource], s.logger)
 	if !ok {
-		return nil, fmt.Errorf(FailedToConvert, ConfigSource)
+		return nil, S3, fmt.Errorf(FailedToConvert, ConfigSource)
 	}
 	securityConfig, ok := utils.InterfaceToMap(configSource[SecurityConfig], s.logger)
 	if !ok {
-		return nil, fmt.Errorf(FailedToConvert, SecurityConfig)
+		return nil, S3, fmt.Errorf(FailedToConvert, SecurityConfig)
 	}
 
 	for key, value := range securityConfig {
@@ -117,7 +118,7 @@ func (s *s3) TranslateOpenMetadataConfigToFybrikConfig(tableName string,
 	delete(ret, AccessKeyID)
 	delete(ret, SecretAccessID)
 
-	return ret, nil
+	return ret, S3, nil
 }
 
 // Check whether the fields in the 'configSource' section are equivalent.

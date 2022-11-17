@@ -267,22 +267,30 @@ func NewOpenMetadataAPIService(conf map[string]interface{}, customization map[st
 		vaultPluginPrefix = EmptyString
 	}
 
-	nameToDatabaseStruct := make(map[string]dbtypes.DatabaseType)
-	nameToDatabaseStruct[MysqlLowercase] = dbtypes.NewMysql(logger)
-	nameToDatabaseStruct[S3] = dbtypes.NewS3(vaultConf, logger)
-	nameToDatabaseStruct[Generic] = dbtypes.NewGeneric(logger)
+	nameToDatabaseStruct := map[string]dbtypes.DatabaseType{
+		MysqlLowercase: dbtypes.NewMysql(logger),
+		S3:             dbtypes.NewS3(vaultConf, logger),
+		Generic:        dbtypes.NewGeneric(logger),
+	}
+
+	serviceTypeToConnectionType := map[string]string{
+		dbtypes.Datalake:       S3,
+		dbtypes.Mysql:          MysqlLowercase,
+		dbtypes.CustomDatabase: Generic,
+	}
 
 	s := &OpenMetadataAPIService{Endpoint: conf["openmetadata_endpoint"].(string),
-		SleepIntervalMS:      SleepIntervalMS,
-		NumRetries:           NumRetries,
-		NameToDatabaseStruct: nameToDatabaseStruct,
-		logger:               logger,
-		NumRenameRetries:     DefaultNumRenameRetries,
-		customization:        customization,
-		Port:                 port,
-		user:                 user,
-		password:             password,
-		vaultPluginPrefix:    vaultPluginPrefix,
+		SleepIntervalMS:             SleepIntervalMS,
+		NumRetries:                  NumRetries,
+		NameToDatabaseStruct:        nameToDatabaseStruct,
+		serviceTypeToConnectionType: serviceTypeToConnectionType,
+		logger:                      logger,
+		NumRenameRetries:            DefaultNumRenameRetries,
+		customization:               customization,
+		Port:                        port,
+		user:                        user,
+		password:                    password,
+		vaultPluginPrefix:           vaultPluginPrefix,
 	}
 
 	s.initialized = s.PrepareOpenMetadataForFybrik()
@@ -525,7 +533,7 @@ func (s *OpenMetadataAPIService) enrichAsset(ctx context.Context, table *client.
 	dataFormat *string,
 	requestTags map[string]interface{},
 	requestColumnsModels []models.ResourceColumn,
-	requestColumnsAPI []api.ResourceColumn, connectionType string) error {
+	requestColumnsAPI []api.ResourceColumn) error {
 	var requestBody []map[string]interface{}
 
 	customProperties := make(map[string]interface{})
@@ -533,7 +541,6 @@ func (s *OpenMetadataAPIService) enrichAsset(ctx context.Context, table *client.
 	utils.UpdateCustomProperty(customProperties, table.Extension, Description, name)
 	utils.UpdateCustomProperty(customProperties, table.Extension, Owner, owner)
 	utils.UpdateCustomProperty(customProperties, table.Extension, DataFormat, dataFormat)
-	utils.UpdateCustomProperty(customProperties, table.Extension, ConnectionType, &connectionType)
 
 	propertiesUpdate := make(map[string]interface{})
 	propertiesUpdate["op"] = "add"
@@ -652,21 +659,20 @@ func (s *OpenMetadataAPIService) constructAssetResponse(ctx context.Context, //n
 		ret.Details.DataFormat = &dataFormatStr
 	}
 
-	connectionType := customProperties[ConnectionType]
+	connectionType, ok := s.serviceTypeToConnectionType[respService.ServiceType]
 
-	if connectionType == nil {
-		message := ConnectionType + " value missing from table custom properties"
+	if !ok {
+		message := "unrecognized servicetype " + respService.ServiceType
 		s.logger.Error().Msg(message)
 		return nil, errors.New(message)
 	}
-	connectionTypeStr := connectionType.(string)
-	dt, found := s.NameToDatabaseStruct[connectionTypeStr]
+	dt, found := s.NameToDatabaseStruct[connectionType]
 	if !found {
 		// since this connection type was not recognized, we use the generic type
 		dt = s.NameToDatabaseStruct[Generic]
 	}
 
-	config, err := dt.TranslateOpenMetadataConfigToFybrikConfig(table.Name,
+	config, connectionType, err := dt.TranslateOpenMetadataConfigToFybrikConfig(table.Name,
 		respService.Connection.GetConfig())
 	if err != nil {
 		s.logger.Error().Err(err).Msg("error in translating openmetadata config to fybrik format")
@@ -678,8 +684,8 @@ func (s *OpenMetadataAPIService) constructAssetResponse(ctx context.Context, //n
 	}
 
 	additionalProperties := make(map[string]interface{})
-	ret.Details.Connection.Name = connectionTypeStr
-	additionalProperties[connectionTypeStr] = config
+	ret.Details.Connection.Name = connectionType
+	additionalProperties[connectionType] = config
 	ret.Details.Connection.AdditionalProperties = additionalProperties
 
 	for i := range table.Columns {
