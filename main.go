@@ -99,7 +99,7 @@ func RunCmd() *cobra.Command {
 }
 
 // PrepareCmd defines the command for preparing OM for Fybrik
-// by creating Fybrik tags and custom properties
+// by creating tags and custom properties for Fybrik
 func PrepareCmd() *cobra.Command {
 	logger := logging.LogInit(logging.CONNECTOR, "Preparing OpenMetadata for Fybrik")
 	customizationFile := DefaultCustomizationFile

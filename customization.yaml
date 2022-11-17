@@ -1,8 +1,8 @@
 # you can customize with additional tag categories
 # and tags as necessary
 tag-categories:
-- name: Fybrik
-  description: Parent Category for all Fybrik labels
+- name: GenericTags
+  description: Parent Category for all generic labels
   tags:
   - name: PII
     description: Personally Identifiable Information

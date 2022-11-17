@@ -25,16 +25,16 @@ const EmptyString = ""
 func getTag(ctx context.Context, c *client.APIClient, tagFQN string) client.TagLabel {
 	if strings.Count(tagFQN, ".") == 0 {
 		// Since this is not a 'category.primary' or 'category.primary.secondary' format,
-		// we will translate it to 'Fybrik.tagFQN'. We try to create it
+		// we will translate it to 'GenericTags.tagFQN'. We try to create it
 		// (whether it exists or not)
 		createTag := *client.NewCreateTag(tagFQN, tagFQN)
-		_, r, err := c.TagsApi.CreatePrimaryTag(ctx, Fybrik).CreateTag(createTag).Execute()
+		_, r, err := c.TagsApi.CreatePrimaryTag(ctx, GenericTags).CreateTag(createTag).Execute()
 		if err != nil {
 			logger.Trace().Err(err).Msg("could not create primary tag. it may already exist")
 		} else {
 			r.Body.Close()
 		}
-		tagFQN = Fybrik + "." + tagFQN
+		tagFQN = GenericTags + "." + tagFQN
 	}
 	return client.TagLabel{
 		LabelType: "Manual",
