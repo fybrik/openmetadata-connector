@@ -25,10 +25,10 @@ func AppendStrings(a, b string) string {
 	return a + "." + b
 }
 
-// If the tag is in the Fybrik tag category (e.g. "Fybrik.PII"), remove the
-// "Fybrik." prefix. Otherwise, do nothing
+// If the tag is in the GenericTags tag category (e.g. "GenericTags.PII"), remove the
+// "GenericTags." prefix. Otherwise, do nothing
 func StripTag(tag string) string {
-	return strings.TrimPrefix(tag, "Fybrik.")
+	return strings.TrimPrefix(tag, "GenericTags.")
 }
 
 func UpdateCustomProperty(customProperties, orig map[string]interface{}, key string, value *string) {

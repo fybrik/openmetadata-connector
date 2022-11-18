@@ -24,7 +24,8 @@ func NewGeneric(logger *zerolog.Logger) *generic {
 
 // OM databaseService-s of type CustomDatabase expect the configuration key-value pairs to be placed
 // within the 'connectionOptions' field. The values in the key-value pairs must be strings
-func (m *generic) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interface{}, credentials *string) map[string]interface{} {
+func (m *generic) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interface{},
+	connectionType string, credentials *string) map[string]interface{} {
 	ret := make(map[string]string)
 	for key, value := range config {
 		valueStr, ok := value.(string)
@@ -39,20 +40,22 @@ func (m *generic) TranslateFybrikConfigToOpenMetadataConfig(config map[string]in
 			}
 		}
 	}
+	ret[ConnectionType] = connectionType
 	return map[string]interface{}{ConnectionOptions: ret}
 }
 
 // take the configuration key-value pairs from the `connectionOptions` field, and convert the
 // JSON fields to maps
 func (m *generic) TranslateOpenMetadataConfigToFybrikConfig(tableName string,
-	config map[string]interface{}) (map[string]interface{}, error) {
+	config map[string]interface{}) (map[string]interface{}, string, error) {
+	connectionType := Generic
 	connectionOption, ok := config[ConnectionOptions]
 	if !ok {
-		return nil, fmt.Errorf("%s missing from configuration", ConnectionOptions)
+		return nil, connectionType, fmt.Errorf("%s missing from configuration", ConnectionOptions)
 	}
 	configSource, ok := utils.InterfaceToMap(connectionOption, m.logger)
 	if !ok {
-		return nil, fmt.Errorf(FailedToConvert, ConnectionOptions)
+		return nil, connectionType, fmt.Errorf(FailedToConvert, ConnectionOptions)
 	}
 	ret := make(map[string]interface{})
 	for key, value := range configSource {
@@ -64,7 +67,11 @@ func (m *generic) TranslateOpenMetadataConfigToFybrikConfig(tableName string,
 			ret[key] = value.(string)
 		}
 	}
-	return ret, nil
+	if connectionTypeVal, ok := ret[ConnectionType]; ok {
+		delete(ret, ConnectionType)
+		connectionType = connectionTypeVal.(string)
+	}
+	return ret, connectionType, nil
 }
 
 func (m *generic) TableFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) (string, error) {

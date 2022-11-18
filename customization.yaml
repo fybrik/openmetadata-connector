@@ -1,24 +1,25 @@
 # you can customize with additional tag categories
 # and tags as necessary
 tag-categories:
-- name: Fybrik
-  description: Parent Category for all Fybrik labels
+- name: GenericTags
+  description: Parent Category for all generic labels
   tags:
   - name: PII
     description: Personally Identifiable Information
   - name: finance
     description: Financial Information
+- name: Purpose
+  description: The purpose for which assets may be used
+  tags:
+  - name: finance
+    description: Financial Information
 # you can customize with additional table properties as needed
 table-properties:
-- name: connectionType
-  description: "Connection type, e.g.: s3 or mysql"
-- name: credentials
-  description: The vault plugin path where the destination data credentials will be stored as kubernetes secrets
 - name: dataFormat
   description: "Data Format, e.g.: csv"
 - name: geography
   description: Geography of the resource
-- name: name
-  description: Name of the resource
+- name: description
+  description: Description of the resource
 - name: owner
   description: Owner of the resource

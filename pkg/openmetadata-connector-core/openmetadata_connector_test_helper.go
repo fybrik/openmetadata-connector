@@ -372,7 +372,7 @@ func handlePostMockOMServer(r *http.Request,
 		r.RequestURI == "/v1/services/ingestionPipelines" ||
 		r.RequestURI == "/v1/databases" ||
 		r.RequestURI == "/v1/databaseSchemas" ||
-		r.RequestURI == "/v1/tags/Fybrik" {
+		r.RequestURI == "/v1/tags/GenericTags" {
 		return map[string]interface{}{
 			ID:                 ZeroUUID,
 			FullyQualifiedName: TestDatabaseService}, 0

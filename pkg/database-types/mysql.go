@@ -29,12 +29,13 @@ func NewMysql(logger *zerolog.Logger) *mysql {
 	return &mysql{standardFields: standardFields, dataBase: dataBase{name: Mysql, logger: logger}}
 }
 
-func (m *mysql) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interface{}, credentials *string) map[string]interface{} {
+func (m *mysql) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interface{},
+	connectionType string, credentials *string) map[string]interface{} {
 	return config
 }
 
 func (m *mysql) TranslateOpenMetadataConfigToFybrikConfig(tableName string,
-	config map[string]interface{}) (map[string]interface{}, error) {
+	config map[string]interface{}) (map[string]interface{}, string, error) {
 	other := make(map[string]interface{})
 	ret := make(map[string]interface{})
 	for key, value := range config {
@@ -46,7 +47,7 @@ func (m *mysql) TranslateOpenMetadataConfigToFybrikConfig(tableName string,
 	}
 
 	ret[Other] = other
-	return ret, nil
+	return ret, Mysql, nil
 }
 
 func (m *mysql) TableFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) (string, error) {

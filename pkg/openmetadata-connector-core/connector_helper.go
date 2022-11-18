@@ -23,19 +23,35 @@ import (
 const EmptyString = ""
 
 func getTag(ctx context.Context, c *client.APIClient, tagFQN string) client.TagLabel {
-	if strings.Count(tagFQN, ".") == 0 {
+	var category, primary string
+	split := strings.Split(tagFQN, ".")
+	splitLen := len(split)
+	if splitLen == 1 {
 		// Since this is not a 'category.primary' or 'category.primary.secondary' format,
-		// we will translate it to 'Fybrik.tagFQN'. We try to create it
+		// we will translate it to 'GenericTags.tagFQN'. We try to create it
 		// (whether it exists or not)
-		createTag := *client.NewCreateTag(tagFQN, tagFQN)
-		_, r, err := c.TagsApi.CreatePrimaryTag(ctx, Fybrik).CreateTag(createTag).Execute()
+		category = GenericTags
+		primary = tagFQN
+		tagFQN = category + "." + primary
+	} else {
+		category = split[0]
+		primary = split[1]
+		_, r, err := c.TagsApi.CreateTagCategory(ctx).
+			CreateTagCategory(*client.NewCreateTagCategory(Classification, category, category)).Execute()
 		if err != nil {
-			logger.Trace().Err(err).Msg("could not create primary tag. it may already exist")
+			logger.Trace().Err(err).Msg("could not create tag category. it may already exist")
 		} else {
 			r.Body.Close()
 		}
-		tagFQN = Fybrik + "." + tagFQN
 	}
+	createTag := *client.NewCreateTag(primary, primary)
+	_, r, err := c.TagsApi.CreatePrimaryTag(ctx, category).CreateTag(createTag).Execute()
+	if err != nil {
+		logger.Trace().Err(err).Msg("could not create primary tag. it may already exist")
+	} else {
+		r.Body.Close()
+	}
+
 	return client.TagLabel{
 		LabelType: "Manual",
 		Source:    "Tag",
@@ -114,7 +130,7 @@ func PrepareOpenMetadataForFybrik(endpoint string, user string, password string,
 
 					if name, ok := tagCategoryMap[Name]; ok {
 						// Create Tag Category for Fybrik
-						_, r, err2 := c.TagsApi.CreateTagCategory(ctx).CreateTagCategory(*client.NewCreateTagCategory("Classification",
+						_, r, err2 := c.TagsApi.CreateTagCategory(ctx).CreateTagCategory(*client.NewCreateTagCategory(Classification,
 							descriptionStr, name.(string))).Execute()
 						if err2 != nil {
 							logger.Trace().Msg("Failed to create the Tag category. Maybe it already exists.")
@@ -267,22 +283,30 @@ func NewOpenMetadataAPIService(conf map[string]interface{}, customization map[st
 		vaultPluginPrefix = EmptyString
 	}
 
-	nameToDatabaseStruct := make(map[string]dbtypes.DatabaseType)
-	nameToDatabaseStruct[MysqlLowercase] = dbtypes.NewMysql(logger)
-	nameToDatabaseStruct[S3] = dbtypes.NewS3(vaultConf, logger)
-	nameToDatabaseStruct[Generic] = dbtypes.NewGeneric(logger)
+	nameToDatabaseStruct := map[string]dbtypes.DatabaseType{
+		MysqlLowercase: dbtypes.NewMysql(logger),
+		S3:             dbtypes.NewS3(vaultConf, logger),
+		Generic:        dbtypes.NewGeneric(logger),
+	}
+
+	serviceTypeToConnectionType := map[string]string{
+		dbtypes.Datalake:       S3,
+		dbtypes.Mysql:          MysqlLowercase,
+		dbtypes.CustomDatabase: Generic,
+	}
 
 	s := &OpenMetadataAPIService{Endpoint: conf["openmetadata_endpoint"].(string),
-		SleepIntervalMS:      SleepIntervalMS,
-		NumRetries:           NumRetries,
-		NameToDatabaseStruct: nameToDatabaseStruct,
-		logger:               logger,
-		NumRenameRetries:     DefaultNumRenameRetries,
-		customization:        customization,
-		Port:                 port,
-		user:                 user,
-		password:             password,
-		vaultPluginPrefix:    vaultPluginPrefix,
+		SleepIntervalMS:             SleepIntervalMS,
+		NumRetries:                  NumRetries,
+		NameToDatabaseStruct:        nameToDatabaseStruct,
+		serviceTypeToConnectionType: serviceTypeToConnectionType,
+		logger:                      logger,
+		NumRenameRetries:            DefaultNumRenameRetries,
+		customization:               customization,
+		Port:                        port,
+		user:                        user,
+		password:                    password,
+		vaultPluginPrefix:           vaultPluginPrefix,
 	}
 
 	s.initialized = s.PrepareOpenMetadataForFybrik()
@@ -521,20 +545,18 @@ func (s *OpenMetadataAPIService) createTable(ctx context.Context,
 // enrichAsset is called after asset is created, or during an updateAsset request
 // OM uses the JsonPatch format for updates
 func (s *OpenMetadataAPIService) enrichAsset(ctx context.Context, table *client.Table, c *client.APIClient,
-	credentials *string, geography *string, name *string, owner *string,
+	geography *string, name *string, owner *string,
 	dataFormat *string,
 	requestTags map[string]interface{},
 	requestColumnsModels []models.ResourceColumn,
-	requestColumnsAPI []api.ResourceColumn, connectionType string) error {
+	requestColumnsAPI []api.ResourceColumn) error {
 	var requestBody []map[string]interface{}
 
 	customProperties := make(map[string]interface{})
-	utils.UpdateCustomProperty(customProperties, table.Extension, Credentials, credentials)
 	utils.UpdateCustomProperty(customProperties, table.Extension, Geography, geography)
-	utils.UpdateCustomProperty(customProperties, table.Extension, Name, name)
+	utils.UpdateCustomProperty(customProperties, table.Extension, Description, name)
 	utils.UpdateCustomProperty(customProperties, table.Extension, Owner, owner)
 	utils.UpdateCustomProperty(customProperties, table.Extension, DataFormat, dataFormat)
-	utils.UpdateCustomProperty(customProperties, table.Extension, ConnectionType, &connectionType)
 
 	propertiesUpdate := make(map[string]interface{})
 	propertiesUpdate["op"] = "add"
@@ -620,7 +642,7 @@ func (s *OpenMetadataAPIService) constructAssetResponse(ctx context.Context, //n
 	// We need it for the connection information.
 	respService, r, err := c.DatabaseServiceApi.GetDatabaseServiceByID(ctx, table.Service.Id).Execute()
 	if err != nil {
-		s.logger.Error().Msg("Could not find Database Service: " + table.Service.Id +
+		s.logger.Error().Err(err).Msg("Could not find Database Service: " + table.Service.Id +
 			". Therefore, unable to get connection information for asset: " + *table.FullyQualifiedName)
 		return nil, err
 	}
@@ -629,11 +651,7 @@ func (s *OpenMetadataAPIService) constructAssetResponse(ctx context.Context, //n
 	ret := &models.GetAssetResponse{}
 	customProperties := table.GetExtension()
 
-	credentials := customProperties[Credentials]
-	if credentials != nil {
-		ret.Credentials = credentials.(string)
-	}
-	name := customProperties[Name]
+	name := customProperties[Description]
 	if name != nil {
 		nameStr := name.(string)
 		ret.ResourceMetadata.Name = &nameStr
@@ -651,25 +669,30 @@ func (s *OpenMetadataAPIService) constructAssetResponse(ctx context.Context, //n
 		ret.ResourceMetadata.Geography = &geographyStr
 	}
 
+	dataFormatStr := DefaultDataFormat
 	dataFormat := customProperties[DataFormat]
 	if dataFormat != nil {
-		dataFormatStr := dataFormat.(string)
-		ret.Details.DataFormat = &dataFormatStr
+		dfStr, ok := dataFormat.(string)
+		if ok && dfStr != "" {
+			dataFormatStr = dfStr
+		}
 	}
+	ret.Details.DataFormat = &dataFormatStr
 
-	connectionType := customProperties[ConnectionType]
+	connectionType, ok := s.serviceTypeToConnectionType[respService.ServiceType]
 
-	if connectionType == nil {
-		return nil, errors.New(ConnectionType + " value missing from table custom properties")
+	if !ok {
+		message := "unrecognized servicetype " + respService.ServiceType
+		s.logger.Error().Msg(message)
+		return nil, errors.New(message)
 	}
-	connectionTypeStr := connectionType.(string)
-	dt, found := s.NameToDatabaseStruct[connectionTypeStr]
+	dt, found := s.NameToDatabaseStruct[connectionType]
 	if !found {
 		// since this connection type was not recognized, we use the generic type
 		dt = s.NameToDatabaseStruct[Generic]
 	}
 
-	config, err := dt.TranslateOpenMetadataConfigToFybrikConfig(table.Name,
+	config, connectionType, err := dt.TranslateOpenMetadataConfigToFybrikConfig(table.Name,
 		respService.Connection.GetConfig())
 	if err != nil {
 		s.logger.Error().Err(err).Msg("error in translating openmetadata config to fybrik format")
@@ -681,8 +704,8 @@ func (s *OpenMetadataAPIService) constructAssetResponse(ctx context.Context, //n
 	}
 
 	additionalProperties := make(map[string]interface{})
-	ret.Details.Connection.Name = connectionTypeStr
-	additionalProperties[connectionTypeStr] = config
+	ret.Details.Connection.Name = connectionType
+	additionalProperties[connectionType] = config
 	ret.Details.Connection.AdditionalProperties = additionalProperties
 
 	for i := range table.Columns {
