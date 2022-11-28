@@ -13,16 +13,18 @@ import (
 	"os"
 	"strings"
 
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/rs/zerolog"
 )
 
 type VaultClient struct {
-	address      string
-	authPath     string
-	pluginPrefix string
-	role         string
-	jwtFilePath  string
-	logger       *zerolog.Logger
+	address         string
+	authPath        string
+	pluginPrefix    string
+	role            string
+	jwtFilePath     string
+	logger          *zerolog.Logger
+	vaultHTTPClient *retryablehttp.Client
 }
 
 const ROLE = "role"
@@ -38,7 +40,8 @@ func getFullAuthPath(authPath string) string {
 }
 
 // return structure for Vault Client, based on configuration
-func NewVaultClient(conf map[interface{}]interface{}, logger *zerolog.Logger) *VaultClient {
+func NewVaultClient(conf map[interface{}]interface{}, logger *zerolog.Logger,
+	httpClient *retryablehttp.Client) *VaultClient {
 	var address, authPath, pluginPrefix, role, jwtFilePath string
 	if conf != nil {
 		if addressConf, ok := conf["address"]; ok {
@@ -58,7 +61,7 @@ func NewVaultClient(conf map[interface{}]interface{}, logger *zerolog.Logger) *V
 		}
 	}
 	return &VaultClient{address: address, authPath: getFullAuthPath(authPath),
-		pluginPrefix: pluginPrefix, role: role, jwtFilePath: jwtFilePath, logger: logger}
+		pluginPrefix: pluginPrefix, role: role, jwtFilePath: jwtFilePath, logger: logger, vaultHTTPClient: httpClient}
 }
 
 func GetFullSecretPath(pluginPrefix, secret string) string {
@@ -86,7 +89,7 @@ func (v *VaultClient) GetToken() (string, error) {
 
 	// request token from vault
 	requestBody := strings.NewReader(string(jsonStr))
-	resp, err := http.Post(fullAuthPath, "encoding/json", requestBody) //nolint
+	resp, err := v.vaultHTTPClient.Post(fullAuthPath, "encoding/json", requestBody) //nolint
 	if err != nil {
 		v.logger.Error().Msg("vault POST request failed")
 		return EmptyString, err
@@ -117,15 +120,14 @@ func (v *VaultClient) GetToken() (string, error) {
 }
 
 func (v *VaultClient) GetSecret(token, secretPath string) ([]byte, error) {
-	req, err := http.NewRequestWithContext(context.Background(), "GET", v.address+secretPath, http.NoBody)
+	req, err := retryablehttp.NewRequestWithContext(context.Background(), "GET", v.address+secretPath, http.NoBody)
 	if err != nil {
 		v.logger.Error().Msg("Failed to prepare Vault secret request")
 		return nil, err
 	}
 
 	req.Header.Set("X-Vault-Token", token)
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := v.vaultHTTPClient.Do(req)
 	if err != nil || resp.StatusCode != http.StatusOK {
 		v.logger.Error().Msg("Failed to obtain secret from Vault")
 		return nil, err

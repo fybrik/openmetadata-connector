@@ -9,7 +9,9 @@ import (
 	"os"
 	"strconv"
 
+	fybrikEnv "fybrik.io/fybrik/pkg/environment"
 	"fybrik.io/fybrik/pkg/logging"
+	fybrikTLS "fybrik.io/fybrik/pkg/tls"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
@@ -32,6 +34,8 @@ const (
 	FileContainingTagsAndPropertiesNeeded = "File containing tags and custom properties needed for working with Fybrik"
 	ParseCustomizationFileFailed          = "parseCustomizationFile() failed. Exiting"
 )
+
+const ReadHeaderTimeout = 3
 
 func parseCustomizationFile(customizationFile string, logger *zerolog.Logger) (map[string]interface{}, error) {
 	customizationFileBytes, err := os.ReadFile(customizationFile)
@@ -85,6 +89,21 @@ func RunCmd() *cobra.Command {
 			DefaultAPIController := occ.NewOpenMetadataAPIController(DefaultAPIService)
 
 			router := api.NewRouter(DefaultAPIController)
+			if fybrikEnv.IsUsingTLS() {
+				tlsConfig, err := fybrikTLS.GetServerConfig(&logger)
+				if err != nil {
+					logger.Error().Msg("failed to get tls config")
+					return
+				}
+				server := http.Server{Addr: ":" + strconv.Itoa(DefaultAPIService.Port), Handler: router, TLSConfig: tlsConfig,
+					ReadHeaderTimeout: ReadHeaderTimeout}
+				err = server.ListenAndServeTLS("", "")
+				if err != nil {
+					logger.Error().Err(err).Msg(err.Error())
+					return
+				}
+				return
+			}
 
 			logger.Info().Msg("Server is starting")
 			http.ListenAndServe(":"+strconv.Itoa(DefaultAPIService.Port), router) //nolint

@@ -9,6 +9,7 @@ import (
 
 	"fybrik.io/fybrik/pkg/logging"
 	"github.com/fatih/structs"
+	"github.com/hashicorp/go-retryablehttp"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/rs/zerolog"
@@ -56,7 +57,8 @@ var _ = Describe("Vault and OM connector", Ordered, func() {
 		var accessKey string
 		var secretKey string
 		It("should receive a valid token", func() {
-			vaultClient = vault.NewVaultClient(vaultConf, &logger)
+			retryClient := retryablehttp.NewClient()
+			vaultClient = vault.NewVaultClient(vaultConf, &logger, retryClient)
 			token, err = vaultClient.GetToken()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(token).To(Equal(TestToken))
