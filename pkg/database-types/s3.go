@@ -6,12 +6,9 @@ package databasetypes
 import (
 	"errors"
 	"fmt"
-	"net/http"
 	"reflect"
 	"strings"
 
-	fybrikTLS "fybrik.io/fybrik/pkg/tls"
-	"github.com/hashicorp/go-retryablehttp"
 	"github.com/rs/zerolog"
 
 	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
@@ -44,19 +41,7 @@ func NewS3(vaultClientConfiguration map[interface{}]interface{}, logger *zerolog
 
 func (s *s3) getS3Credentials(vaultClientConfiguration map[interface{}]interface{},
 	credentialsPath *string) (string, string, error) {
-	retryClient := retryablehttp.NewClient()
-
-	config, err := fybrikTLS.GetClientTLSConfig(s.logger)
-	if err != nil {
-		s.logger.Error().Err(err)
-		return EmptyString, EmptyString, err
-	}
-	if config != nil {
-		s.logger.Info().Msg("Set TLS config for opa connector as a client")
-		retryClient.HTTPClient.Transport = &http.Transport{TLSClientConfig: config}
-	}
-
-	client := vault.NewVaultClient(vaultClientConfiguration, s.logger, retryClient)
+	client := vault.NewVaultClient(vaultClientConfiguration, s.logger, utils.HTTPClient)
 	token, err := client.GetToken()
 	if err != nil {
 		s.logger.Warn().Msg(GetTokenFailed)

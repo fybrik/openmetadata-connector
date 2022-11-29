@@ -9,13 +9,13 @@ import (
 
 	"fybrik.io/fybrik/pkg/logging"
 	"github.com/fatih/structs"
-	"github.com/hashicorp/go-retryablehttp"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/rs/zerolog"
 
 	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
 	api "fybrik.io/openmetadata-connector/datacatalog-go/go"
+	"fybrik.io/openmetadata-connector/pkg/utils"
 	"fybrik.io/openmetadata-connector/pkg/vault"
 )
 
@@ -28,6 +28,7 @@ var _ = Describe("Vault and OM connector", Ordered, func() {
 	var logger zerolog.Logger
 	var err error
 	var n int
+	utils.InitHTTPClient(&logger)
 	BeforeEach(func() {
 		logger = logging.LogInit(logging.CONNECTOR, "OpenMetadata Connector Tests")
 		logger.Trace().Msg("Setting up OM Connector test suite")
@@ -57,8 +58,7 @@ var _ = Describe("Vault and OM connector", Ordered, func() {
 		var accessKey string
 		var secretKey string
 		It("should receive a valid token", func() {
-			retryClient := retryablehttp.NewClient()
-			vaultClient = vault.NewVaultClient(vaultConf, &logger, retryClient)
+			vaultClient = vault.NewVaultClient(vaultConf, &logger, utils.HTTPClient)
 			token, err = vaultClient.GetToken()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(token).To(Equal(TestToken))

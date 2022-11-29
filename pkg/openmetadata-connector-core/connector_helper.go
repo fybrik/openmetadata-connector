@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"strings"
 
-	fybrikUtils "fybrik.io/fybrik/pkg/connectors/utils"
 	"github.com/rs/zerolog"
 
 	client "fybrik.io/openmetadata-connector/datacatalog-go-client"
@@ -321,7 +320,7 @@ func getOpenMetadataClient(ctx context.Context, endpoint, user, password string,
 			URL:         endpoint,
 			Description: "Endpoint URL",
 		}},
-		HTTPClient: fybrikUtils.GetHTTPClient(logger),
+		HTTPClient: utils.HTTPClient,
 	}
 
 	c := client.NewAPIClient(&conf)

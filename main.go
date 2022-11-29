@@ -88,6 +88,9 @@ func RunCmd() *cobra.Command {
 			DefaultAPIService := occ.NewOpenMetadataAPIService(conf, customization, &logger)
 			DefaultAPIController := occ.NewOpenMetadataAPIController(DefaultAPIService)
 
+			// Init the http client which is used to communicate with Vault and Openmetadata servers.
+			utils.InitHTTPClient(&logger)
+
 			router := api.NewRouter(DefaultAPIController)
 			if fybrikEnv.IsUsingTLS() {
 				tlsConfig, err := fybrikTLS.GetServerConfig(&logger)
