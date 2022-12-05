@@ -35,8 +35,6 @@ const (
 	ParseCustomizationFileFailed          = "parseCustomizationFile() failed. Exiting"
 )
 
-const ReadHeaderTimeout = 3
-
 func parseCustomizationFile(customizationFile string, logger *zerolog.Logger) (map[string]interface{}, error) {
 	customizationFileBytes, err := os.ReadFile(customizationFile)
 	if err != nil {
@@ -99,11 +97,10 @@ func RunCmd() *cobra.Command {
 					return
 				}
 				server := http.Server{Addr: ":" + strconv.Itoa(DefaultAPIService.Port), Handler: router, TLSConfig: tlsConfig,
-					ReadHeaderTimeout: ReadHeaderTimeout}
+					ReadHeaderTimeout: occ.ReadHeaderTimeout}
 				err = server.ListenAndServeTLS("", "")
 				if err != nil {
 					logger.Error().Err(err).Msg("function ListenAndServeTLS returns error")
-					return
 				}
 				return
 			}
