@@ -7,14 +7,26 @@ import (
 	"crypto/rand"
 	"fmt"
 	"math/big"
+	"net/http"
 	"os"
 	"strings"
 
+	fybrikUtils "fybrik.io/fybrik/pkg/connectors/utils"
 	"github.com/rs/zerolog"
 
 	client "fybrik.io/openmetadata-connector/datacatalog-go-client"
 	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
 )
+
+// HTTPClient is used to communicate with Vault and Openmetadata servers.
+// The client is safe for concurrent use by multiple goroutines and
+// for efficiency is created only once and re-used.
+var HTTPClient *http.Client
+
+/* Init the http client which is used to communicate with Vault and Openmetadata servers.  */
+func InitHTTPClient(log *zerolog.Logger) {
+	HTTPClient = fybrikUtils.GetHTTPClient(log)
+}
 
 const EmptyString = ""
 

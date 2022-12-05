@@ -38,6 +38,7 @@ const Op = "op"
 const Owner = "owner"
 const Path = "path"
 const RandomStringLength = 5
+const ReadHeaderTimeout = 3
 const S3 = "s3"
 const String = "string"
 const SucceededInCreatingDatabaseService = "Succeeded in creating Database Service: "

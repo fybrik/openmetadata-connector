@@ -319,9 +319,10 @@ func getOpenMetadataClient(ctx context.Context, endpoint, user, password string,
 		client.ServerConfiguration{
 			URL:         endpoint,
 			Description: "Endpoint URL",
-		},
-	},
+		}},
+		HTTPClient: utils.HTTPClient,
 	}
+
 	c := client.NewAPIClient(&conf)
 	tokenStruct, r, err := c.UsersApi.LoginUserWithPwd(ctx).
 		LoginRequest(*client.NewLoginRequest(user, password)).Execute()

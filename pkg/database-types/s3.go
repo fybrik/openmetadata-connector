@@ -41,7 +41,7 @@ func NewS3(vaultClientConfiguration map[interface{}]interface{}, logger *zerolog
 
 func (s *s3) getS3Credentials(vaultClientConfiguration map[interface{}]interface{},
 	credentialsPath *string) (string, string, error) {
-	client := vault.NewVaultClient(vaultClientConfiguration, s.logger)
+	client := vault.NewVaultClient(vaultClientConfiguration, s.logger, utils.HTTPClient)
 	token, err := client.GetToken()
 	if err != nil {
 		s.logger.Warn().Msg(GetTokenFailed)

@@ -9,7 +9,9 @@ import (
 	"os"
 	"strconv"
 
+	fybrikEnv "fybrik.io/fybrik/pkg/environment"
 	"fybrik.io/fybrik/pkg/logging"
+	fybrikTLS "fybrik.io/fybrik/pkg/tls"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
@@ -84,7 +86,24 @@ func RunCmd() *cobra.Command {
 			DefaultAPIService := occ.NewOpenMetadataAPIService(conf, customization, &logger)
 			DefaultAPIController := occ.NewOpenMetadataAPIController(DefaultAPIService)
 
+			// Init the http client which is used to communicate with Vault and Openmetadata servers.
+			utils.InitHTTPClient(&logger)
+
 			router := api.NewRouter(DefaultAPIController)
+			if fybrikEnv.IsUsingTLS() {
+				tlsConfig, err := fybrikTLS.GetServerConfig(&logger)
+				if err != nil {
+					logger.Error().Msg("failed to get tls config")
+					return
+				}
+				server := http.Server{Addr: ":" + strconv.Itoa(DefaultAPIService.Port), Handler: router, TLSConfig: tlsConfig,
+					ReadHeaderTimeout: occ.ReadHeaderTimeout}
+				err = server.ListenAndServeTLS("", "")
+				if err != nil {
+					logger.Error().Err(err).Msg("function ListenAndServeTLS returns error")
+				}
+				return
+			}
 
 			logger.Info().Msg("Server is starting")
 			http.ListenAndServe(":"+strconv.Itoa(DefaultAPIService.Port), router) //nolint
