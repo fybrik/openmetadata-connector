@@ -102,7 +102,7 @@ func RunCmd() *cobra.Command {
 					ReadHeaderTimeout: ReadHeaderTimeout}
 				err = server.ListenAndServeTLS("", "")
 				if err != nil {
-					logger.Error().Err(err).Msg(err.Error())
+					logger.Error().Err(err).Msg("function ListenAndServeTLS returns error")
 					return
 				}
 				return
