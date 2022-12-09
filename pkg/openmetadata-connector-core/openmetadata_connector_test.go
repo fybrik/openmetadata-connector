@@ -105,8 +105,13 @@ var _ = Describe("Vault and OM connector", Ordered, func() {
 			expectedMap := structs.Map(getAssetResponse)
 			Expect(responseMap).To(Equal(expectedMap))
 		})
-		It("should create an asset and receive a valid response", func() {
+		It("should create an asset with no columns specified and receive a valid response", func() {
 			clearMockDataCatalog()
+			// remove columns from createAssetRequest
+			createAssetRequest.ResourceMetadata.Columns =
+				createAssetRequest.ResourceMetadata.Columns[:0]
+			getAssetResponse.ResourceMetadata.Columns =
+				[]models.ResourceColumn{{Name: "fake_column"}}
 			response, err = servicer.CreateAsset(ctx, TestConnectorCredentials, createAssetRequest)
 			Expect(err).ToNot(HaveOccurred())
 			assetID = fmt.Sprintf("%s.%s.%s.%s", TestDatabaseService, TestDatabase, TestBucket, TestObjectName)
