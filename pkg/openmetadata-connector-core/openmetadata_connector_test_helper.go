@@ -439,3 +439,9 @@ func createMockOMServer() *httptest.Server {
 
 	return svr
 }
+
+func clearMockDataCatalog() {
+	for k := range mockDataCatalog {
+		delete(mockDataCatalog, k)
+	}
+}
