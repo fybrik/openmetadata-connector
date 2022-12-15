@@ -532,7 +532,7 @@ func (s *OpenMetadataAPIService) createTable(ctx context.Context,
 	tableName string,
 	columns []client.Column) (*client.Table, error) {
 	if len(columns) == 0 {
-		columns = append(columns, *client.NewColumn("STRING", "fake_column"))
+		columns = make([]client.Column, 0)
 	}
 	createTable := client.NewCreateTable(columns,
 		*client.NewEntityReference(databaseSchemaID, "databaseSchema"),
