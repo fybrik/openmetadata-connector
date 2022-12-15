@@ -111,7 +111,7 @@ var _ = Describe("Vault and OM connector", Ordered, func() {
 			createAssetRequest.ResourceMetadata.Columns =
 				createAssetRequest.ResourceMetadata.Columns[:0]
 			getAssetResponse.ResourceMetadata.Columns =
-				[]models.ResourceColumn{{Name: "fake_column"}}
+				getAssetResponse.ResourceMetadata.Columns[:0]
 			response, err = servicer.CreateAsset(ctx, TestConnectorCredentials, createAssetRequest)
 			Expect(err).ToNot(HaveOccurred())
 			assetID = fmt.Sprintf("%s.%s.%s.%s", TestDatabaseService, TestDatabase, TestBucket, TestObjectName)
