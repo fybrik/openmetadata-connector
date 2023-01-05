@@ -287,12 +287,14 @@ func NewOpenMetadataAPIService(conf map[string]interface{}, customization map[st
 		MysqlLowercase: dbtypes.NewMysql(logger),
 		S3:             dbtypes.NewS3(vaultConf, logger),
 		Generic:        dbtypes.NewGeneric(logger),
+		TrinoLowercase: dbtypes.NewTrino(logger),
 	}
 
 	serviceTypeToConnectionType := map[string]string{
 		dbtypes.Datalake:       S3,
 		dbtypes.Mysql:          MysqlLowercase,
 		dbtypes.CustomDatabase: Generic,
+		dbtypes.Trino:          TrinoLowercase,
 	}
 
 	s := &OpenMetadataAPIService{Endpoint: conf["openmetadata_endpoint"].(string),
