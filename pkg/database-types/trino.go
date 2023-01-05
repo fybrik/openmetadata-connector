@@ -1,7 +1,7 @@
 // Copyright 2022 IBM Corp.
 // SPDX-License-Identifier: Apache-2.0
 
-package databasetypes //nolint:dupl
+package databasetypes
 
 import (
 	"fmt"
@@ -15,18 +15,10 @@ import (
 
 type trino struct {
 	dataBase
-	standardFields map[string]bool
 }
 
 func NewTrino(logger *zerolog.Logger) *trino {
-	standardFields := map[string]bool{
-		DatabaseSchema: true,
-		HostPort:       true,
-		Password:       true,
-		Scheme:         true,
-		Username:       true,
-	}
-	return &trino{standardFields: standardFields, dataBase: dataBase{name: Trino, logger: logger}}
+	return &trino{dataBase: dataBase{name: Trino, logger: logger}}
 }
 
 func (t *trino) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interface{},
@@ -36,18 +28,7 @@ func (t *trino) TranslateFybrikConfigToOpenMetadataConfig(config map[string]inte
 
 func (t *trino) TranslateOpenMetadataConfigToFybrikConfig(tableName string,
 	config map[string]interface{}) (map[string]interface{}, string, error) {
-	other := make(map[string]interface{})
-	ret := make(map[string]interface{})
-	for key, value := range config {
-		if _, ok := t.standardFields[key]; ok {
-			ret[key] = value
-		} else {
-			other[key] = value
-		}
-	}
-
-	ret[Other] = other
-	return ret, Trino, nil
+	return config, Trino, nil
 }
 
 func (t *trino) TableFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) (string, error) {
