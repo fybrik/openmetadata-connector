@@ -97,5 +97,5 @@ test:
 check:
 	go fmt ./...
 	go vet ./...
-	go mod tidy -compat=1.17
+	go mod tidy
 	docker run --rm -v ${PWD}:/app -w /app golangci/golangci-lint:v1.50.0 golangci-lint run

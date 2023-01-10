@@ -1,6 +1,6 @@
 module fybrik.io/openmetadata-connector
 
-go 1.17
+go 1.18
 
 require (
 	fybrik.io/fybrik v1.1.0
