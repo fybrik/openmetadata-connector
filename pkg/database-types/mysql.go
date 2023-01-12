@@ -4,7 +4,6 @@
 package databasetypes
 
 import (
-	"fmt"
 	"reflect"
 
 	"github.com/rs/zerolog"
@@ -50,19 +49,6 @@ func (m *mysql) TranslateOpenMetadataConfigToFybrikConfig(tableName string,
 	return ret, Mysql, nil
 }
 
-func (m *mysql) TableFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) (string, error) {
-	connectionProperties, ok := utils.InterfaceToMap(createAssetRequest.Details.GetConnection().AdditionalProperties["mysql"], m.logger)
-	if !ok {
-		return EmptyString, fmt.Errorf(FailedToConvert, AdditionalProperties)
-	}
-	assetName := *createAssetRequest.DestinationAssetID
-	databaseSchema, found := connectionProperties[DatabaseSchema]
-	if found {
-		return fmt.Sprintf("%s.%s.%s.%s", serviceName, Default, databaseSchema.(string), assetName), nil
-	}
-	return fmt.Sprintf("%s.%s.%s", serviceName, Default, assetName), nil
-}
-
 func (m *mysql) EquivalentServiceConfigurations(requestConfig, serviceConfig map[string]interface{}) bool {
 	for property, value := range requestConfig {
 		if !reflect.DeepEqual(serviceConfig[property], value) {
@@ -77,17 +63,34 @@ func (m *mysql) DatabaseName(createAssetRequest *models.CreateAssetRequest) stri
 }
 
 func (m *mysql) DatabaseFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) string {
-	return EmptyString
+	return utils.AppendStrings(serviceName, m.DatabaseName(createAssetRequest))
 }
 
 func (m *mysql) DatabaseSchemaName(createAssetRequest *models.CreateAssetRequest) string {
+	connectionProperties, ok := utils.InterfaceToMap(createAssetRequest.Details.GetConnection().AdditionalProperties["mysql"], m.logger)
+	if !ok {
+		return EmptyString
+	}
+	databaseSchema, found := connectionProperties[DatabaseSchema]
+	if found {
+		return databaseSchema.(string)
+	}
 	return EmptyString
 }
 
 func (m *mysql) DatabaseSchemaFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) string {
-	return EmptyString
+	return utils.AppendStrings(m.DatabaseFQN(serviceName, createAssetRequest),
+		m.DatabaseSchemaName(createAssetRequest))
 }
 
 func (m *mysql) TableName(createAssetRequest *models.CreateAssetRequest) (string, error) {
-	return EmptyString, nil
+	return *createAssetRequest.DestinationAssetID, nil
+}
+
+func (m *mysql) TableFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) (string, error) {
+	tableName, err := m.TableName(createAssetRequest)
+	if err != nil {
+		return EmptyString, err
+	}
+	return utils.AppendStrings(m.DatabaseSchemaFQN(serviceName, createAssetRequest), tableName), nil
 }
