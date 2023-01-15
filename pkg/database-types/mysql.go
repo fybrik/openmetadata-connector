@@ -13,7 +13,6 @@ import (
 
 type mysql struct {
 	dataBase
-	databaseTypeParent
 	standardFields map[string]bool
 }
 

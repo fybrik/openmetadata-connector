@@ -16,7 +16,6 @@ import (
 
 type generic struct {
 	dataBase
-	databaseTypeParent
 }
 
 func NewGeneric(logger *zerolog.Logger) *generic {

@@ -18,7 +18,6 @@ import (
 
 type s3 struct {
 	dataBase
-	databaseTypeParent
 	vaultClientConfiguration map[interface{}]interface{}
 }
 
