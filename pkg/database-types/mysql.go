@@ -4,17 +4,16 @@
 package databasetypes
 
 import (
-	"fmt"
 	"reflect"
 
 	"github.com/rs/zerolog"
 
 	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
-	"fybrik.io/openmetadata-connector/pkg/utils"
 )
 
 type mysql struct {
 	dataBase
+	databaseTypeParent
 	standardFields map[string]bool
 }
 
@@ -50,19 +49,6 @@ func (m *mysql) TranslateOpenMetadataConfigToFybrikConfig(tableName string,
 	return ret, Mysql, nil
 }
 
-func (m *mysql) TableFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) (string, error) {
-	connectionProperties, ok := utils.InterfaceToMap(createAssetRequest.Details.GetConnection().AdditionalProperties["mysql"], m.logger)
-	if !ok {
-		return EmptyString, fmt.Errorf(FailedToConvert, AdditionalProperties)
-	}
-	assetName := *createAssetRequest.DestinationAssetID
-	databaseSchema, found := connectionProperties[DatabaseSchema]
-	if found {
-		return fmt.Sprintf("%s.%s.%s.%s", serviceName, Default, databaseSchema.(string), assetName), nil
-	}
-	return fmt.Sprintf("%s.%s.%s", serviceName, Default, assetName), nil
-}
-
 func (m *mysql) EquivalentServiceConfigurations(requestConfig, serviceConfig map[string]interface{}) bool {
 	for property, value := range requestConfig {
 		if !reflect.DeepEqual(serviceConfig[property], value) {
@@ -76,15 +62,7 @@ func (m *mysql) DatabaseName(createAssetRequest *models.CreateAssetRequest) stri
 	return Default
 }
 
-func (m *mysql) DatabaseFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) string {
-	return EmptyString
-}
-
 func (m *mysql) DatabaseSchemaName(createAssetRequest *models.CreateAssetRequest) string {
-	return EmptyString
-}
-
-func (m *mysql) DatabaseSchemaFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) string {
 	return EmptyString
 }
 

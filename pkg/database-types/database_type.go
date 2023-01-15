@@ -7,6 +7,7 @@ import (
 	zerolog "github.com/rs/zerolog"
 
 	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
+	"fybrik.io/openmetadata-connector/pkg/utils"
 )
 
 type DatabaseType interface {
@@ -62,4 +63,25 @@ type dataBase struct {
 
 func (db dataBase) OMTypeName() string {
 	return db.name
+}
+
+type databaseTypeParent struct {
+	DatabaseType
+}
+
+func (p *databaseTypeParent) DatabaseFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) string {
+	return utils.AppendStrings(serviceName, p.DatabaseName(createAssetRequest))
+}
+
+func (p *databaseTypeParent) DatabaseSchemaFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) string {
+	return utils.AppendStrings(p.DatabaseFQN(serviceName, createAssetRequest),
+		p.DatabaseSchemaName(createAssetRequest))
+}
+
+func (p *databaseTypeParent) TableFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) (string, error) {
+	tableName, err := p.TableName(createAssetRequest)
+	if err != nil {
+		return EmptyString, err
+	}
+	return utils.AppendStrings(p.DatabaseSchemaFQN(serviceName, createAssetRequest), tableName), nil
 }

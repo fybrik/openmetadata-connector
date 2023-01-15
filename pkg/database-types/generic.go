@@ -16,6 +16,7 @@ import (
 
 type generic struct {
 	dataBase
+	databaseTypeParent
 }
 
 func NewGeneric(logger *zerolog.Logger) *generic {
@@ -74,29 +75,12 @@ func (m *generic) TranslateOpenMetadataConfigToFybrikConfig(tableName string,
 	return ret, connectionType, nil
 }
 
-func (m *generic) TableFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) (string, error) {
-	tableName, err := m.TableName(createAssetRequest)
-	if err != nil {
-		return EmptyString, err
-	}
-	return utils.AppendStrings(m.DatabaseSchemaFQN(serviceName, createAssetRequest), tableName), nil
-}
-
 func (m *generic) EquivalentServiceConfigurations(requestConfig, serviceConfig map[string]interface{}) bool {
 	return reflect.DeepEqual(requestConfig, serviceConfig)
 }
 
 func (m *generic) DatabaseName(createAssetRequest *models.CreateAssetRequest) string {
 	return Default
-}
-
-func (m *generic) DatabaseFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) string {
-	return utils.AppendStrings(serviceName, m.DatabaseName(createAssetRequest))
-}
-
-func (m *generic) DatabaseSchemaFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) string {
-	return utils.AppendStrings(m.DatabaseFQN(serviceName, createAssetRequest),
-		m.DatabaseSchemaName(createAssetRequest))
 }
 
 func (m *generic) DatabaseSchemaName(createAssetRequest *models.CreateAssetRequest) string {
