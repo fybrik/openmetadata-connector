@@ -46,7 +46,7 @@ func (m *mysql) TranslateOpenMetadataConfigToFybrikConfig(tableName string,
 	}
 
 	ret[Other] = other
-	return ret, Mysql, nil
+	return ret, MysqlLowercase, nil
 }
 
 func (m *mysql) EquivalentServiceConfigurations(requestConfig, serviceConfig map[string]interface{}) bool {
@@ -67,7 +67,7 @@ func (m *mysql) DatabaseFQN(serviceName string, createAssetRequest *models.Creat
 }
 
 func (m *mysql) DatabaseSchemaName(createAssetRequest *models.CreateAssetRequest) string {
-	connectionProperties, ok := utils.InterfaceToMap(createAssetRequest.Details.GetConnection().AdditionalProperties["mysql"], m.logger)
+	connectionProperties, ok := utils.InterfaceToMap(createAssetRequest.Details.GetConnection().AdditionalProperties[MysqlLowercase], m.logger)
 	if !ok {
 		return EmptyString
 	}
