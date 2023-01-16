@@ -7,6 +7,7 @@ import (
 	zerolog "github.com/rs/zerolog"
 
 	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
+	"fybrik.io/openmetadata-connector/pkg/utils"
 )
 
 type DatabaseType interface {
@@ -37,22 +38,11 @@ type DatabaseType interface {
 	// DatabaseName returns the name of the asset Database, e.g. 'default'
 	DatabaseName(createAssetRequest *models.CreateAssetRequest) string
 
-	// DatabaseFQN returns the Fully Qualified Name of the asset Database, e.g. 'openmetadata-s3.default'
-	DatabaseFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) string
-
 	// DatabaseSchemaName returns the name of the asset DatabaseSchema, e.g. 'fake-csv-bucket'
 	DatabaseSchemaName(createAssetRequest *models.CreateAssetRequest) string
 
-	// DatabaseSchemaFQN returns the Fully Qualified Name of the asset DatabaseSchema,
-	// e.g. 'openmetadata-s3.default.fake-csv-bucket'
-	DatabaseSchemaFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) string
-
 	// TableName returns the name of the asset Table, e.g. '"fake.csv"'
 	TableName(createAssetRequest *models.CreateAssetRequest) (string, error)
-
-	// TableFQN returns the Fully Qualified Name of the asset DatabaseSchema,
-	// e.g. 'openmetadata-s3.default.fake-csv-bucket."fake.csv"'
-	TableFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) (string, error)
 }
 
 type dataBase struct {
@@ -62,4 +52,26 @@ type dataBase struct {
 
 func (db dataBase) OMTypeName() string {
 	return db.name
+}
+
+// DatabaseFQN returns the Fully Qualified Name of the asset Database, e.g. 'openmetadata-s3.default'
+func DatabaseFQN(p DatabaseType, serviceName string, createAssetRequest *models.CreateAssetRequest) string {
+	return utils.AppendStrings(serviceName, p.DatabaseName(createAssetRequest))
+}
+
+// DatabaseSchemaFQN returns the Fully Qualified Name of the asset DatabaseSchema,
+// e.g. 'openmetadata-s3.default.fake-csv-bucket'
+func DatabaseSchemaFQN(p DatabaseType, serviceName string, createAssetRequest *models.CreateAssetRequest) string {
+	return utils.AppendStrings(DatabaseFQN(p, serviceName, createAssetRequest),
+		p.DatabaseSchemaName(createAssetRequest))
+}
+
+// TableFQN returns the Fully Qualified Name of the asset DatabaseSchema,
+// e.g. 'openmetadata-s3.default.fake-csv-bucket."fake.csv"'
+func TableFQN(p DatabaseType, serviceName string, createAssetRequest *models.CreateAssetRequest) (string, error) {
+	tableName, err := p.TableName(createAssetRequest)
+	if err != nil {
+		return EmptyString, err
+	}
+	return utils.AppendStrings(DatabaseSchemaFQN(p, serviceName, createAssetRequest), tableName), nil
 }

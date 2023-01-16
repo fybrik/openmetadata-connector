@@ -171,10 +171,6 @@ func (s *s3) DatabaseName(createAssetRequest *models.CreateAssetRequest) string 
 	return Default
 }
 
-func (s *s3) DatabaseFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) string {
-	return utils.AppendStrings(serviceName, s.DatabaseName(createAssetRequest))
-}
-
 func (s *s3) DatabaseSchemaName(createAssetRequest *models.CreateAssetRequest) string {
 	connectionProperties, ok := utils.InterfaceToMap(createAssetRequest.Details.GetConnection().
 		AdditionalProperties[S3], s.logger)
@@ -197,11 +193,6 @@ func (s *s3) DatabaseSchemaName(createAssetRequest *models.CreateAssetRequest) s
 	return EmptyString
 }
 
-func (s *s3) DatabaseSchemaFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) string {
-	return utils.AppendStrings(s.DatabaseFQN(serviceName, createAssetRequest),
-		s.DatabaseSchemaName(createAssetRequest))
-}
-
 func (s *s3) TableName(createAssetRequest *models.CreateAssetRequest) (string, error) {
 	connectionProperties, ok := utils.InterfaceToMap(createAssetRequest.Details.GetConnection().AdditionalProperties[S3], s.logger)
 	if !ok {
@@ -213,12 +204,4 @@ func (s *s3) TableName(createAssetRequest *models.CreateAssetRequest) (string, e
 	}
 	split := strings.Split(*createAssetRequest.DestinationAssetID, ".")
 	return split[len(split)-1], nil
-}
-
-func (s *s3) TableFQN(serviceName string, createAssetRequest *models.CreateAssetRequest) (string, error) {
-	tableName, err := s.TableName(createAssetRequest)
-	if err != nil {
-		return EmptyString, err
-	}
-	return utils.AppendStrings(s.DatabaseSchemaFQN(serviceName, createAssetRequest), tableName), nil
 }

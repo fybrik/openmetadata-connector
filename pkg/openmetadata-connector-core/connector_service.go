@@ -83,7 +83,7 @@ func (s *OpenMetadataAPIService) CreateAsset(ctx context.Context, //nolint
 	}
 
 	// now that we know the of the database service, we can determine the asset name in OpenMetadata
-	assetID, err := dt.TableFQN(databaseServiceName, createAssetRequest)
+	assetID, err := dbtypes.TableFQN(dt, databaseServiceName, createAssetRequest)
 	if err != nil {
 		s.logger.Error().Err(err).Msg("cannot determine table FQN")
 		return api.Response(http.StatusBadRequest, nil), err
@@ -114,14 +114,14 @@ func (s *OpenMetadataAPIService) CreateAsset(ctx context.Context, //nolint
 		}
 	}
 	databaseID, err := s.findOrCreateDatabase(ctx, c, databaseServiceID,
-		dt.DatabaseFQN(databaseServiceName, createAssetRequest),
+		dbtypes.DatabaseFQN(dt, databaseServiceName, createAssetRequest),
 		dt.DatabaseName(createAssetRequest))
 	if err != nil {
 		return api.Response(http.StatusBadRequest, nil), err
 	}
 
 	databaseSchemaID, _ := s.findOrCreateDatabaseSchema(ctx, c, databaseID,
-		dt.DatabaseSchemaFQN(databaseServiceName, createAssetRequest),
+		dbtypes.DatabaseSchemaFQN(dt, databaseServiceName, createAssetRequest),
 		dt.DatabaseSchemaName(createAssetRequest))
 
 	columns := utils.ExtractColumns(createAssetRequest.ResourceMetadata.Columns)
