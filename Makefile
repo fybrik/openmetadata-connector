@@ -8,7 +8,7 @@ GIT_REPO_ID_MODELS := datacatalog-go-models
 GIT_REPO_ID_CLIENT := datacatalog-go-client
 
 AUTO_GENERATED = auto-generated
-FYBRIK_VERSION ?= v1.0.1
+FYBRIK_VERSION ?= v1.2.1
 
 DOCKER_HOSTNAME ?= ghcr.io
 DOCKER_NAMESPACE ?= fybrik
@@ -97,5 +97,5 @@ test:
 check:
 	go fmt ./...
 	go vet ./...
-	go mod tidy -compat=1.17
+	go mod tidy -compat=1.19
 	docker run --rm -v ${PWD}:/app -w /app golangci/golangci-lint:v1.50.1 golangci-lint run
