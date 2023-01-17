@@ -11,7 +11,7 @@ env:
   DOCKER_HOSTNAME: ghcr.io
   DOCKER_NAMESPACE: fybrik 
   DOCKER_USERNAME: ${{ github.actor }}
-  GO_VERSION: 1.17
+  GO_VERSION: 1.19
 
 jobs:
   build:
