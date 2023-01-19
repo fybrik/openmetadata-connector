@@ -26,9 +26,14 @@ type VaultClient struct {
 	httpClient   *http.Client
 }
 
-const ROLE = "role"
-const JWT = "jwt"
+const Data = "data"
 const EmptyString = ""
+const FailedToExtractCredentialsFromVaultSecret = "failed to extract credentials from Vault secret"
+const GetSecretFailed = "getSecret failed"
+const GetTokenFailed = "getToken failed"
+const JWT = "jwt"
+const MalformedSecretResponseFromVault = "malformed secret response from vault"
+const ROLE = "role"
 
 func getFullAuthPath(authPath string) string {
 	if authPath == EmptyString {
@@ -67,7 +72,7 @@ func GetFullSecretPath(pluginPrefix, secret string) string {
 	return fmt.Sprintf("/v1/%s/%s", pluginPrefix, secret)
 }
 
-func (v *VaultClient) GetToken() (string, error) {
+func (v *VaultClient) getToken() (string, error) {
 	// read JWT file. JWT is used to authenticate against Vault
 	jwt, err := os.ReadFile(v.jwtFilePath)
 	if err != nil {
@@ -118,7 +123,7 @@ func (v *VaultClient) GetToken() (string, error) {
 	return EmptyString, errors.New(MalformedVaultResposeMessage)
 }
 
-func (v *VaultClient) GetSecret(token, secretPath string) ([]byte, error) {
+func (v *VaultClient) getSecret(token, secretPath string) ([]byte, error) {
 	req, err := http.NewRequestWithContext(context.Background(), "GET", v.address+secretPath, http.NoBody)
 	if err != nil {
 		v.logger.Error().Msg("Failed to prepare Vault secret request")
@@ -143,22 +148,28 @@ func (v *VaultClient) GetSecret(token, secretPath string) ([]byte, error) {
 	return responseBody, nil
 }
 
-const MalformedSecretResponseFromVault = "malformed secret response from vault"
-const FailedToExtractS3CredentialsFromVaultSecret = "failed to extract S3 credentials from Vault secret"
-
-func (v *VaultClient) ExtractS3CredentialsFromSecret(secret []byte) (string, string, error) {
-	secretMap := make(map[string]interface{})
-	err := json.Unmarshal(secret, &secretMap)
+func (v *VaultClient) GetSecretMap(credentialsPath *string) (map[string]interface{}, error) {
+	token, err := v.getToken()
 	if err != nil {
-		v.logger.Error().Msg(MalformedSecretResponseFromVault)
-		return EmptyString, EmptyString, errors.New(MalformedSecretResponseFromVault)
+		v.logger.Warn().Msg(GetTokenFailed)
+		return nil, errors.New(GetTokenFailed)
+	}
+	secret, err := v.getSecret(token, *credentialsPath)
+	if err != nil {
+		v.logger.Warn().Msg(GetSecretFailed)
+		return nil, errors.New(GetSecretFailed)
 	}
 
-	if value, ok := secretMap["data"]; ok {
-		data := value.(map[string]interface{})
-		v.logger.Info().Msg("Successfully extracted S3 credentials from Vault secret")
-		return data["access_key"].(string), data["secret_key"].(string), nil
+	secretMap := make(map[string]interface{})
+	err = json.Unmarshal(secret, &secretMap)
+	if err != nil {
+		v.logger.Error().Err(err).Msg(MalformedSecretResponseFromVault)
 	}
-	v.logger.Error().Msg(FailedToExtractS3CredentialsFromVaultSecret)
-	return EmptyString, EmptyString, errors.New(FailedToExtractS3CredentialsFromVaultSecret)
+	if value, ok := secretMap[Data]; ok {
+		data := value.(map[string]interface{})
+		v.logger.Info().Msg("Successfully extracted credentials from Vault secret")
+		return data, nil
+	}
+	v.logger.Error().Msg(FailedToExtractCredentialsFromVaultSecret)
+	return nil, errors.New(FailedToExtractCredentialsFromVaultSecret)
 }

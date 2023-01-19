@@ -10,14 +10,16 @@ import (
 
 	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
 	"fybrik.io/openmetadata-connector/pkg/utils"
+	"fybrik.io/openmetadata-connector/pkg/vault"
 )
 
 type mysql struct {
 	dataBase
-	standardFields map[string]bool
+	vaultClientConfiguration map[interface{}]interface{}
+	standardFields           map[string]bool
 }
 
-func NewMysql(logger *zerolog.Logger) *mysql {
+func NewMysql(vaultClientConfiguration map[interface{}]interface{}, logger *zerolog.Logger) *mysql {
 	standardFields := map[string]bool{
 		DatabaseSchema: true,
 		HostPort:       true,
@@ -25,11 +27,33 @@ func NewMysql(logger *zerolog.Logger) *mysql {
 		Scheme:         true,
 		Username:       true,
 	}
-	return &mysql{standardFields: standardFields, dataBase: dataBase{name: Mysql, logger: logger}}
+	return &mysql{
+		standardFields:           standardFields,
+		dataBase:                 dataBase{name: Mysql, logger: logger},
+		vaultClientConfiguration: vaultClientConfiguration,
+	}
+}
+
+func (m *mysql) getMySQLCredentials(vaultClientConfiguration map[interface{}]interface{},
+	credentialsPath *string) (string, string, error) {
+	client := vault.NewVaultClient(vaultClientConfiguration, m.logger, utils.HTTPClient)
+	secrets, err := client.GetSecretMap(credentialsPath)
+	if err != nil {
+		m.logger.Warn().Msg("MySQL credentials extraction failed")
+		return EmptyString, EmptyString, err
+	}
+	return secrets[Username].(string), secrets[Password].(string), nil
 }
 
 func (m *mysql) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interface{},
 	connectionType string, credentials *string) map[string]interface{} {
+	if m.vaultClientConfiguration != nil && credentials != nil {
+		username, password, err := m.getMySQLCredentials(m.vaultClientConfiguration, credentials)
+		if err == nil && username != EmptyString && password != EmptyString {
+			config[Username] = username
+			config[Password] = password
+		}
+	}
 	return config
 }
 

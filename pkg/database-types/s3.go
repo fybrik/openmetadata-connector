@@ -4,7 +4,6 @@
 package databasetypes
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -42,22 +41,12 @@ func NewS3(vaultClientConfiguration map[interface{}]interface{}, logger *zerolog
 func (s *s3) getS3Credentials(vaultClientConfiguration map[interface{}]interface{},
 	credentialsPath *string) (string, string, error) {
 	client := vault.NewVaultClient(vaultClientConfiguration, s.logger, utils.HTTPClient)
-	token, err := client.GetToken()
-	if err != nil {
-		s.logger.Warn().Msg(GetTokenFailed)
-		return EmptyString, EmptyString, errors.New(GetTokenFailed)
-	}
-	secret, err := client.GetSecret(token, *credentialsPath)
-	if err != nil {
-		s.logger.Warn().Msg(GetSecretFailed)
-		return EmptyString, EmptyString, errors.New(GetSecretFailed)
-	}
-	accessKey, secretKey, err := client.ExtractS3CredentialsFromSecret(secret)
+	secrets, err := client.GetSecretMap(credentialsPath)
 	if err != nil {
 		s.logger.Warn().Msg("S3 credentials extraction failed")
 		return EmptyString, EmptyString, err
 	}
-	return accessKey, secretKey, nil
+	return secrets["access_key"].(string), secrets["secret_key"].(string), nil
 }
 
 func (s *s3) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interface{},
