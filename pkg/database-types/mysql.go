@@ -47,7 +47,7 @@ func (m *mysql) TranslateOpenMetadataConfigToFybrikConfig(tableName string,
 
 	ret[Other] = other
 
-	// remote sensitive information
+	// remove sensitive information
 	delete(ret, Username)
 	delete(ret, Password)
 
