@@ -9,6 +9,7 @@ import (
 	"github.com/rs/zerolog"
 
 	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
+	"fybrik.io/openmetadata-connector/pkg/utils"
 )
 
 type mysql struct {
@@ -45,6 +46,11 @@ func (m *mysql) TranslateOpenMetadataConfigToFybrikConfig(tableName string,
 	}
 
 	ret[Other] = other
+
+	// remote sensitive information
+	delete(ret, Username)
+	delete(ret, Password)
+
 	return ret, Mysql, nil
 }
 
@@ -62,9 +68,17 @@ func (m *mysql) DatabaseName(createAssetRequest *models.CreateAssetRequest) stri
 }
 
 func (m *mysql) DatabaseSchemaName(createAssetRequest *models.CreateAssetRequest) string {
+	connectionProperties, ok := utils.InterfaceToMap(createAssetRequest.Details.GetConnection().AdditionalProperties[MysqlLowercase], m.logger)
+	if !ok {
+		return EmptyString
+	}
+	databaseSchema, found := connectionProperties[DatabaseSchema]
+	if found {
+		return databaseSchema.(string)
+	}
 	return EmptyString
 }
 
 func (m *mysql) TableName(createAssetRequest *models.CreateAssetRequest) (string, error) {
-	return EmptyString, nil
+	return *createAssetRequest.DestinationAssetID, nil
 }
