@@ -46,7 +46,7 @@ func (s *s3) getS3Credentials(vaultClientConfiguration map[interface{}]interface
 		s.logger.Warn().Msg("S3 credentials extraction failed")
 		return EmptyString, EmptyString, err
 	}
-	return secrets["access_key"].(string), secrets["secret_key"].(string), nil
+	return secrets[AccessKey].(string), secrets[SecretKey].(string), nil
 }
 
 func (s *s3) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interface{},

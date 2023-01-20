@@ -3,6 +3,7 @@
 
 package databasetypes
 
+const AccessKey = "access_key"
 const AccessKeyID = "access_key_id"
 const AdditionalProperties = "additional properties"
 const AwsAccessKeyID = "awsAccessKeyId"
@@ -32,6 +33,7 @@ const Region = "region"
 const S3 = "s3"
 const Scheme = "scheme"
 const SecretAccessID = "secret_access_id"
+const SecretKey = "secret_key"
 const SecurityConfig = "securityConfig"
 const Type = "type"
 const Username = "username"
