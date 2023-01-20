@@ -4,6 +4,7 @@
 package databasetypes
 
 import (
+	"fmt"
 	"reflect"
 
 	"github.com/rs/zerolog"
@@ -34,7 +35,7 @@ func NewMysql(vaultClientConfiguration map[interface{}]interface{}, logger *zero
 	}
 }
 
-func (m *mysql) getMySQLCredentials(vaultClientConfiguration map[interface{}]interface{},
+func (m *mysql) getMySQLCredentials(vaultClientConfiguration map[interface{}]interface{}, //nolint:dupl
 	credentialsPath *string) (string, string, error) {
 	client := vault.NewVaultClient(vaultClientConfiguration, m.logger, utils.HTTPClient)
 	secrets, err := client.GetSecretMap(credentialsPath)
@@ -42,7 +43,13 @@ func (m *mysql) getMySQLCredentials(vaultClientConfiguration map[interface{}]int
 		m.logger.Warn().Msg("MySQL credentials extraction failed")
 		return EmptyString, EmptyString, err
 	}
-	return secrets[Username].(string), secrets[Password].(string), nil
+	requiredFields := []string{Username, Password}
+	secretStrings := utils.InterfaceMapToStringMap(secrets, requiredFields)
+	if secretStrings == nil {
+		m.logger.Warn().Msg(fmt.Sprintf(SomeRequiredFieldsMissing, requiredFields))
+		return EmptyString, EmptyString, fmt.Errorf(SomeRequiredFieldsMissing, requiredFields)
+	}
+	return secretStrings[Username], secretStrings[Password], nil
 }
 
 func (m *mysql) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interface{},

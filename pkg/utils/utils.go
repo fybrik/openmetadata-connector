@@ -104,3 +104,21 @@ func GetEnvironmentVariables() (bool, string, string, string) {
 	}
 	return true, endpoint, user, password
 }
+
+func InterfaceMapToStringMap(input map[string]interface{}, fields []string) map[string]string {
+	output := make(map[string]string)
+	for _, field := range fields {
+		if value, found := input[field]; found {
+			valueStr, ok := value.(string)
+			if ok {
+				output[field] = valueStr
+			} else {
+				return nil
+			}
+		} else {
+			return nil
+		}
+	}
+
+	return output
+}

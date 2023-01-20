@@ -38,7 +38,7 @@ func NewS3(vaultClientConfiguration map[interface{}]interface{}, logger *zerolog
 		vaultClientConfiguration: vaultClientConfiguration}
 }
 
-func (s *s3) getS3Credentials(vaultClientConfiguration map[interface{}]interface{},
+func (s *s3) getS3Credentials(vaultClientConfiguration map[interface{}]interface{}, //nolint:dupl
 	credentialsPath *string) (string, string, error) {
 	client := vault.NewVaultClient(vaultClientConfiguration, s.logger, utils.HTTPClient)
 	secrets, err := client.GetSecretMap(credentialsPath)
@@ -46,7 +46,13 @@ func (s *s3) getS3Credentials(vaultClientConfiguration map[interface{}]interface
 		s.logger.Warn().Msg("S3 credentials extraction failed")
 		return EmptyString, EmptyString, err
 	}
-	return secrets[AccessKey].(string), secrets[SecretKey].(string), nil
+	requiredFields := []string{AccessKey, SecretKey}
+	secretStrings := utils.InterfaceMapToStringMap(secrets, requiredFields)
+	if secretStrings == nil {
+		s.logger.Warn().Msg(fmt.Sprintf(SomeRequiredFieldsMissing, requiredFields))
+		return EmptyString, EmptyString, fmt.Errorf(SomeRequiredFieldsMissing, requiredFields)
+	}
+	return secretStrings[AccessKey], secretStrings[SecretKey], nil
 }
 
 func (s *s3) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interface{},
