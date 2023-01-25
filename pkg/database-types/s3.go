@@ -38,7 +38,7 @@ func NewS3(vaultClientConfiguration map[interface{}]interface{}, logger *zerolog
 		vaultClientConfiguration: vaultClientConfiguration}
 }
 
-func (s *s3) getS3Credentials(vaultClientConfiguration map[interface{}]interface{}, //nolint:dupl
+func (s *s3) getCredentials(vaultClientConfiguration map[interface{}]interface{}, //nolint:dupl
 	credentialsPath *string) (string, string, error) {
 	client := vault.NewVaultClient(vaultClientConfiguration, s.logger, utils.HTTPClient)
 	secrets, err := client.GetSecretMap(credentialsPath)
@@ -75,7 +75,7 @@ func (s *s3) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interfa
 	}
 
 	if s.vaultClientConfiguration != nil && credentialsPath != nil {
-		awsAccessKeyID, awsSecretAccessKey, err := s.getS3Credentials(s.vaultClientConfiguration, credentialsPath)
+		awsAccessKeyID, awsSecretAccessKey, err := s.getCredentials(s.vaultClientConfiguration, credentialsPath)
 		if err == nil && awsAccessKeyID != EmptyString && awsSecretAccessKey != EmptyString {
 			securityMap[AwsAccessKeyID] = awsAccessKeyID
 			securityMap[AwsSecretAccessKey] = awsSecretAccessKey

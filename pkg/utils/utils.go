@@ -105,9 +105,12 @@ func GetEnvironmentVariables() (bool, string, string, string) {
 	return true, endpoint, user, password
 }
 
-func InterfaceMapToStringMap(input map[string]interface{}, fields []string) map[string]string {
+// Given `input` of type map[string]interface{}, returns a map[string]string with keys taken from
+// the `requiredFields` array. If any of the keys are missing, `nil` is returned. Also, it any
+// of the values are not of type `string`, `nil` is returned
+func InterfaceMapToStringMap(input map[string]interface{}, requiredFields []string) map[string]string {
 	output := make(map[string]string)
-	for _, field := range fields {
+	for _, field := range requiredFields {
 		if value, found := input[field]; found {
 			valueStr, ok := value.(string)
 			if ok {

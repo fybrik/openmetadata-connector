@@ -28,12 +28,13 @@ type VaultClient struct {
 
 const Data = "data"
 const EmptyString = ""
+const JWT = "jwt"
+const ROLE = "role"
+
 const FailedToExtractCredentialsFromVaultSecret = "failed to extract credentials from Vault secret"
 const GetSecretFailed = "getSecret failed"
 const GetTokenFailed = "getToken failed"
-const JWT = "jwt"
 const MalformedSecretResponseFromVault = "malformed secret response from vault"
-const ROLE = "role"
 
 func getFullAuthPath(authPath string) string {
 	if authPath == EmptyString {
