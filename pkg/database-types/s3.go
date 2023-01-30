@@ -47,7 +47,7 @@ func (s *s3) getCredentials(vaultClientConfiguration map[interface{}]interface{}
 		return EmptyString, EmptyString, err
 	}
 	requiredFields := []string{AccessKey, SecretKey}
-	secretStrings := utils.InterfaceMapToStringMap(secrets, requiredFields)
+	secretStrings := utils.InterfaceMapToStringMap(secrets, requiredFields, s.logger)
 	if secretStrings == nil {
 		s.logger.Warn().Msg(fmt.Sprintf(SomeRequiredFieldsMissing, requiredFields))
 		return EmptyString, EmptyString, fmt.Errorf(SomeRequiredFieldsMissing, requiredFields)

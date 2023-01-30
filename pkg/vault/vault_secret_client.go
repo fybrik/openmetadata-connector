@@ -150,6 +150,8 @@ func (v *VaultClient) getSecret(token, secretPath string) ([]byte, error) {
 }
 
 func (v *VaultClient) GetSecretMap(credentialsPath *string) (map[string]interface{}, error) {
+	// if we fail, we log Warn messages instead of Error messages, for scenarios where the connector
+	// is given all necessary credentials, and does not need credentials hidden in a secret.
 	token, err := v.getToken()
 	if err != nil {
 		v.logger.Warn().Msg(GetTokenFailed)
@@ -164,13 +166,13 @@ func (v *VaultClient) GetSecretMap(credentialsPath *string) (map[string]interfac
 	secretMap := make(map[string]interface{})
 	err = json.Unmarshal(secret, &secretMap)
 	if err != nil {
-		v.logger.Error().Err(err).Msg(MalformedSecretResponseFromVault)
+		v.logger.Warn().Err(err).Msg(MalformedSecretResponseFromVault)
 	}
 	if value, ok := secretMap[Data]; ok {
 		data := value.(map[string]interface{})
 		v.logger.Info().Msg("Successfully extracted credentials from Vault secret")
 		return data, nil
 	}
-	v.logger.Error().Msg(FailedToExtractCredentialsFromVaultSecret)
+	v.logger.Warn().Msg(FailedToExtractCredentialsFromVaultSecret)
 	return nil, errors.New(FailedToExtractCredentialsFromVaultSecret)
 }

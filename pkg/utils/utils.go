@@ -108,7 +108,7 @@ func GetEnvironmentVariables() (bool, string, string, string) {
 // Given `input` of type map[string]interface{}, returns a map[string]string with keys taken from
 // the `requiredFields` array. If any of the keys are missing, `nil` is returned. Also, it any
 // of the values are not of type `string`, `nil` is returned
-func InterfaceMapToStringMap(input map[string]interface{}, requiredFields []string) map[string]string {
+func InterfaceMapToStringMap(input map[string]interface{}, requiredFields []string, logger *zerolog.Logger) map[string]string {
 	output := make(map[string]string)
 	for _, field := range requiredFields {
 		if value, found := input[field]; found {
@@ -116,9 +116,11 @@ func InterfaceMapToStringMap(input map[string]interface{}, requiredFields []stri
 			if ok {
 				output[field] = valueStr
 			} else {
+				logger.Warn().Msg(fmt.Sprintf("could not convert field %s to string. returning nil", field))
 				return nil
 			}
 		} else {
+			logger.Warn().Msg(fmt.Sprintf("required field %s not found in configuration map. returning nil", field))
 			return nil
 		}
 	}

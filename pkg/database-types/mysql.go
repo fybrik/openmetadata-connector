@@ -44,7 +44,7 @@ func (m *mysql) getCredentials(vaultClientConfiguration map[interface{}]interfac
 		return EmptyString, EmptyString, err
 	}
 	requiredFields := []string{Username, Password}
-	secretStrings := utils.InterfaceMapToStringMap(secrets, requiredFields)
+	secretStrings := utils.InterfaceMapToStringMap(secrets, requiredFields, m.logger)
 	if secretStrings == nil {
 		m.logger.Warn().Msg(fmt.Sprintf(SomeRequiredFieldsMissing, requiredFields))
 		return EmptyString, EmptyString, fmt.Errorf(SomeRequiredFieldsMissing, requiredFields)
