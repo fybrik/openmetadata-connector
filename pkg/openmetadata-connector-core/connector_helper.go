@@ -284,7 +284,7 @@ func NewOpenMetadataAPIService(conf map[string]interface{}, customization map[st
 	}
 
 	nameToDatabaseStruct := map[string]dbtypes.DatabaseType{
-		MysqlLowercase: dbtypes.NewMysql(logger),
+		MysqlLowercase: dbtypes.NewMysql(vaultConf, logger),
 		S3:             dbtypes.NewS3(vaultConf, logger),
 		Generic:        dbtypes.NewGeneric(logger),
 	}

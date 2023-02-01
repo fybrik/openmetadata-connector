@@ -4,20 +4,23 @@
 package databasetypes
 
 import (
+	"fmt"
 	"reflect"
 
 	"github.com/rs/zerolog"
 
 	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
 	"fybrik.io/openmetadata-connector/pkg/utils"
+	"fybrik.io/openmetadata-connector/pkg/vault"
 )
 
 type mysql struct {
 	dataBase
-	standardFields map[string]bool
+	vaultClientConfiguration map[interface{}]interface{}
+	standardFields           map[string]bool
 }
 
-func NewMysql(logger *zerolog.Logger) *mysql {
+func NewMysql(vaultClientConfiguration map[interface{}]interface{}, logger *zerolog.Logger) *mysql {
 	standardFields := map[string]bool{
 		DatabaseSchema: true,
 		HostPort:       true,
@@ -25,11 +28,39 @@ func NewMysql(logger *zerolog.Logger) *mysql {
 		Scheme:         true,
 		Username:       true,
 	}
-	return &mysql{standardFields: standardFields, dataBase: dataBase{name: Mysql, logger: logger}}
+	return &mysql{
+		standardFields:           standardFields,
+		dataBase:                 dataBase{name: Mysql, logger: logger},
+		vaultClientConfiguration: vaultClientConfiguration,
+	}
+}
+
+func (m *mysql) getCredentials(vaultClientConfiguration map[interface{}]interface{}, //nolint:dupl
+	credentialsPath *string) (string, string, error) {
+	client := vault.NewVaultClient(vaultClientConfiguration, m.logger, utils.HTTPClient)
+	secrets, err := client.GetSecretMap(credentialsPath)
+	if err != nil {
+		m.logger.Warn().Msg("MySQL credentials extraction failed")
+		return EmptyString, EmptyString, err
+	}
+	requiredFields := []string{Username, Password}
+	secretStrings := utils.InterfaceMapToStringMap(secrets, requiredFields, m.logger)
+	if secretStrings == nil {
+		m.logger.Warn().Msg(fmt.Sprintf(SomeRequiredFieldsMissing, requiredFields))
+		return EmptyString, EmptyString, fmt.Errorf(SomeRequiredFieldsMissing, requiredFields)
+	}
+	return secretStrings[Username], secretStrings[Password], nil
 }
 
 func (m *mysql) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interface{},
 	connectionType string, credentials *string) map[string]interface{} {
+	if m.vaultClientConfiguration != nil && credentials != nil {
+		username, password, err := m.getCredentials(m.vaultClientConfiguration, credentials)
+		if err == nil && username != EmptyString && password != EmptyString {
+			config[Username] = username
+			config[Password] = password
+		}
+	}
 	return config
 }
 

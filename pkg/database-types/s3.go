@@ -4,7 +4,6 @@
 package databasetypes
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -39,25 +38,21 @@ func NewS3(vaultClientConfiguration map[interface{}]interface{}, logger *zerolog
 		vaultClientConfiguration: vaultClientConfiguration}
 }
 
-func (s *s3) getS3Credentials(vaultClientConfiguration map[interface{}]interface{},
+func (s *s3) getCredentials(vaultClientConfiguration map[interface{}]interface{}, //nolint:dupl
 	credentialsPath *string) (string, string, error) {
 	client := vault.NewVaultClient(vaultClientConfiguration, s.logger, utils.HTTPClient)
-	token, err := client.GetToken()
-	if err != nil {
-		s.logger.Warn().Msg(GetTokenFailed)
-		return EmptyString, EmptyString, errors.New(GetTokenFailed)
-	}
-	secret, err := client.GetSecret(token, *credentialsPath)
-	if err != nil {
-		s.logger.Warn().Msg(GetSecretFailed)
-		return EmptyString, EmptyString, errors.New(GetSecretFailed)
-	}
-	accessKey, secretKey, err := client.ExtractS3CredentialsFromSecret(secret)
+	secrets, err := client.GetSecretMap(credentialsPath)
 	if err != nil {
 		s.logger.Warn().Msg("S3 credentials extraction failed")
 		return EmptyString, EmptyString, err
 	}
-	return accessKey, secretKey, nil
+	requiredFields := []string{AccessKey, SecretKey}
+	secretStrings := utils.InterfaceMapToStringMap(secrets, requiredFields, s.logger)
+	if secretStrings == nil {
+		s.logger.Warn().Msg(fmt.Sprintf(SomeRequiredFieldsMissing, requiredFields))
+		return EmptyString, EmptyString, fmt.Errorf(SomeRequiredFieldsMissing, requiredFields)
+	}
+	return secretStrings[AccessKey], secretStrings[SecretKey], nil
 }
 
 func (s *s3) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interface{},
@@ -80,7 +75,7 @@ func (s *s3) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interfa
 	}
 
 	if s.vaultClientConfiguration != nil && credentialsPath != nil {
-		awsAccessKeyID, awsSecretAccessKey, err := s.getS3Credentials(s.vaultClientConfiguration, credentialsPath)
+		awsAccessKeyID, awsSecretAccessKey, err := s.getCredentials(s.vaultClientConfiguration, credentialsPath)
 		if err == nil && awsAccessKeyID != EmptyString && awsSecretAccessKey != EmptyString {
 			securityMap[AwsAccessKeyID] = awsAccessKeyID
 			securityMap[AwsSecretAccessKey] = awsSecretAccessKey

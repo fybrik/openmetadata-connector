@@ -55,23 +55,14 @@ var _ = Describe("Vault and OM connector", Ordered, func() {
 		})
 	})
 	Describe("Vault credentials retrieval flow", Ordered, func() {
-		var token string
-		var secret []byte
 		var vaultClient *vault.VaultClient
-		var accessKey string
-		var secretKey string
-		It("should receive a valid token", func() {
-			vaultClient = vault.NewVaultClient(vaultConf, &logger, utils.HTTPClient)
-			token, err = vaultClient.GetToken()
-			Expect(err).ToNot(HaveOccurred())
-			Expect(token).To(Equal(TestToken))
-		})
-		It("should receive a valid secret", func() {
-			secret, err = vaultClient.GetSecret(token, TestPathInVault)
-			Expect(err).ToNot(HaveOccurred())
-		})
 		It("should receive valid access and secret keys", func() {
-			accessKey, secretKey, err = vaultClient.ExtractS3CredentialsFromSecret(secret)
+			vaultClient = vault.NewVaultClient(vaultConf, &logger, utils.HTTPClient)
+			testPathInVault := TestPathInVault
+			secrets, err1 := vaultClient.GetSecretMap(&testPathInVault)
+			Expect(err1).ToNot(HaveOccurred())
+			accessKey := secrets[AccessKey].(string)
+			secretKey := secrets[SecretKey].(string)
 			Expect(accessKey).To(Equal(TestAccessKey))
 			Expect(secretKey).To(Equal(TestSecretKey))
 			Expect(err).ToNot(HaveOccurred())
