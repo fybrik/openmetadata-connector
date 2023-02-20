@@ -47,6 +47,7 @@ const TableProperties = "table-properties"
 const TagCategories = "tag-categories"
 const Tags = "tags"
 const TagsPath = "/tags"
+const TrinoLowercase = "trino"
 const True = "true"
 const Type = "type"
 const TypeListLengthLimit = 100
