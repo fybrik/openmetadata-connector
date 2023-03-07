@@ -90,23 +90,27 @@ func RunCmd() *cobra.Command {
 			utils.InitHTTPClient(&logger)
 
 			router := api.NewRouter(DefaultAPIController)
+			addr := ":" + strconv.Itoa(DefaultAPIService.Port)
 			if fybrikEnv.IsUsingTLS() {
 				tlsConfig, err := fybrikTLS.GetServerConfig(&logger)
 				if err != nil {
 					logger.Error().Msg("failed to get tls config")
 					return
 				}
-				server := http.Server{Addr: ":" + strconv.Itoa(DefaultAPIService.Port), Handler: router, TLSConfig: tlsConfig,
-					ReadHeaderTimeout: occ.ReadHeaderTimeout}
+				server := http.Server{Addr: addr, Handler: router, TLSConfig: tlsConfig, ReadHeaderTimeout: occ.ReadHeaderTimeout}
+				logger.Info().Msg(occ.ServerStartingMsg)
 				err = server.ListenAndServeTLS("", "")
 				if err != nil {
 					logger.Error().Err(err).Msg("function ListenAndServeTLS returns error")
 				}
-				return
+			} else {
+				server := http.Server{Addr: addr, Handler: router, ReadHeaderTimeout: occ.ReadHeaderTimeout}
+				logger.Info().Msg(occ.ServerStartingMsg)
+				err := server.ListenAndServe()
+				if err != nil {
+					logger.Error().Err(err).Msg("function ListenAndServe returns error")
+				}
 			}
-
-			logger.Info().Msg("Server is starting")
-			http.ListenAndServe(":"+strconv.Itoa(DefaultAPIService.Port), router) //nolint
 		},
 	}
 
