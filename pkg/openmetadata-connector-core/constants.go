@@ -3,6 +3,8 @@
 
 package openapiconnectorcore
 
+import "time"
+
 const Add = "add"
 const AssetNotFound = "asset not found"
 const CannotLoginToOM = "cannot login to OpenMetadata"
@@ -38,7 +40,7 @@ const Op = "op"
 const Owner = "owner"
 const Path = "path"
 const RandomStringLength = 5
-const ReadHeaderTimeout = 3
+const ReadHeaderTimeout = 3 * time.Second
 const S3 = "s3"
 const ServerStartingMsg = "Server is starting"
 const String = "string"
