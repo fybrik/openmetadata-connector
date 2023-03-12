@@ -6,6 +6,8 @@ package databasetypes
 import (
 	"fmt"
 	"reflect"
+	"strconv"
+	"strings"
 
 	"github.com/rs/zerolog"
 
@@ -81,6 +83,20 @@ func (m *mysql) TranslateOpenMetadataConfigToFybrikConfig(tableName string,
 	// remove sensitive information
 	delete(ret, Username)
 	delete(ret, Password)
+
+	if databaseSchema, ok := config[DatabaseSchema]; ok {
+		delete(ret, DatabaseSchema)
+		ret[Database] = databaseSchema
+	}
+
+	if hostPort, ok := config[HostPort]; ok {
+		delete(ret, HostPort)
+		s := strings.Split(hostPort.(string), ":")
+		ret[Host] = s[0]
+		if port, err := strconv.Atoi(s[1]); err != nil {
+			ret[Port] = port
+		}
+	}
 
 	return ret, MysqlLowercase, nil
 }
