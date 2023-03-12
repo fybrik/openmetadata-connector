@@ -82,7 +82,7 @@ func (m *mysql) TranslateOpenMetadataConfigToFybrikConfig(tableName string,
 	delete(ret, Username)
 	delete(ret, Password)
 
-	return ret, Mysql, nil
+	return ret, MysqlLowercase, nil
 }
 
 func (m *mysql) EquivalentServiceConfigurations(requestConfig, serviceConfig map[string]interface{}) bool {
