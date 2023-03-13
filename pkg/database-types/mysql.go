@@ -63,6 +63,20 @@ func (m *mysql) TranslateFybrikConfigToOpenMetadataConfig(config map[string]inte
 			config[Password] = password
 		}
 	}
+	host, ok1 := config[Host]
+	port, ok2 := config[Port]
+	if ok1 && ok2 {
+		delete(config, Host)
+		delete(config, Port)
+		config[HostPort] = fmt.Sprintf("%s:%.0f", host, port)
+	}
+
+	if database, ok := config[Database]; ok {
+		delete(config, Database)
+		config[DatabaseSchema] = database
+	}
+
+	config[Scheme] = "mysql+pymysql"
 	return config
 }
 
