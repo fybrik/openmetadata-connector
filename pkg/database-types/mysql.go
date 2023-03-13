@@ -108,7 +108,7 @@ func (m *mysql) TranslateOpenMetadataConfigToFybrikConfig(tableName string,
 		s := strings.Split(hostPort.(string), ":")
 		ret[Host] = s[0]
 		if len(s) > 1 {
-			if port, err := strconv.Atoi(s[1]); err != nil {
+			if port, err := strconv.Atoi(s[1]); err == nil {
 				ret[Port] = port
 			}
 		}
