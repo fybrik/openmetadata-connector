@@ -29,6 +29,7 @@ func NewMysql(vaultClientConfiguration map[interface{}]interface{}, logger *zero
 		Password:       true,
 		Scheme:         true,
 		Username:       true,
+		Table:          true,
 	}
 	return &mysql{
 		standardFields:           standardFields,
@@ -56,28 +57,27 @@ func (m *mysql) getCredentials(vaultClientConfiguration map[interface{}]interfac
 
 func (m *mysql) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interface{},
 	connectionType string, credentials *string) map[string]interface{} {
+	ret := make(map[string]interface{})
 	if m.vaultClientConfiguration != nil && credentials != nil {
 		username, password, err := m.getCredentials(m.vaultClientConfiguration, credentials)
 		if err == nil && username != EmptyString && password != EmptyString {
-			config[Username] = username
-			config[Password] = password
+			ret[Username] = username
+			ret[Password] = password
 		}
 	}
 	host, ok1 := config[Host]
 	port, ok2 := config[Port]
 	if ok1 && ok2 {
-		delete(config, Host)
-		delete(config, Port)
-		config[HostPort] = fmt.Sprintf("%s:%.0f", host, port)
+		ret[HostPort] = fmt.Sprintf("%s:%.0f", host, port)
 	}
 
 	if database, ok := config[Database]; ok {
-		delete(config, Database)
-		config[DatabaseSchema] = database
+		ret[DatabaseSchema] = database
 	}
 
-	config[Scheme] = "mysql+pymysql"
-	return config
+	ret[Scheme] = "mysql+pymysql"
+
+	return ret
 }
 
 func (m *mysql) TranslateOpenMetadataConfigToFybrikConfig(tableName string,
@@ -135,7 +135,7 @@ func (m *mysql) DatabaseSchemaName(createAssetRequest *models.CreateAssetRequest
 	if !ok {
 		return EmptyString
 	}
-	databaseSchema, found := connectionProperties[DatabaseSchema]
+	databaseSchema, found := connectionProperties[Database]
 	if found {
 		return databaseSchema.(string)
 	}
@@ -143,5 +143,13 @@ func (m *mysql) DatabaseSchemaName(createAssetRequest *models.CreateAssetRequest
 }
 
 func (m *mysql) TableName(createAssetRequest *models.CreateAssetRequest) (string, error) {
+	connectionProperties, ok := utils.InterfaceToMap(createAssetRequest.Details.GetConnection().AdditionalProperties[MysqlLowercase], m.logger)
+	if !ok {
+		return EmptyString, fmt.Errorf(FailedToConvert, AdditionalProperties)
+	}
+	tableName, found := connectionProperties[Table]
+	if found {
+		return tableName.(string), nil
+	}
 	return *createAssetRequest.DestinationAssetID, nil
 }
