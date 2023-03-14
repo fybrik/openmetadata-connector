@@ -84,6 +84,9 @@ func (m *mysql) TranslateOpenMetadataConfigToFybrikConfig(tableName string,
 	config map[string]interface{}) (map[string]interface{}, string, error) {
 	other := make(map[string]interface{})
 	ret := make(map[string]interface{})
+
+	ret[Table] = tableName
+
 	for key, value := range config {
 		if _, ok := m.standardFields[key]; ok {
 			ret[key] = value
