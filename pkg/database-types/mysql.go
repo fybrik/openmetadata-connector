@@ -16,23 +16,22 @@ import (
 	"fybrik.io/openmetadata-connector/pkg/vault"
 )
 
+var standardFields map[string]bool = map[string]bool{
+	DatabaseSchema: true,
+	HostPort:       true,
+	Password:       true,
+	Scheme:         true,
+	Username:       true,
+	Table:          true,
+}
+
 type mysql struct {
 	dataBase
 	vaultClientConfiguration map[interface{}]interface{}
-	standardFields           map[string]bool
 }
 
 func NewMysql(vaultClientConfiguration map[interface{}]interface{}, logger *zerolog.Logger) *mysql {
-	standardFields := map[string]bool{
-		DatabaseSchema: true,
-		HostPort:       true,
-		Password:       true,
-		Scheme:         true,
-		Username:       true,
-		Table:          true,
-	}
 	return &mysql{
-		standardFields:           standardFields,
 		dataBase:                 dataBase{name: Mysql, logger: logger},
 		vaultClientConfiguration: vaultClientConfiguration,
 	}
@@ -88,7 +87,7 @@ func (m *mysql) TranslateOpenMetadataConfigToFybrikConfig(tableName string,
 	ret[Table] = tableName
 
 	for key, value := range config {
-		if _, ok := m.standardFields[key]; ok {
+		if _, ok := standardFields[key]; ok {
 			ret[key] = value
 		} else {
 			other[key] = value
