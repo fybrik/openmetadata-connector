@@ -145,7 +145,12 @@ func (m *mysql) DatabaseSchemaName(createAssetRequest *models.CreateAssetRequest
 }
 
 func (m *mysql) TableName(createAssetRequest *models.CreateAssetRequest) (string, error) {
-	connectionProperties, ok := utils.InterfaceToMap(createAssetRequest.Details.GetConnection().AdditionalProperties[MysqlLowercase], m.logger)
+	additionalProperties := createAssetRequest.Details.GetConnection().AdditionalProperties
+	mysqlAddtionalProperties, ok := additionalProperties[MysqlLowercase]
+	if !ok {
+		return EmptyString, fmt.Errorf(RequiredFieldMissing, MysqlLowercase)
+	}
+	connectionProperties, ok := utils.InterfaceToMap(mysqlAddtionalProperties, m.logger)
 	if !ok {
 		return EmptyString, fmt.Errorf(FailedToConvert, AdditionalProperties)
 	}

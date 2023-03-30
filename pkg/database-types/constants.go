@@ -44,4 +44,5 @@ const Value = "value"
 
 // error message constants
 const FailedToConvert = "%s: failed to convert interface to map"
+const RequiredFieldMissing = "required fields missing: %s"
 const SomeRequiredFieldsMissing = "some of the required fields in %s are missing"
