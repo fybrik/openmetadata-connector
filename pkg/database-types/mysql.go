@@ -66,7 +66,10 @@ func (m *mysql) TranslateFybrikConfigToOpenMetadataConfig(config map[string]inte
 	}
 	host, ok1 := config[Host]
 	port, ok2 := config[Port]
-	if ok1 && ok2 {
+	if ok1 {
+		if !ok2 {
+			port = 3306
+		}
 		ret[HostPort] = fmt.Sprintf("%s:%.0f", host, port)
 	}
 
