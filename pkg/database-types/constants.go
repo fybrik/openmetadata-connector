@@ -19,6 +19,7 @@ const Database = "database"
 const DatabaseSchema = "databaseSchema"
 const Datalake = "Datalake"
 const Default = "default"
+const DefaultMySQLPort = 3306
 const EmptyString = ""
 const Endpoint = "endpoint"
 const EndPointURL = "endPointURL"
