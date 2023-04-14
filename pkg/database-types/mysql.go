@@ -6,6 +6,8 @@ package databasetypes
 import (
 	"fmt"
 	"reflect"
+	"strconv"
+	"strings"
 
 	"github.com/rs/zerolog"
 
@@ -14,22 +16,22 @@ import (
 	"fybrik.io/openmetadata-connector/pkg/vault"
 )
 
+var standardFields = map[string]bool{
+	DatabaseSchema: true,
+	HostPort:       true,
+	Password:       true,
+	Scheme:         true,
+	Username:       true,
+	Table:          true,
+}
+
 type mysql struct {
 	dataBase
 	vaultClientConfiguration map[interface{}]interface{}
-	standardFields           map[string]bool
 }
 
 func NewMysql(vaultClientConfiguration map[interface{}]interface{}, logger *zerolog.Logger) *mysql {
-	standardFields := map[string]bool{
-		DatabaseSchema: true,
-		HostPort:       true,
-		Password:       true,
-		Scheme:         true,
-		Username:       true,
-	}
 	return &mysql{
-		standardFields:           standardFields,
 		dataBase:                 dataBase{name: Mysql, logger: logger},
 		vaultClientConfiguration: vaultClientConfiguration,
 	}
@@ -54,22 +56,41 @@ func (m *mysql) getCredentials(vaultClientConfiguration map[interface{}]interfac
 
 func (m *mysql) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interface{},
 	connectionType string, credentials *string) map[string]interface{} {
+	ret := make(map[string]interface{})
 	if m.vaultClientConfiguration != nil && credentials != nil {
 		username, password, err := m.getCredentials(m.vaultClientConfiguration, credentials)
 		if err == nil && username != EmptyString && password != EmptyString {
-			config[Username] = username
-			config[Password] = password
+			ret[Username] = username
+			ret[Password] = password
 		}
 	}
-	return config
+	host, ok1 := config[Host]
+	port, ok2 := config[Port]
+	if ok1 {
+		if !ok2 {
+			port = DefaultMySQLPort
+		}
+		ret[HostPort] = fmt.Sprintf("%s:%.0f", host, port)
+	}
+
+	if database, ok := config[Database]; ok {
+		ret[DatabaseSchema] = database
+	}
+
+	ret[Scheme] = "mysql+pymysql"
+
+	return ret
 }
 
 func (m *mysql) TranslateOpenMetadataConfigToFybrikConfig(tableName string,
 	config map[string]interface{}) (map[string]interface{}, string, error) {
 	other := make(map[string]interface{})
 	ret := make(map[string]interface{})
+
+	ret[Table] = tableName
+
 	for key, value := range config {
-		if _, ok := m.standardFields[key]; ok {
+		if _, ok := standardFields[key]; ok {
 			ret[key] = value
 		} else {
 			other[key] = value
@@ -81,6 +102,22 @@ func (m *mysql) TranslateOpenMetadataConfigToFybrikConfig(tableName string,
 	// remove sensitive information
 	delete(ret, Username)
 	delete(ret, Password)
+
+	if databaseSchema, ok := config[DatabaseSchema]; ok {
+		delete(ret, DatabaseSchema)
+		ret[Database] = databaseSchema
+	}
+
+	if hostPort, ok := config[HostPort]; ok {
+		delete(ret, HostPort)
+		s := strings.Split(hostPort.(string), ":")
+		ret[Host] = s[0]
+		if len(s) > 1 {
+			if port, err := strconv.Atoi(s[1]); err == nil {
+				ret[Port] = port
+			}
+		}
+	}
 
 	return ret, MysqlLowercase, nil
 }
@@ -103,7 +140,7 @@ func (m *mysql) DatabaseSchemaName(createAssetRequest *models.CreateAssetRequest
 	if !ok {
 		return EmptyString
 	}
-	databaseSchema, found := connectionProperties[DatabaseSchema]
+	databaseSchema, found := connectionProperties[Database]
 	if found {
 		return databaseSchema.(string)
 	}
@@ -111,5 +148,18 @@ func (m *mysql) DatabaseSchemaName(createAssetRequest *models.CreateAssetRequest
 }
 
 func (m *mysql) TableName(createAssetRequest *models.CreateAssetRequest) (string, error) {
+	additionalProperties := createAssetRequest.Details.GetConnection().AdditionalProperties
+	mysqlAdditionalProperties, ok := additionalProperties[MysqlLowercase]
+	if !ok {
+		return EmptyString, fmt.Errorf(RequiredFieldMissing, MysqlLowercase)
+	}
+	connectionProperties, ok := utils.InterfaceToMap(mysqlAdditionalProperties, m.logger)
+	if !ok {
+		return EmptyString, fmt.Errorf(FailedToConvert, AdditionalProperties)
+	}
+	tableName, found := connectionProperties[Table]
+	if found {
+		return tableName.(string), nil
+	}
 	return *createAssetRequest.DestinationAssetID, nil
 }
