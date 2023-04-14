@@ -16,7 +16,7 @@ import (
 	"fybrik.io/openmetadata-connector/pkg/vault"
 )
 
-var standardFields map[string]bool = map[string]bool{
+var standardFields = map[string]bool{
 	DatabaseSchema: true,
 	HostPort:       true,
 	Password:       true,
@@ -149,11 +149,11 @@ func (m *mysql) DatabaseSchemaName(createAssetRequest *models.CreateAssetRequest
 
 func (m *mysql) TableName(createAssetRequest *models.CreateAssetRequest) (string, error) {
 	additionalProperties := createAssetRequest.Details.GetConnection().AdditionalProperties
-	mysqlAddtionalProperties, ok := additionalProperties[MysqlLowercase]
+	mysqlAdditionalProperties, ok := additionalProperties[MysqlLowercase]
 	if !ok {
 		return EmptyString, fmt.Errorf(RequiredFieldMissing, MysqlLowercase)
 	}
-	connectionProperties, ok := utils.InterfaceToMap(mysqlAddtionalProperties, m.logger)
+	connectionProperties, ok := utils.InterfaceToMap(mysqlAdditionalProperties, m.logger)
 	if !ok {
 		return EmptyString, fmt.Errorf(FailedToConvert, AdditionalProperties)
 	}

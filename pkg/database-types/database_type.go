@@ -4,7 +4,7 @@
 package databasetypes
 
 import (
-	zerolog "github.com/rs/zerolog"
+	"github.com/rs/zerolog"
 
 	models "fybrik.io/openmetadata-connector/datacatalog-go-models"
 	"fybrik.io/openmetadata-connector/pkg/utils"
@@ -12,7 +12,7 @@ import (
 
 type DatabaseType interface {
 	// OMTypeName() returns the OpenMetadata name for different connections types. For instance, it
-	// return "Mysql" for MYSQL and "Deltalake" for s3
+	// returns "Mysql" for MYSQL and "Deltalake" for s3
 	OMTypeName() string
 
 	// translate the connection information from the Fybrik format to the OM format.
@@ -26,7 +26,7 @@ type DatabaseType interface {
 		config map[string]interface{}) (map[string]interface{}, string, error)
 
 	// In checking whether a certain databaseService already exists, compare whether two
-	// OM configuration informations are equivalent.Return 'true' if they are
+	// OM configuration information are equivalent.Return 'true' if they are
 	EquivalentServiceConfigurations(map[string]interface{}, map[string]interface{}) bool
 
 	// The hierarchy in OM is:
