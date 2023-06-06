@@ -39,7 +39,7 @@ generate-code:
 	docker run --rm \
            -v ${PWD}:/local \
            -u "${USER_ID}:${GROUP_ID}" \
-           openapitools/openapi-generator-cli generate -g go-server \
+           openapitools/openapi-generator-cli:2.5.2 generate -g go-server \
            --additional-properties=serverPort=8081 \
            --git-host=${GIT_HOST} \
            --git-user-id=${GIT_USER_ID} \
