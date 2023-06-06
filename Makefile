@@ -49,7 +49,7 @@ generate-code:
 	docker run --rm \
            -v ${PWD}:/local \
            -u "${USER_ID}:${GROUP_ID}" \
-           openapitools/openapi-generator-cli generate -g go \
+           openapitools/openapi-generator-cli:v6.4.0 generate -g go \
            --global-property=models,supportingFiles \
            --git-host=${GIT_HOST} \
            --git-user-id=${GIT_USER_ID} \
@@ -60,7 +60,7 @@ generate-code:
 	docker run --rm \
            -v ${PWD}:/local \
            -u "${USER_ID}:${GROUP_ID}" \
-           openapitools/openapi-generator-cli generate -g go \
+           openapitools/openapi-generator-cli:v6.4.0 generate -g go \
            --git-host=${GIT_HOST} \
            --git-user-id=${GIT_USER_ID} \
            --git-repo-id=${GIT_REPO_ID_CLIENT} \
