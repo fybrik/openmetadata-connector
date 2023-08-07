@@ -37,7 +37,7 @@ func NewMysql(vaultClientConfiguration map[interface{}]interface{}, logger *zero
 	}
 }
 
-func (m *mysql) getCredentials(vaultClientConfiguration map[interface{}]interface{}, //nolint:dupl
+func (m *mysql) getCredentials(vaultClientConfiguration map[interface{}]interface{},
 	credentialsPath *string) (string, string, error) {
 	client := vault.NewVaultClient(vaultClientConfiguration, m.logger, utils.HTTPClient)
 	secrets, err := client.GetSecretMap(credentialsPath)

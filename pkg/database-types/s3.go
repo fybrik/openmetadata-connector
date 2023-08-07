@@ -40,7 +40,7 @@ func NewS3(vaultClientConfiguration map[interface{}]interface{}, logger *zerolog
 		vaultClientConfiguration: vaultClientConfiguration}
 }
 
-func (s *s3) getCredentials(vaultClientConfiguration map[interface{}]interface{}, //nolint:dupl
+func (s *s3) getCredentials(vaultClientConfiguration map[interface{}]interface{},
 	credentialsPath *string) (string, string, string, error) {
 	client := vault.NewVaultClient(vaultClientConfiguration, s.logger, utils.HTTPClient)
 	secrets, err := client.GetSecretMap(credentialsPath)
