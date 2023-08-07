@@ -54,13 +54,12 @@ func (s *s3) getCredentials(vaultClientConfiguration map[interface{}]interface{}
 		s.logger.Warn().Msg(fmt.Sprintf(SomeRequiredFieldsMissing, requiredFields))
 		return EmptyString, EmptyString, EmptyString, fmt.Errorf(SomeRequiredFieldsMissing, requiredFields)
 	}
-	accessToken := EmptyString
+	sessionToken := EmptyString
 	val, ok := secrets[SessionToken].(string)
-
 	if ok {
-		accessToken = val
+		sessionToken = val
 	}
-	return secretStrings[AccessKey], secretStrings[SecretKey], accessToken, nil
+	return secretStrings[AccessKey], secretStrings[SecretKey], sessionToken, nil
 }
 
 func (s *s3) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interface{},
