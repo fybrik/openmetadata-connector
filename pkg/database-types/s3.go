@@ -25,12 +25,14 @@ var translate = map[string]string{
 	Endpoint:       EndPointURL,
 	AccessKeyID:    AwsAccessKeyID,
 	SecretAccessID: AwsSecretAccessKey,
+	SessionToken:   AwsSessionToken,
 }
 var translateInv = map[string]string{
 	AwsRegion:          Region,
 	EndPointURL:        Endpoint,
 	AwsAccessKeyID:     AccessKeyID,
 	AwsSecretAccessKey: SecretAccessID,
+	AwsSessionToken:    SessionToken,
 }
 
 func NewS3(vaultClientConfiguration map[interface{}]interface{}, logger *zerolog.Logger) *s3 {
@@ -38,21 +40,26 @@ func NewS3(vaultClientConfiguration map[interface{}]interface{}, logger *zerolog
 		vaultClientConfiguration: vaultClientConfiguration}
 }
 
-func (s *s3) getCredentials(vaultClientConfiguration map[interface{}]interface{}, //nolint:dupl
-	credentialsPath *string) (string, string, error) {
+func (s *s3) getCredentials(vaultClientConfiguration map[interface{}]interface{},
+	credentialsPath *string) (string, string, string, error) {
 	client := vault.NewVaultClient(vaultClientConfiguration, s.logger, utils.HTTPClient)
 	secrets, err := client.GetSecretMap(credentialsPath)
 	if err != nil {
 		s.logger.Warn().Msg("S3 credentials extraction failed")
-		return EmptyString, EmptyString, err
+		return EmptyString, EmptyString, EmptyString, err
 	}
 	requiredFields := []string{AccessKey, SecretKey}
 	secretStrings := utils.InterfaceMapToStringMap(secrets, requiredFields, s.logger)
 	if secretStrings == nil {
 		s.logger.Warn().Msg(fmt.Sprintf(SomeRequiredFieldsMissing, requiredFields))
-		return EmptyString, EmptyString, fmt.Errorf(SomeRequiredFieldsMissing, requiredFields)
+		return EmptyString, EmptyString, EmptyString, fmt.Errorf(SomeRequiredFieldsMissing, requiredFields)
 	}
-	return secretStrings[AccessKey], secretStrings[SecretKey], nil
+	sessionToken := EmptyString
+	val, ok := secrets[SessionToken].(string)
+	if ok {
+		sessionToken = val
+	}
+	return secretStrings[AccessKey], secretStrings[SecretKey], sessionToken, nil
 }
 
 func (s *s3) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interface{},
@@ -75,10 +82,13 @@ func (s *s3) TranslateFybrikConfigToOpenMetadataConfig(config map[string]interfa
 	}
 
 	if s.vaultClientConfiguration != nil && credentialsPath != nil {
-		awsAccessKeyID, awsSecretAccessKey, err := s.getCredentials(s.vaultClientConfiguration, credentialsPath)
+		awsAccessKeyID, awsSecretAccessKey, awsSessionToken, err := s.getCredentials(s.vaultClientConfiguration, credentialsPath)
 		if err == nil && awsAccessKeyID != EmptyString && awsSecretAccessKey != EmptyString {
 			securityMap[AwsAccessKeyID] = awsAccessKeyID
 			securityMap[AwsSecretAccessKey] = awsSecretAccessKey
+			if awsSessionToken != EmptyString {
+				securityMap[AwsSessionToken] = awsSessionToken
+			}
 		}
 	}
 
@@ -112,6 +122,7 @@ func (s *s3) TranslateOpenMetadataConfigToFybrikConfig(tableName string,
 
 	delete(ret, AccessKeyID)
 	delete(ret, SecretAccessID)
+	delete(ret, SessionToken)
 
 	return ret, S3, nil
 }
